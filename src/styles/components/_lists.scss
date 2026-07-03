@@ -1,0 +1,246 @@
+@use 'sass:list';
+@use '../abstracts/variables' as *;
+@use '../abstracts/mixins' as *;
+
+.list-sections {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-md;
+}
+
+.list-section {
+  @include card;
+  padding: $spacing-md $spacing-lg;
+
+  &__header {
+    display: flex;
+    align-items: center;
+    gap: $spacing-sm;
+  }
+
+  &__header-button {
+    display: flex;
+    align-items: center;
+    gap: $spacing-sm;
+    flex: 1;
+    min-width: 0;
+    border: none;
+    background: transparent;
+    font-family: inherit;
+    text-align: left;
+    padding: 0;
+    cursor: pointer;
+  }
+
+  &__collapse-icon {
+    @include flex-center;
+    flex-shrink: 0;
+    color: $color-text-muted;
+    transition: transform 0.15s ease;
+
+    &--collapsed {
+      transform: rotate(-90deg);
+    }
+  }
+
+  &__color-dot {
+    width: 0.625rem;
+    height: 0.625rem;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  &__list-name {
+    font-size: $font-size-base;
+    font-weight: 600;
+    color: $color-text;
+    @include truncate;
+  }
+
+  &__list-icon {
+    vertical-align: -0.125em;
+    margin-right: 0.3125rem;
+    color: $color-text-muted;
+  }
+
+  &__task-count {
+    font-size: $font-size-sm;
+    color: $color-text-muted;
+  }
+
+  &__add-task-button {
+    @include flex-center;
+    flex-shrink: 0;
+    gap: 0.25rem;
+    font-family: inherit;
+    font-size: $font-size-sm;
+    font-weight: 600;
+    padding: 0.375rem $spacing-md;
+    border-radius: $radius-pill;
+    border: none;
+    background: $color-bg;
+    color: $color-primary;
+    cursor: pointer;
+  }
+
+  &__task-list {
+    margin-top: $spacing-sm;
+  }
+
+  @each $key, $pair in $accent-map {
+    &--#{$key} &__color-dot {
+      background: list.nth($pair, 1);
+    }
+  }
+}
+
+.subtask-editor {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-xs;
+
+  &__item {
+    display: flex;
+    align-items: center;
+    gap: $spacing-sm;
+  }
+
+  &__item-checkbox {
+    @include flex-center;
+    flex-shrink: 0;
+    width: 1.125rem;
+    height: 1.125rem;
+    border-radius: $radius-xs;
+    border: 2px solid $color-border;
+    background: $color-surface;
+    color: $color-surface;
+    cursor: pointer;
+
+    &--done {
+      background: $color-primary;
+      border-color: $color-primary;
+    }
+  }
+
+  &__item-title {
+    flex: 1;
+    font-size: $font-size-base;
+    color: $color-text;
+
+    &--done {
+      text-decoration: line-through;
+      color: $color-text-muted;
+    }
+  }
+
+  &__remove-button {
+    @include flex-center;
+    flex-shrink: 0;
+    width: 1.25rem;
+    height: 1.25rem;
+    border-radius: 50%;
+    border: none;
+    background: transparent;
+    color: $color-text-muted;
+    cursor: pointer;
+  }
+
+  &__add-row {
+    display: flex;
+    gap: $spacing-sm;
+
+    .modal__input {
+      flex: 1;
+    }
+  }
+}
+
+.task-row {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+  width: 100%;
+  padding: $spacing-sm 0;
+  border: none;
+  border-top: 1px solid $color-border;
+  background: transparent;
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+
+  &:first-child {
+    border-top: none;
+  }
+
+  &__check {
+    @include flex-center;
+    flex-shrink: 0;
+    width: 1.375rem;
+    height: 1.375rem;
+    border-radius: $radius-xs;
+    border: 2px solid $color-border;
+    color: $color-surface;
+    cursor: pointer;
+  }
+
+  &__body {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    gap: 0.125rem;
+    min-width: 0;
+  }
+
+  &__title {
+    font-size: $font-size-base;
+    color: $color-text;
+    @include truncate;
+  }
+
+  &__icon {
+    vertical-align: -0.125em;
+    margin-right: 0.3125rem;
+    color: $color-text-muted;
+  }
+
+  &__repeat-icon {
+    vertical-align: -0.125em;
+    margin-left: 0.3125rem;
+    color: $color-text-muted;
+  }
+
+  &__meta {
+    display: flex;
+    align-items: center;
+    gap: $spacing-sm;
+    font-size: $font-size-sm;
+    color: $color-text-muted;
+  }
+
+  &__due--overdue {
+    color: $color-danger;
+    font-weight: 600;
+  }
+
+  &__assignee {
+    padding: 0.0625rem $spacing-sm;
+    border-radius: $radius-pill;
+    background: $color-bg;
+  }
+
+  &--done &__title {
+    text-decoration: line-through;
+    color: $color-text-muted;
+  }
+
+  @each $key, $pair in $accent-map {
+    &--#{$key} &__check {
+      border-color: list.nth($pair, 1);
+    }
+
+    &--#{$key}.task-row--done &__check {
+      background: list.nth($pair, 1);
+      border-color: list.nth($pair, 1);
+    }
+  }
+}

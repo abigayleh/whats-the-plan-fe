@@ -1,0 +1,122 @@
+@use '../abstracts/variables' as *;
+@use '../abstracts/mixins' as *;
+
+.page {
+  padding-top: $spacing-md;
+
+  &__header {
+    display: flex;
+    align-items: center;
+    gap: $spacing-md;
+    margin-bottom: $spacing-lg;
+  }
+
+  &__badge {
+    @include flex-center;
+    width: 3rem;
+    height: 3rem;
+    border-radius: $radius-md;
+    flex-shrink: 0;
+
+    &--coral {
+      background: $color-accent-coral-soft;
+      color: $color-accent-coral;
+    }
+
+    &--teal {
+      background: $color-accent-teal-soft;
+      color: $color-accent-teal;
+    }
+
+    &--amber {
+      background: $color-accent-amber-soft;
+      color: $color-accent-amber;
+    }
+
+    &--blue {
+      background: $color-accent-blue-soft;
+      color: $color-accent-blue;
+    }
+
+    &--primary {
+      background: $color-primary-soft;
+      color: $color-primary;
+    }
+  }
+
+  &__title {
+    font-size: $font-size-xl;
+    font-weight: 600;
+    margin: 0;
+  }
+
+  &__header-action {
+    display: inline-flex;
+    align-items: center;
+    gap: $spacing-xs;
+    margin-left: auto;
+  }
+
+  &__header-actions {
+    display: flex;
+    align-items: center;
+    gap: $spacing-sm;
+    margin-left: auto;
+  }
+
+  &__badge-tag {
+    display: inline-flex;
+    align-items: center;
+    font-size: $font-size-sm;
+    font-weight: 600;
+    padding: 0.25rem $spacing-sm;
+    border-radius: $radius-pill;
+    background: $color-accent-amber-soft;
+    color: $color-accent-amber;
+  }
+
+  &__back-link {
+    display: inline-block;
+    margin-bottom: $spacing-md;
+    font-size: $font-size-sm;
+    font-weight: 600;
+    color: $color-text-muted;
+    text-decoration: none;
+
+    &:hover {
+      color: $color-primary;
+    }
+  }
+
+  &__card {
+    @include card;
+
+    & + & {
+      margin-top: $spacing-md;
+    }
+  }
+
+  &__placeholder {
+    color: $color-text-muted;
+    margin: 0;
+  }
+}
+
+.floating-action-button {
+  @include flex-center;
+  position: fixed;
+  right: $spacing-xl;
+  bottom: $spacing-xl;
+  width: 3.5rem;
+  height: 3.5rem;
+  border-radius: 50%;
+  border: none;
+  background: $color-primary;
+  color: $color-surface;
+  box-shadow: $shadow-md;
+  cursor: pointer;
+
+  &:hover {
+    background: $color-primary-hover;
+  }
+}

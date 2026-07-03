@@ -1,0 +1,32 @@
+@use '../abstracts/variables' as *;
+
+.button {
+  font-family: inherit;
+  font-size: $font-size-base;
+  font-weight: 600;
+  padding: $spacing-sm $spacing-lg;
+  border-radius: $radius-pill;
+  border: 1px solid transparent;
+  cursor: pointer;
+
+  &--primary {
+    background: $color-primary;
+    color: $color-surface;
+    box-shadow: $shadow-sm;
+
+    &:hover {
+      background: $color-primary-hover;
+    }
+  }
+
+  &--ghost {
+    background: transparent;
+    color: $color-text-muted;
+    border-color: $color-border;
+  }
+
+  &--danger {
+    background: transparent;
+    color: $color-danger;
+  }
+}

@@ -1,0 +1,57 @@
+@use '../abstracts/variables' as *;
+@use '../abstracts/mixins' as *;
+
+.auth-page {
+  @include flex-center;
+  min-height: 100vh;
+  background: $color-bg;
+  padding: $spacing-lg;
+}
+
+.auth-card {
+  @include card;
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-md;
+  width: 100%;
+  max-width: 22rem;
+
+  &__title {
+    font-size: $font-size-xl;
+    font-weight: 600;
+    margin: 0;
+  }
+
+  &__field {
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-xs;
+    font-size: $font-size-sm;
+    color: $color-text-muted;
+
+    input {
+      font-family: inherit;
+      font-size: $font-size-base;
+      color: $color-text;
+      padding: $spacing-sm $spacing-md;
+      border: 1px solid $color-border;
+      border-radius: $radius-pill;
+
+      &:focus {
+        outline: 2px solid $color-primary;
+        outline-offset: 1px;
+      }
+    }
+  }
+
+  &__footer {
+    font-size: $font-size-sm;
+    color: $color-text-muted;
+    margin: 0;
+
+    a {
+      color: $color-primary;
+      font-weight: 600;
+    }
+  }
+}

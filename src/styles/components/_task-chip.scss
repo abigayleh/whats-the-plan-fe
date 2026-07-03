@@ -1,0 +1,119 @@
+@use 'sass:list';
+@use '../abstracts/variables' as *;
+@use '../abstracts/mixins' as *;
+
+.task-chip {
+  display: flex;
+  align-items: flex-start;
+  gap: $spacing-sm;
+  padding: $spacing-xs 0;
+  cursor: pointer;
+  position: relative;
+
+  &__check {
+    @include flex-center;
+    flex-shrink: 0;
+    width: 1.125rem;
+    height: 1.125rem;
+    margin-top: 0.125rem;
+    border-radius: $radius-xs;
+    border: 2px solid $color-border;
+    background: $color-surface;
+    color: $color-surface;
+    cursor: pointer;
+    padding: 0;
+  }
+
+  &__body {
+    flex: 1;
+    min-width: 0;
+  }
+
+  &__title {
+    margin: 0;
+    font-size: $font-size-base;
+    font-weight: 500;
+    color: $color-text;
+    @include truncate;
+  }
+
+  &__icon {
+    vertical-align: -0.125em;
+    margin-right: 0.25rem;
+    color: $color-text-muted;
+  }
+
+  &__repeat-icon {
+    vertical-align: -0.125em;
+    margin-left: 0.25rem;
+    color: $color-text-muted;
+  }
+
+  &__time {
+    margin: 0.125rem 0 0;
+    font-size: $font-size-sm;
+    color: $color-text-muted;
+  }
+
+  &--done &__title {
+    text-decoration: line-through;
+    color: $color-text-muted;
+  }
+
+  &--compact {
+    padding: 0;
+  }
+
+  &--compact &__check {
+    width: 0.875rem;
+    height: 0.875rem;
+  }
+
+  @each $key, $pair in $accent-map {
+    &--#{$key} &__check {
+      border-color: list.nth($pair, 1);
+    }
+
+    &--#{$key}.task-chip--done &__check {
+      background: list.nth($pair, 1);
+      border-color: list.nth($pair, 1);
+    }
+  }
+
+  // Timed items (a specific start/end time) fill the block with a solid color
+  // instead of showing a checkbox, so they read as calendar "events" at a glance.
+  &--timed {
+    height: 100%;
+    border-radius: $radius-sm;
+    border-left: 3px solid;
+    padding: 0.125rem $spacing-sm;
+
+    &.task-chip--compact {
+      padding: 0;
+      border-radius: $radius-pill;
+      border-left: none;
+    }
+  }
+
+  &--timed &__title {
+    font-size: 0.6875rem;
+    font-weight: 600;
+  }
+
+  &--timed &__time {
+    font-size: 0.625rem;
+    margin-top: 0;
+  }
+
+  @each $key, $pair in $accent-map {
+    &--timed.task-chip--#{$key} {
+      background: rgba(list.nth($pair, 1), 0.18);
+      color: list.nth($pair, 1);
+      border-left-color: list.nth($pair, 1);
+    }
+
+    &--timed.task-chip--#{$key}.task-chip--compact {
+      background: list.nth($pair, 1);
+    }
+  }
+}

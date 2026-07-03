@@ -1,0 +1,134 @@
+@use 'sass:list';
+@use '../abstracts/variables' as *;
+@use '../abstracts/mixins' as *;
+
+.poll-list {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-md;
+}
+
+.poll-card {
+  @include card;
+
+  &__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: $spacing-sm;
+  }
+
+  &__group-name {
+    font-size: $font-size-sm;
+    font-weight: 600;
+    padding: 0.0625rem $spacing-sm;
+    border-radius: $radius-pill;
+  }
+
+  &__expiry {
+    font-size: $font-size-sm;
+    color: $color-text-muted;
+
+    &--expired {
+      color: $color-danger;
+    }
+  }
+
+  &__question {
+    margin: 0 0 $spacing-md;
+    font-size: $font-size-base;
+    font-weight: 600;
+    color: $color-text;
+  }
+
+  &__options {
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-xs;
+  }
+
+  &__option {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    padding: $spacing-sm $spacing-md;
+    border-radius: $radius-md;
+    border: 1px solid $color-border;
+    background: $color-surface;
+    font-family: inherit;
+    font-size: $font-size-sm;
+    color: $color-text;
+    cursor: pointer;
+    overflow: hidden;
+
+    &:disabled {
+      cursor: default;
+    }
+
+    &--selected {
+      border-color: $color-primary;
+      font-weight: 600;
+    }
+  }
+
+  &__option-bar {
+    position: absolute;
+    inset: 0 auto 0 0;
+    background: $color-primary-soft;
+    transition: width 0.2s ease;
+  }
+
+  &__option-text,
+  &__option-stats {
+    position: relative;
+  }
+
+  &__option-stats {
+    color: $color-text-muted;
+    flex-shrink: 0;
+    margin-left: $spacing-sm;
+  }
+
+  &__total {
+    margin: $spacing-sm 0 0;
+    font-size: $font-size-sm;
+    color: $color-text-muted;
+  }
+
+  @each $key, $pair in $accent-map {
+    &--#{$key} &__group-name {
+      background: list.nth($pair, 2);
+      color: list.nth($pair, 1);
+    }
+  }
+}
+
+.poll-options-editor {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-xs;
+
+  &__row {
+    display: flex;
+    align-items: center;
+    gap: $spacing-sm;
+
+    .modal__input {
+      flex: 1;
+    }
+  }
+
+  &__remove-button {
+    @include flex-center;
+    flex-shrink: 0;
+    width: 1.5rem;
+    height: 1.5rem;
+    border-radius: 50%;
+    border: none;
+    background: $color-bg;
+    color: $color-text-muted;
+    cursor: pointer;
+  }
+}

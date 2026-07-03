@@ -1,13 +1,81 @@
-$color-primary: #4f46e5;
-$color-bg: #ffffff;
-$color-text: #1f2937;
+// Brand
+$color-primary: #7c5cff;
+$color-primary-hover: #6a47f5;
+$color-primary-soft: #ece6ff;
 
+// Accents (used for group colors, category cards, chips)
+$color-accent-coral: #ff6b81;
+$color-accent-coral-soft: #ffe3e8;
+$color-accent-teal: #17c3b2;
+$color-accent-teal-soft: #d9f7f2;
+$color-accent-amber: #ffb020;
+$color-accent-amber-soft: #fff2d9;
+$color-accent-blue: #3aa0ff;
+$color-accent-blue-soft: #e1f1ff;
+
+// Surfaces
+$color-bg: #f4f2fb;
+$color-surface: #ffffff;
+$color-border: #ece9f7;
+
+// Text
+$color-text: #241f33;
+$color-text-muted: #8b86a3;
+
+$color-danger: #ff5c5c;
+$color-success: #2ecc84;
+
+$spacing-xs: 0.25rem;
 $spacing-sm: 0.5rem;
 $spacing-md: 1rem;
-$spacing-lg: 2rem;
+$spacing-lg: 1.5rem;
+$spacing-xl: 2.5rem;
 
 $breakpoint-mobile: 480px;
 $breakpoint-tablet: 768px;
 $breakpoint-desktop: 1024px;
 
-$font-family-base: system-ui, sans-serif;
+$font-family-base: 'Poppins', system-ui, sans-serif;
+$font-size-sm: 0.8125rem;
+$font-size-base: 0.9375rem;
+$font-size-lg: 1.125rem;
+$font-size-xl: 1.5rem;
+
+$radius-xs: 4px;
+$radius-sm: 10px;
+$radius-md: 16px;
+$radius-lg: 24px;
+$radius-pill: 999px;
+
+$shadow-sm: 0 2px 8px rgba(124, 92, 255, 0.08);
+$shadow-md: 0 8px 24px rgba(124, 92, 255, 0.14);
+
+$header-height: 4rem;
+$sidenav-width: 15.5rem;
+$sidenav-collapsed-width: 4.75rem;
+$content-max-width: 72rem;
+
+// Shared color-key -> (solid, soft) lookup for anything that colors itself
+// per group/category (event dots, chips, badges). Iterate with @each.
+$accent-map: (
+  'primary': (
+    $color-primary,
+    $color-primary-soft,
+  ),
+  'coral': (
+    $color-accent-coral,
+    $color-accent-coral-soft,
+  ),
+  'teal': (
+    $color-accent-teal,
+    $color-accent-teal-soft,
+  ),
+  'amber': (
+    $color-accent-amber,
+    $color-accent-amber-soft,
+  ),
+  'blue': (
+    $color-accent-blue,
+    $color-accent-blue-soft,
+  ),
+);

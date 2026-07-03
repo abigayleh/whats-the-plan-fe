@@ -1,0 +1,83 @@
+@use '../abstracts/variables' as *;
+@use '../abstracts/mixins' as *;
+
+.header {
+  height: $header-height;
+  padding: 0 $spacing-xl;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: $color-surface;
+  border-bottom: 1px solid $color-border;
+
+  &__eyebrow {
+    margin: 0;
+    font-size: $font-size-sm;
+    color: $color-text-muted;
+  }
+
+  &__title {
+    margin: 0;
+    font-size: $font-size-lg;
+    font-weight: 600;
+    color: $color-text;
+  }
+
+  &__profile {
+    position: relative;
+  }
+
+  &__avatar {
+    @include flex-center;
+    width: 2.75rem;
+    height: 2.75rem;
+    border-radius: 50%;
+    border: none;
+    background: $color-primary-soft;
+    color: $color-primary;
+    font-weight: 600;
+    font-size: $font-size-lg;
+    cursor: pointer;
+  }
+}
+
+.profile-menu__backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+}
+
+.profile-menu {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  z-index: 11;
+  margin-top: $spacing-sm;
+  width: 16rem;
+  padding: $spacing-md;
+  background: $color-surface;
+  border: 1px solid $color-border;
+  border-radius: $radius-sm;
+  box-shadow: $shadow-md;
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-md;
+
+  &__form {
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-sm;
+  }
+
+  &__delete-button {
+    align-self: flex-start;
+    font-family: inherit;
+    font-size: $font-size-sm;
+    font-weight: 600;
+    color: $color-danger;
+    background: none;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+  }
+}
