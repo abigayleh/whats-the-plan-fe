@@ -1,7 +1,6 @@
 import { CheckIcon, RepeatIcon } from '../layout/icons';
 import { formatTime } from '../../utils/date';
 import { isTaskTimed } from '../../utils/tasks';
-import { getTaskIcon } from '../../constants/taskIcons';
 import TaskActionButtons from '../tasks/TaskActionButtons';
 
 function TaskChip({
@@ -9,8 +8,6 @@ function TaskChip({
 }) {
   const done = task.status === 'done';
   const timed = isTaskTimed(task);
-  const categoryIcon = getTaskIcon(task.icon);
-  const CategoryIcon = categoryIcon?.Icon;
 
   return (
     <div
@@ -48,7 +45,6 @@ function TaskChip({
       {!compact && (
         <div className="task-chip__body">
           <p className="task-chip__title">
-            {CategoryIcon && <CategoryIcon className="task-chip__icon" />}
             {task.title}
             {task.recurrenceRule && <RepeatIcon className="task-chip__repeat-icon" />}
           </p>

@@ -119,6 +119,7 @@ function AppProvider({ children }) {
         scheduledEnd: null,
         assignedTo: null,
         subtasks: [],
+        attachments: [],
         recurrenceRule: null,
         ...task,
         id: generateId('tk'),

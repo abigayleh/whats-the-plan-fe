@@ -36,7 +36,7 @@ function ListSection({
           <span className={`list-section__collapse-icon${collapsed ? ' list-section__collapse-icon--collapsed' : ''}`}>
             <ChevronIcon />
           </span>
-          <span className="list-section__color-dot" />
+          {!ListIcon && <span className="list-section__color-dot" />}
           <span className="list-section__list-name">
             {ListIcon && <ListIcon className="list-section__list-icon" />}
             {list.name}

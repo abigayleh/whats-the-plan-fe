@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { CheckIcon, CloseIcon } from '../layout/icons';
 import { RECURRENCE_OPTIONS } from '../../constants/recurrence';
 import useAppData from '../../hooks/useAppData';
+import AttachmentUploader from './AttachmentUploader';
 import {
   combineDateAndTime, getTaskDay, isTaskTimed, toDateInputValue, toTimeInputValue,
 } from '../../utils/tasks';
@@ -36,6 +37,7 @@ function TaskModal({
   const [assignedTo, setAssignedTo] = useState(task?.assignedTo ?? '');
   const [subtasks, setSubtasks] = useState(task?.subtasks ?? []);
   const [newSubtask, setNewSubtask] = useState('');
+  const [attachments, setAttachments] = useState(task?.attachments ?? []);
 
   function handleListChange(newListId) {
     setListId(newListId);
@@ -70,6 +72,7 @@ function TaskModal({
       status: done ? 'done' : 'todo',
       assignedTo: assignedTo || null,
       subtasks,
+      attachments,
       recurrenceRule: dueDate && recurrence ? { frequency: recurrence, interval: 1 } : null,
     };
 
@@ -204,6 +207,11 @@ function TaskModal({
                 </button>
               </div>
             </div>
+          </div>
+
+          <div className="modal__field">
+            <span className="modal__label">Attachments</span>
+            <AttachmentUploader attachments={attachments} onChange={setAttachments} max={5} />
           </div>
 
           <label className="modal__field">

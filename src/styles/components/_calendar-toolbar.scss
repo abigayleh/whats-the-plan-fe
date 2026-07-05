@@ -30,7 +30,17 @@
     border-radius: 50%;
   }
 
+  &__icon {
+    width: 0.875rem;
+    height: 0.875rem;
+  }
+
   @each $key, $pair in $accent-map {
+    &__chip--#{$key} &__dot,
+    &__chip--#{$key} &__icon {
+      color: list.nth($pair, 1);
+    }
+
     &__chip--#{$key} &__dot {
       background: list.nth($pair, 1);
     }

@@ -60,7 +60,6 @@
   &__list-icon {
     vertical-align: -0.125em;
     margin-right: 0.3125rem;
-    color: $color-text-muted;
   }
 
   &__task-count {
@@ -90,6 +89,10 @@
   @each $key, $pair in $accent-map {
     &--#{$key} &__color-dot {
       background: list.nth($pair, 1);
+    }
+
+    &--#{$key} &__list-icon {
+      color: list.nth($pair, 1);
     }
   }
 }
@@ -152,6 +155,81 @@
     .modal__input {
       flex: 1;
     }
+  }
+}
+
+.attachment-uploader {
+  &__grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: $spacing-sm;
+  }
+
+  &__item {
+    position: relative;
+    width: 4.5rem;
+    height: 4.5rem;
+  }
+
+  &__thumb {
+    width: 100%;
+    height: 100%;
+    border-radius: $radius-sm;
+    object-fit: cover;
+  }
+
+  &__file {
+    @include flex-center;
+    flex-direction: column;
+    gap: $spacing-xs;
+    width: 100%;
+    height: 100%;
+    padding: $spacing-xs;
+    border-radius: $radius-sm;
+    background: $color-bg;
+    color: $color-text-muted;
+    text-align: center;
+  }
+
+  &__filename {
+    font-size: $font-size-sm;
+    @include truncate;
+    max-width: 100%;
+  }
+
+  &__remove {
+    @include flex-center;
+    position: absolute;
+    top: -0.375rem;
+    right: -0.375rem;
+    width: 1.25rem;
+    height: 1.25rem;
+    border-radius: 50%;
+    border: none;
+    background: $color-surface;
+    color: $color-text-muted;
+    box-shadow: 0 0 0 1px $color-border;
+    cursor: pointer;
+  }
+
+  &__add {
+    @include flex-center;
+    width: 4.5rem;
+    height: 4.5rem;
+    border-radius: $radius-sm;
+    border: 1px dashed $color-border;
+    color: $color-text-muted;
+    cursor: pointer;
+
+    input[type='file'] {
+      display: none;
+    }
+  }
+
+  &__count {
+    margin-top: $spacing-xs;
+    font-size: $font-size-sm;
+    color: $color-text-muted;
   }
 }
 

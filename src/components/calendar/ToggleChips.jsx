@@ -1,8 +1,11 @@
+import { getTaskIcon } from '../../constants/taskIcons';
+
 function ToggleChips({ items, activeIds, onToggle }) {
   return (
     <div className="filter-chips">
       {items.map((item) => {
         const active = activeIds.has(item.id);
+        const ItemIcon = getTaskIcon(item.icon)?.Icon;
         return (
           <button
             key={item.id ?? 'none'}
@@ -11,7 +14,7 @@ function ToggleChips({ items, activeIds, onToggle }) {
             onClick={() => onToggle(item.id)}
             aria-pressed={active}
           >
-            <span className="filter-chips__dot" />
+            {ItemIcon ? <ItemIcon className="filter-chips__icon" /> : <span className="filter-chips__dot" />}
             {item.name}
           </button>
         );
