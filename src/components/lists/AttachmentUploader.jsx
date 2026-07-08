@@ -25,20 +25,24 @@ function AttachmentUploader({ attachments, onChange, max = 5 }) {
 
   return (
     <div className="attachment-uploader">
-      <div className="attachment-uploader__grid">
+      <div className="attachment-uploader__attachment-grid">
         {attachments.map((attachment) => (
-          <div key={attachment.id} className="attachment-uploader__item">
+          <div key={attachment.id} className="attachment-uploader__attachment">
             {attachment.previewUrl ? (
-              <img src={attachment.previewUrl} alt={attachment.name} className="attachment-uploader__thumb" />
+              <img
+                src={attachment.previewUrl}
+                alt={attachment.name}
+                className="attachment-uploader__thumbnail-image"
+              />
             ) : (
-              <div className="attachment-uploader__file">
+              <div className="attachment-uploader__file-preview">
                 <FolderIcon />
                 <span className="attachment-uploader__filename">{attachment.name}</span>
               </div>
             )}
             <button
               type="button"
-              className="attachment-uploader__remove"
+              className="attachment-uploader__remove-button"
               onClick={() => handleRemove(attachment.id)}
               aria-label={`Remove ${attachment.name}`}
             >
@@ -48,13 +52,13 @@ function AttachmentUploader({ attachments, onChange, max = 5 }) {
         ))}
 
         {attachments.length < max && (
-          <label className="attachment-uploader__add">
+          <label className="attachment-uploader__add-attachment-button">
             <PlusIcon width={16} height={16} />
             <input type="file" multiple onChange={handleFilesSelected} />
           </label>
         )}
       </div>
-      <p className="attachment-uploader__count">{attachments.length}/{max} attached</p>
+      <p className="attachment-uploader__count-label">{attachments.length}/{max} attached</p>
     </div>
   );
 }
