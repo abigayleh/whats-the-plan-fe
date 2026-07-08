@@ -1,0 +1,31 @@
+@use '../abstracts/variables' as *;
+
+// Attach to any element via `data-tooltip="label"` for a hover/focus pill tooltip.
+[data-tooltip] {
+  position: relative;
+
+  &::after {
+    content: attr(data-tooltip);
+    position: absolute;
+    bottom: calc(100% + 0.375rem);
+    left: 50%;
+    z-index: 10;
+    padding: 0.25rem 0.625rem;
+    border-radius: $radius-pill;
+    background: $color-text;
+    color: $color-surface;
+    font-size: $font-size-sm;
+    font-weight: 600;
+    white-space: nowrap;
+    opacity: 0;
+    pointer-events: none;
+    transform: translate(-50%, 0.25rem);
+    transition: opacity 0.15s ease, transform 0.15s ease;
+  }
+
+  &:hover::after,
+  &:focus-visible::after {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+}

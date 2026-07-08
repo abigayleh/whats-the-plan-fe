@@ -1,6 +1,9 @@
 import { useState } from 'react';
-import { ClockIcon, FolderIcon, TrashIcon } from '../layout/icons';
+import {
+  ClockIcon, FolderIcon, SkipForwardIcon, TrashIcon,
+} from '../layout/icons';
 import useAppData from '../../hooks/useAppData';
+import { addDays } from '../../utils/date';
 import {
   combineDateAndTime, getTaskDay, isTaskTimed, toDateInputValue, toTimeInputValue,
 } from '../../utils/tasks';
@@ -33,6 +36,19 @@ function TaskActionButtons({ task, lists }) {
     setOpenPopover(null);
   }
 
+  function handlePushToTomorrow() {
+    const tomorrow = addDays(new Date(), 1);
+    const tomorrowStr = toDateInputValue(tomorrow);
+    if (timed) {
+      updateTask(task.id, {
+        scheduledStart: combineDateAndTime(tomorrowStr, toTimeInputValue(task.scheduledStart)),
+        scheduledEnd: combineDateAndTime(tomorrowStr, toTimeInputValue(task.scheduledEnd)),
+      });
+    } else {
+      updateTask(task.id, { dueDate: combineDateAndTime(tomorrowStr, '00:00') });
+    }
+  }
+
   function handleMove(newListId) {
     const newList = newListId ? writableLists.find((list) => list.id === newListId) : null;
     const newGroupId = newList?.groupId ?? null;
@@ -55,14 +71,25 @@ function TaskActionButtons({ task, lists }) {
         className="task-actions__button"
         onClick={() => toggle('reschedule')}
         aria-label="Reschedule"
+        data-tooltip="Reschedule"
       >
         <ClockIcon width={15} height={15} />
       </button>
       <button
         type="button"
         className="task-actions__button"
+        onClick={handlePushToTomorrow}
+        aria-label="Push to tomorrow"
+        data-tooltip="Push to tomorrow"
+      >
+        <SkipForwardIcon width={15} height={15} />
+      </button>
+      <button
+        type="button"
+        className="task-actions__button"
         onClick={() => toggle('move')}
         aria-label="Move to another list"
+        data-tooltip="Move to another list"
       >
         <FolderIcon width={15} height={15} />
       </button>
@@ -71,6 +98,7 @@ function TaskActionButtons({ task, lists }) {
         className="task-actions__button task-actions__button--danger"
         onClick={() => deleteTask(task.id)}
         aria-label="Delete"
+        data-tooltip="Delete"
       >
         <TrashIcon width={15} height={15} />
       </button>
