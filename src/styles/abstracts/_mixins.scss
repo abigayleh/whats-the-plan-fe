@@ -24,7 +24,8 @@
 
 @mixin card {
   background: $color-surface;
-  border-radius: $radius-lg;
+  border: 1px solid $color-border;
+  border-radius: $radius-md;
   box-shadow: $shadow-sm;
   padding: $spacing-lg;
 }

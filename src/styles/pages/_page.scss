@@ -13,35 +13,8 @@
 
   &__badge {
     @include flex-center;
-    width: 3rem;
-    height: 3rem;
-    border-radius: $radius-md;
     flex-shrink: 0;
-
-    &--coral {
-      background: $color-accent-coral-soft;
-      color: $color-accent-coral;
-    }
-
-    &--teal {
-      background: $color-accent-teal-soft;
-      color: $color-accent-teal;
-    }
-
-    &--amber {
-      background: $color-accent-amber-soft;
-      color: $color-accent-amber;
-    }
-
-    &--blue {
-      background: $color-accent-blue-soft;
-      color: $color-accent-blue;
-    }
-
-    &--primary {
-      background: $color-primary-soft;
-      color: $color-primary;
-    }
+    color: $color-text-muted;
   }
 
   &__title {
