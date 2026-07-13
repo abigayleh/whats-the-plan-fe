@@ -54,4 +54,16 @@
       font-weight: 600;
     }
   }
+
+  &__error {
+    font-size: $font-size-sm;
+    color: $color-danger;
+    margin: 0;
+  }
+}
+
+.auth-loading {
+  @include flex-center;
+  min-height: 100vh;
+  color: $color-text-muted;
 }

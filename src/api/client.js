@@ -1,0 +1,73 @@
+// Thin fetch wrapper: base URL, Bearer auth, and transparent one-shot token refresh on 401.
+const BASE = import.meta.env.VITE_API_URL || 'http://localhost:4000';
+const REFRESH_KEY = 'wtp_refresh';
+
+let accessToken = null;
+let onAuthFailure = null;
+let refreshing = null;
+
+export const getAccessToken = () => accessToken;
+export const getRefreshToken = () => localStorage.getItem(REFRESH_KEY);
+export const setOnAuthFailure = (cb) => { onAuthFailure = cb; };
+
+export function setTokens({ accessToken: at, refreshToken: rt }) {
+  accessToken = at;
+  if (rt) localStorage.setItem(REFRESH_KEY, rt);
+}
+
+export function clearTokens() {
+  accessToken = null;
+  localStorage.removeItem(REFRESH_KEY);
+}
+
+export class ApiError extends Error {
+  constructor(message, status) {
+    super(message);
+    this.status = status;
+  }
+}
+
+function rawFetch(path, { method = 'GET', body, auth = true } = {}) {
+  const headers = { 'Content-Type': 'application/json' };
+  if (auth && accessToken) headers.Authorization = `Bearer ${accessToken}`;
+  return fetch(BASE + path, { method, headers, body: body !== undefined ? JSON.stringify(body) : undefined });
+}
+
+// Refresh the access token once; concurrent callers share a single in-flight request.
+function refreshTokens() {
+  if (!refreshing) {
+    const rt = getRefreshToken();
+    refreshing = (rt
+      ? fetch(BASE + '/api/auth/refresh', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ refreshToken: rt }),
+      })
+      : Promise.resolve({ ok: false }))
+      .then(async (res) => {
+        if (!res.ok) throw new Error('refresh failed');
+        const data = await res.json();
+        setTokens(data);
+        return data.accessToken;
+      })
+      .catch((err) => {
+        clearTokens();
+        if (onAuthFailure) onAuthFailure();
+        throw err;
+      })
+      .finally(() => { refreshing = null; });
+  }
+  return refreshing;
+}
+
+export async function apiFetch(path, options = {}) {
+  let res = await rawFetch(path, options);
+  if (res.status === 401 && options.auth !== false) {
+    await refreshTokens();
+    res = await rawFetch(path, options);
+  }
+  if (res.status === 204) return null;
+  const data = await res.json().catch(() => null);
+  if (!res.ok) throw new ApiError(data?.error || 'Request failed', res.status);
+  return data;
+}

@@ -1,5 +1,6 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import AppContext from './AppContext';
+import useAuth from '../hooks/useAuth';
 import { GROUPS, CURRENT_USER, DEFAULT_PERSONAL_SPACE } from '../mocks/groups';
 import { LISTS, TASKS } from '../mocks/tasks';
 import { POLLS } from '../mocks/polls';
@@ -18,8 +19,17 @@ function generateInviteCode() {
 // pre-backend prototype, so one store keeps related mutations (e.g. deleting a group
 // also drops its lists) in one place instead of coordinating several contexts.
 function AppProvider({ children }) {
+  const { user: authUser } = useAuth();
   const [currentUser, setCurrentUser] = useState(CURRENT_USER);
   const [personalSpace, setPersonalSpace] = useState(DEFAULT_PERSONAL_SPACE);
+
+  // Reflect the logged-in user's real name/email in the UI while the rest of the
+  // app still runs on mock data (the mock id is kept so seeded relations resolve).
+  useEffect(() => {
+    if (authUser) {
+      setCurrentUser((prev) => ({ ...prev, name: authUser.name || authUser.email, email: authUser.email }));
+    }
+  }, [authUser]);
   const [groups, setGroups] = useState(GROUPS);
   const [lists, setLists] = useState(LISTS);
   const [tasks, setTasks] = useState(TASKS);

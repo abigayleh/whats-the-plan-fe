@@ -1,12 +1,21 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import useAppData from '../../hooks/useAppData';
+import useAuth from '../../hooks/useAuth';
 
 function ProfileMenu({ onClose }) {
   const { currentUser, updateCurrentUser } = useAppData();
+  const { signOut } = useAuth();
+  const navigate = useNavigate();
   const [name, setName] = useState(currentUser.name);
   const [email, setEmail] = useState(currentUser.email ?? '');
   const [password, setPassword] = useState(currentUser.password ?? '');
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+
+  async function handleLogout() {
+    await signOut();
+    navigate('/login');
+  }
 
   function handleSave(e) {
     e.preventDefault();
@@ -43,6 +52,9 @@ function ProfileMenu({ onClose }) {
           </label>
           <button type="submit" className="button button--primary">Save</button>
         </form>
+        <button type="button" className="button button--ghost" onClick={handleLogout}>
+          Log out
+        </button>
         <button
           type="button"
           className="profile-menu__delete-button"
