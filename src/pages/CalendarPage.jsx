@@ -6,83 +6,67 @@ import ToggleChips from '../components/calendar/ToggleChips';
 import CalendarMonthly from '../components/calendar/CalendarMonthly';
 import CalendarWeekly from '../components/calendar/CalendarWeekly';
 import CalendarDaily from '../components/calendar/CalendarDaily';
-import TaskModal from '../components/lists/TaskModal';
+import EventModal from '../components/calendar/EventModal';
 import useAppData from '../hooks/useAppData';
 import useLocalStorageState from '../hooks/useLocalStorageState';
+import useCalendarItems from '../hooks/useCalendarItems';
+import * as eventsApi from '../api/events';
+import * as tasksApi from '../api/tasks';
+import { getGroupColorKey } from '../utils/tasks';
 import {
-  getListColorKey, getTaskColorKey, getTaskDay, getTaskIconKey, isTaskTimed,
-} from '../utils/tasks';
-import {
-  addDays,
-  addMonths,
-  formatFullDate,
-  formatMonthYear,
-  formatWeekRange,
-  getWeekDays,
+  addDays, addMonths, startOfDay, getMonthGrid, getWeekDays,
+  formatFullDate, formatMonthYear, formatWeekRange,
 } from '../utils/date';
 
-const NO_LIST_OPTION = { id: null, name: 'No list', colorKey: 'primary' };
+const DAY_MS = 86400000;
 
 function CalendarPage() {
-  const {
-    groups, lists, tasks, currentUser, personalSpace, toggleTaskStatus, addTask, updateTask, deleteTask,
-  } = useAppData();
-  const groupOptions = useMemo(() => [{ id: null, ...personalSpace }, ...groups], [groups, personalSpace]);
+  const { groups, currentUser, personalSpace } = useAppData();
   const [view, setView] = useLocalStorageState('calendar-view', 'month');
   const [contentFilter, setContentFilter] = useLocalStorageState('calendar-content-filter', 'all');
   const [onlyMine, setOnlyMine] = useLocalStorageState('calendar-only-mine', false);
   const [showCompleted, setShowCompleted] = useLocalStorageState('calendar-show-completed', true);
   const [focusDate, setFocusDate] = useState(new Date());
-  const [activeGroupIds, setActiveGroupIds] = useState(
-    () => new Set(groupOptions.map((group) => group.id)),
-  );
-  const [activeListIds, setActiveListIds] = useState(
-    () => new Set([...lists.map((list) => list.id), null]),
-  );
-  const [taskModalState, setTaskModalState] = useState(null); // null | 'new' | task object
-  const [newTaskSchedule, setNewTaskSchedule] = useState(null); // prefill for a slot-click 'new' task
+  const [hiddenGroupIds, setHiddenGroupIds] = useState(() => new Set());
+  const [eventModal, setEventModal] = useState(null); // null | { mode:'new', start, end } | { mode:'edit', event }
 
-  const listOptions = useMemo(
-    () => [
-      NO_LIST_OPTION,
-      ...lists
-        .filter((list) => activeGroupIds.has(list.groupId ?? null))
-        .map((list) => ({ ...list, colorKey: getListColorKey(list, groups, personalSpace) })),
-    ],
-    [lists, groups, personalSpace, activeGroupIds],
+  const range = useMemo(() => {
+    let days;
+    if (view === 'month') days = getMonthGrid(focusDate);
+    else if (view === 'week') days = getWeekDays(focusDate);
+    else days = [focusDate];
+    const start = startOfDay(days[0]);
+    const end = new Date(startOfDay(days[days.length - 1]).getTime() + DAY_MS);
+    return { startISO: start.toISOString(), endISO: end.toISOString() };
+  }, [view, focusDate]);
+
+  const { items, refetch } = useCalendarItems(range.startISO, range.endISO);
+
+  const groupOptions = useMemo(() => [{ id: null, ...personalSpace }, ...groups], [groups, personalSpace]);
+  const activeGroupIds = useMemo(
+    () => new Set(groupOptions.filter((g) => !hiddenGroupIds.has(g.id)).map((g) => g.id)),
+    [groupOptions, hiddenGroupIds],
   );
 
-  const filteredTasks = useMemo(() => tasks.filter((task) => {
-    if (!getTaskDay(task)) return false;
-    if (contentFilter === 'events' && !isTaskTimed(task)) return false;
-    if (contentFilter === 'tasks' && isTaskTimed(task)) return false;
-    if (!activeGroupIds.has(task.groupId ?? null)) return false;
-    if (!activeListIds.has(task.listId ?? null)) return false;
-    if (!showCompleted && task.status === 'done') return false;
-    if (onlyMine && task.assignedTo && task.assignedTo !== currentUser.name) return false;
-    return true;
-  }).map((task) => ({
-    ...task,
-    colorKey: getTaskColorKey(task, lists, groups, personalSpace),
-    icon: getTaskIconKey(task, lists),
-  })),
-  [tasks, lists, groups, personalSpace, activeGroupIds, activeListIds, contentFilter, onlyMine, showCompleted,
-    currentUser]);
+  const filteredItems = useMemo(() => items
+    .filter((item) => {
+      if (contentFilter === 'events' && !item.isEvent) return false;
+      if (contentFilter === 'tasks' && item.isEvent) return false;
+      if (!activeGroupIds.has(item.groupId ?? null)) return false;
+      if (!showCompleted && item.status === 'done') return false;
+      if (onlyMine && item.assignedToId && item.assignedToId !== currentUser.id) return false;
+      return true;
+    })
+    .map((item) => ({ ...item, colorKey: getGroupColorKey(item.groupId, groups, personalSpace) })),
+  [items, groups, personalSpace, activeGroupIds, contentFilter, onlyMine, showCompleted, currentUser]);
 
-  function toggleGroup(groupId) {
-    setActiveGroupIds((prev) => {
+  const itemById = (id) => items.find((it) => it.id === id);
+
+  function toggleGroup(id) {
+    setHiddenGroupIds((prev) => {
       const next = new Set(prev);
-      if (next.has(groupId)) next.delete(groupId);
-      else next.add(groupId);
-      return next;
-    });
-  }
-
-  function toggleList(listId) {
-    setActiveListIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(listId)) next.delete(listId);
-      else next.add(listId);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
       return next;
     });
   }
@@ -104,38 +88,67 @@ function CalendarPage() {
     setView('day');
   }
 
-  function handleCreateTaskAt(day, hour, minute = 0) {
-    const scheduledStart = new Date(day);
-    scheduledStart.setHours(hour, minute, 0, 0);
-    const scheduledEnd = new Date(scheduledStart.getTime() + 60 * 60000);
-    setNewTaskSchedule({ scheduledStart, scheduledEnd });
-    setTaskModalState('new');
+  async function toggleItemStatus(id) {
+    const item = itemById(id);
+    if (!item || item.isEvent) return;
+    try {
+      await tasksApi.patchTask(item.listId, item.taskId, { status: item.status === 'done' ? 'TODO' : 'DONE' });
+      refetch();
+    } catch { /* ignore */ }
   }
 
-  function handleMoveTask(taskId, { day, hour, minute = 0, timed }) {
-    const task = tasks.find((t) => t.id === taskId);
-    if (!task) return;
-
-    if (!timed) {
-      const dueDate = new Date(day);
-      dueDate.setHours(0, 0, 0, 0);
-      updateTask(taskId, { dueDate, scheduledStart: null, scheduledEnd: null });
-      return;
-    }
-
-    const durationMinutes = isTaskTimed(task) ? (task.scheduledEnd - task.scheduledStart) / 60000 : 60;
-    const scheduledStart = new Date(day);
-    scheduledStart.setHours(hour, minute, 0, 0);
-    const scheduledEnd = new Date(scheduledStart.getTime() + durationMinutes * 60000);
-    updateTask(taskId, { scheduledStart, scheduledEnd, dueDate: null });
+  function openItem(item) {
+    if (item.isEvent) setEventModal({ mode: 'edit', event: item });
   }
 
-  const label =
-    view === 'month'
-      ? formatMonthYear(focusDate)
-      : view === 'week'
-        ? formatWeekRange(getWeekDays(focusDate))
-        : formatFullDate(focusDate);
+  function createEventAt(day, hour, minute = 0) {
+    const start = new Date(day);
+    start.setHours(hour, minute, 0, 0);
+    setEventModal({ mode: 'new', start, end: new Date(start.getTime() + 60 * 60000) });
+  }
+
+  async function moveItem(id, {
+    day, hour, minute = 0, timed,
+  }) {
+    const item = itemById(id);
+    if (!item) return;
+    try {
+      if (item.isEvent && timed) {
+        const duration = item.scheduledEnd - item.scheduledStart;
+        const start = new Date(day);
+        start.setHours(hour, minute, 0, 0);
+        await eventsApi.update(item.eventId, {
+          startAt: start.toISOString(),
+          endAt: new Date(start.getTime() + duration).toISOString(),
+        });
+        refetch();
+      } else if (!item.isEvent && !timed) {
+        await tasksApi.patchTask(item.listId, item.taskId, { dueDate: startOfDay(day).toISOString() });
+        refetch();
+      }
+    } catch { /* ignore */ }
+  }
+
+  async function handleEventSubmit(payload) {
+    if (eventModal.mode === 'edit') await eventsApi.update(eventModal.event.eventId, payload);
+    else await eventsApi.create(payload);
+    setEventModal(null);
+    refetch();
+  }
+
+  async function handleEventDelete(eventId) {
+    try {
+      await eventsApi.remove(eventId);
+    } catch { /* ignore */ }
+    setEventModal(null);
+    refetch();
+  }
+
+  const label = view === 'month'
+    ? formatMonthYear(focusDate)
+    : view === 'week'
+      ? formatWeekRange(getWeekDays(focusDate))
+      : formatFullDate(focusDate);
 
   return (
     <section className="page">
@@ -147,21 +160,16 @@ function CalendarPage() {
       </div>
 
       <ToggleChips items={groupOptions} activeIds={activeGroupIds} onToggle={toggleGroup} />
-      <ToggleChips items={listOptions} activeIds={activeListIds} onToggle={toggleList} />
 
       <div className="calendar-toolbar">
-        <button type="button" className="calendar-toolbar__nav" onClick={handlePrev} aria-label="Previous">
-          ‹
-        </button>
+        <button type="button" className="calendar-toolbar__nav" onClick={handlePrev} aria-label="Previous">‹</button>
         <div className="calendar-toolbar__label-group">
           <span className="calendar-toolbar__label">{label}</span>
           <button type="button" className="calendar-toolbar__today" onClick={() => setFocusDate(new Date())}>
             Today
           </button>
         </div>
-        <button type="button" className="calendar-toolbar__nav" onClick={handleNext} aria-label="Next">
-          ›
-        </button>
+        <button type="button" className="calendar-toolbar__nav" onClick={handleNext} aria-label="Next">›</button>
       </div>
 
       <div className="calendar-filters">
@@ -187,31 +195,26 @@ function CalendarPage() {
 
       <div className="calendar-view">
         {view === 'month' && (
-          <CalendarMonthly
-            focusDate={focusDate}
-            tasks={filteredTasks}
-            onSelectDay={handleSelectDay}
-          />
+          <CalendarMonthly focusDate={focusDate} tasks={filteredItems} onSelectDay={handleSelectDay} />
         )}
         {view === 'week' && (
           <CalendarWeekly
             focusDate={focusDate}
-            tasks={filteredTasks}
+            tasks={filteredItems}
             onSelectDay={handleSelectDay}
-            onToggleTask={toggleTaskStatus}
-            onOpenTask={setTaskModalState}
-            onCreateTask={handleCreateTaskAt}
-            onMoveTask={handleMoveTask}
+            onToggleTask={toggleItemStatus}
+            onOpenTask={openItem}
+            onCreateTask={createEventAt}
+            onMoveTask={moveItem}
           />
         )}
         {view === 'day' && (
           <CalendarDaily
             focusDate={focusDate}
-            tasks={filteredTasks}
-            lists={lists}
-            onToggleTask={toggleTaskStatus}
-            onOpenTask={setTaskModalState}
-            onCreateTask={handleCreateTaskAt}
+            tasks={filteredItems}
+            onToggleTask={toggleItemStatus}
+            onOpenTask={openItem}
+            onCreateTask={createEventAt}
           />
         )}
       </div>
@@ -220,29 +223,23 @@ function CalendarPage() {
         type="button"
         className="floating-action-button"
         onClick={() => {
-          setNewTaskSchedule(null);
-          setTaskModalState('new');
+          const start = new Date(focusDate);
+          start.setHours(9, 0, 0, 0);
+          setEventModal({ mode: 'new', start, end: new Date(start.getTime() + 60 * 60000) });
         }}
-        aria-label="Add task"
+        aria-label="Add event"
       >
         <PlusIcon />
       </button>
 
-      {taskModalState && (
-        <TaskModal
-          lists={lists}
-          defaultSchedule={taskModalState === 'new' ? newTaskSchedule : null}
-          task={taskModalState === 'new' ? null : taskModalState}
-          onClose={() => setTaskModalState(null)}
-          onSave={(payload) => {
-            if (taskModalState === 'new') addTask(payload);
-            else updateTask(taskModalState.id, payload);
-            setTaskModalState(null);
-          }}
-          onDelete={(taskId) => {
-            deleteTask(taskId);
-            setTaskModalState(null);
-          }}
+      {eventModal && (
+        <EventModal
+          event={eventModal.mode === 'edit' ? eventModal.event : null}
+          defaultStart={eventModal.mode === 'new' ? eventModal.start : null}
+          defaultEnd={eventModal.mode === 'new' ? eventModal.end : null}
+          onClose={() => setEventModal(null)}
+          onSubmit={handleEventSubmit}
+          onDelete={handleEventDelete}
         />
       )}
     </section>

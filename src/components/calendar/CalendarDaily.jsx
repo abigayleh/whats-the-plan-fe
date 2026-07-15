@@ -3,7 +3,7 @@ import { isTaskOnDay, isTaskTimed } from '../../utils/tasks';
 import TaskChip from './TaskChip';
 
 function CalendarDaily({
-  focusDate, tasks, lists, onToggleTask, onOpenTask, onCreateTask,
+  focusDate, tasks, onToggleTask, onOpenTask, onCreateTask,
 }) {
   const timedTasks = tasks
     .filter((task) => isTaskTimed(task) && isTaskOnDay(task, focusDate))
@@ -24,10 +24,8 @@ function CalendarDaily({
             <TaskChip
               key={task.id}
               task={task}
-              lists={lists}
               onToggle={onToggleTask}
               onOpen={onOpenTask}
-              showActions
             />
           ))}
         </div>
@@ -51,10 +49,8 @@ function CalendarDaily({
                   <TaskChip
                     key={task.id}
                     task={task}
-                    lists={lists}
                     onToggle={onToggleTask}
                     onOpen={onOpenTask}
-                    showActions
                   />
                 ))}
               </div>

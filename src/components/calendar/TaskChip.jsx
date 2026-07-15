@@ -46,7 +46,7 @@ function TaskChip({
         <div className="task-chip__body">
           <p className="task-chip__title">
             {task.title}
-            {task.recurrenceRule && <RepeatIcon className="task-chip__repeat-icon" />}
+            {(task.isRecurring || task.recurrenceRule) && <RepeatIcon className="task-chip__repeat-icon" />}
           </p>
           {timed && !hideTime && (
             <p className="task-chip__time">
