@@ -21,9 +21,10 @@ export function clearTokens() {
 }
 
 export class ApiError extends Error {
-  constructor(message, status) {
+  constructor(message, status, code) {
     super(message);
     this.status = status;
+    this.code = code;
   }
 }
 
@@ -68,6 +69,6 @@ export async function apiFetch(path, options = {}) {
   }
   if (res.status === 204) return null;
   const data = await res.json().catch(() => null);
-  if (!res.ok) throw new ApiError(data?.error || 'Request failed', res.status);
+  if (!res.ok) throw new ApiError(data?.error || 'Request failed', res.status, data?.code);
   return data;
 }

@@ -2,14 +2,16 @@ import { useState } from 'react';
 import { GroupsIcon, PlusIcon } from '../components/layout/icons';
 import GroupCard from '../components/groups/GroupCard';
 import GroupCreateModal from '../components/groups/GroupCreateModal';
+import JoinGroupModal from '../components/groups/JoinGroupModal';
 import PersonalSpaceModal from '../components/groups/PersonalSpaceModal';
 import useAppData from '../hooks/useAppData';
 
 function GroupsPage() {
   const {
-    groups, personalSpace, addGroup, updatePersonalSpace,
+    groups, personalSpace, addGroup, joinGroup, updatePersonalSpace,
   } = useAppData();
   const [showModal, setShowModal] = useState(false);
+  const [showJoinModal, setShowJoinModal] = useState(false);
   const [showPersonalModal, setShowPersonalModal] = useState(false);
 
   return (
@@ -19,14 +21,15 @@ function GroupsPage() {
           <GroupsIcon />
         </span>
         <h1 className="page__title">Groups</h1>
-        <button
-          type="button"
-          className="button button--primary page__header-action"
-          onClick={() => setShowModal(true)}
-        >
-          <PlusIcon width={16} height={16} />
-          New Group
-        </button>
+        <div className="page__header-actions">
+          <button type="button" className="button button--ghost" onClick={() => setShowJoinModal(true)}>
+            Join Group
+          </button>
+          <button type="button" className="button button--primary" onClick={() => setShowModal(true)}>
+            <PlusIcon width={16} height={16} />
+            New Group
+          </button>
+        </div>
       </div>
 
       <div className="group-grid">
@@ -45,6 +48,13 @@ function GroupsPage() {
           <GroupCard key={group.id} group={group} />
         ))}
       </div>
+
+      {showJoinModal && (
+        <JoinGroupModal
+          onClose={() => setShowJoinModal(false)}
+          onJoin={joinGroup}
+        />
+      )}
 
       {showModal && (
         <GroupCreateModal

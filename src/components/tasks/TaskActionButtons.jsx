@@ -54,7 +54,7 @@ function TaskActionButtons({ task, lists }) {
     const newGroupId = newList?.groupId ?? null;
     const newGroup = newGroupId ? groups.find((group) => group.id === newGroupId) : null;
     const assigneeStillValid = !task.assignedTo
-      || (newGroup && newGroup.members.some((member) => member.name === task.assignedTo));
+      || (newGroup && newGroup.members?.some((member) => member.name === task.assignedTo));
 
     updateTask(task.id, {
       listId: newListId || null,

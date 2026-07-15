@@ -24,7 +24,7 @@ function TaskModal({
   const list = writableLists.find((l) => l.id === listId);
   const effectiveGroupId = list ? (list.groupId ?? '') : groupId;
   const effectiveGroup = effectiveGroupId ? groups.find((g) => g.id === effectiveGroupId) : null;
-  const groupMembers = effectiveGroup ? effectiveGroup.members.map((member) => member.name) : [];
+  const groupMembers = effectiveGroup?.members ? effectiveGroup.members.map((member) => member.name) : [];
 
   const [title, setTitle] = useState(task?.title ?? '');
   const [description, setDescription] = useState(task?.description ?? '');

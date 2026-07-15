@@ -1,7 +1,11 @@
-import { useMemo, useState, useEffect } from 'react';
+import {
+  useMemo, useState, useEffect, useCallback,
+} from 'react';
 import AppContext from './AppContext';
 import useAuth from '../hooks/useAuth';
-import { GROUPS, CURRENT_USER, DEFAULT_PERSONAL_SPACE } from '../mocks/groups';
+import * as groupsApi from '../api/groups';
+import { socket } from '../socket/socketClient';
+import { DEFAULT_PERSONAL_SPACE } from '../mocks/groups';
 import { LISTS, TASKS } from '../mocks/tasks';
 import { POLLS } from '../mocks/polls';
 
@@ -11,44 +15,59 @@ function generateId(prefix) {
   return `${prefix}-${nextId}`;
 }
 
-function generateInviteCode() {
-  return Math.random().toString(36).slice(2, 8).toUpperCase();
-}
+// Maps a BE group (list shape) to what the UI expects.
+const adaptGroup = (g) => ({
+  id: g.id,
+  name: g.name,
+  colorKey: g.color || 'primary',
+  memberCount: g.memberCount,
+  role: g.role,
+});
 
-// Single mock data store for the whole app (groups, lists/tasks, polls) — this is a
-// pre-backend prototype, so one store keeps related mutations (e.g. deleting a group
-// also drops its lists) in one place instead of coordinating several contexts.
+// Groups are real (API + sockets); lists/tasks/polls are still mock until their phases.
 function AppProvider({ children }) {
   const { user: authUser } = useAuth();
-  const [currentUser, setCurrentUser] = useState(CURRENT_USER);
+  const [currentUser, setCurrentUser] = useState({ id: null, name: '', email: '' });
   const [personalSpace, setPersonalSpace] = useState(DEFAULT_PERSONAL_SPACE);
-
-  // Reflect the logged-in user's real name/email in the UI while the rest of the
-  // app still runs on mock data (the mock id is kept so seeded relations resolve).
-  useEffect(() => {
-    if (authUser) {
-      setCurrentUser((prev) => ({ ...prev, name: authUser.name || authUser.email, email: authUser.email }));
-    }
-  }, [authUser]);
-  const [groups, setGroups] = useState(GROUPS);
+  const [groups, setGroups] = useState([]);
   const [lists, setLists] = useState(LISTS);
   const [tasks, setTasks] = useState(TASKS);
   const [polls, setPolls] = useState(POLLS);
 
+  useEffect(() => {
+    if (authUser) setCurrentUser({ id: authUser.id, name: authUser.name || authUser.email, email: authUser.email });
+  }, [authUser]);
+
+  const refreshGroups = useCallback(async () => {
+    try {
+      setGroups((await groupsApi.list()).map(adaptGroup));
+    } catch {
+      // ignore — a failed refresh leaves the last known list in place
+    }
+  }, []);
+
+  // Load groups on login and keep them fresh on membership/socket changes.
+  useEffect(() => {
+    if (!authUser) {
+      setGroups([]);
+      return undefined;
+    }
+    refreshGroups();
+    const onChange = () => refreshGroups();
+    socket.on('group:member-joined', onChange);
+    socket.on('group:member-left', onChange);
+    socket.on('group:deleted', onChange);
+    return () => {
+      socket.off('group:member-joined', onChange);
+      socket.off('group:member-left', onChange);
+      socket.off('group:deleted', onChange);
+    };
+  }, [authUser, refreshGroups]);
+
   const value = useMemo(() => ({
     currentUser,
     updateCurrentUser(patch) {
-      setCurrentUser((prev) => {
-        const renamed = patch.name && patch.name !== prev.name;
-        if (renamed) {
-          setGroups((gs) => gs.map((g) => ({
-            ...g,
-            members: g.members.map((m) => (m.id === prev.id ? { ...m, name: patch.name } : m)),
-          })));
-          setTasks((ts) => ts.map((t) => (t.assignedTo === prev.name ? { ...t, assignedTo: patch.name } : t)));
-        }
-        return { ...prev, ...patch };
-      });
+      setCurrentUser((prev) => ({ ...prev, ...patch }));
     },
 
     personalSpace,
@@ -57,54 +76,43 @@ function AppProvider({ children }) {
     },
 
     groups,
-    updateGroup(groupId, patch) {
-      setGroups((prev) => prev.map((group) => (group.id === groupId ? { ...group, ...patch } : group)));
+    refreshGroups,
+    async addGroup({ name, colorKey }) {
+      const created = await groupsApi.create(name, colorKey);
+      await refreshGroups();
+      return adaptGroup(created);
     },
-    addGroup({ name, colorKey }) {
-      const newGroup = {
-        id: generateId('g'),
-        name,
-        colorKey,
-        inviteCode: generateInviteCode(),
-        members: [{ ...currentUser, role: 'ADMIN' }],
-      };
-      setGroups((prev) => [...prev, newGroup]);
-      return newGroup;
+    async joinGroup(code) {
+      const joined = await groupsApi.join(code);
+      await refreshGroups();
+      return joined;
     },
-    regenerateInvite(groupId) {
-      setGroups((prev) => prev.map((group) => (
-        group.id === groupId ? { ...group, inviteCode: generateInviteCode() } : group
-      )));
+    async updateGroup(groupId, patch) {
+      if (patch.name !== undefined) await groupsApi.update(groupId, { name: patch.name });
+      if (patch.colorKey !== undefined) await groupsApi.setColor(groupId, patch.colorKey);
+      await refreshGroups();
     },
-    setMemberRole(groupId, memberId, role) {
-      setGroups((prev) => prev.map((group) => (group.id !== groupId ? group : {
-        ...group,
-        members: group.members.map((member) => (member.id === memberId ? { ...member, role } : member)),
-      })));
+    async setMemberRole(groupId, memberId, role) {
+      await groupsApi.setRole(groupId, memberId, role);
+      await refreshGroups();
     },
-    removeMember(groupId, memberId) {
-      setGroups((prev) => prev.map((group) => (group.id !== groupId ? group : {
-        ...group,
-        members: group.members.filter((member) => member.id !== memberId),
-      })));
+    async removeMember(groupId, memberId) {
+      await groupsApi.removeMember(groupId, memberId);
+      await refreshGroups();
     },
-    leaveGroup(groupId) {
-      const group = groups.find((g) => g.id === groupId);
-      if (!group) return { ok: false, reason: 'NOT_FOUND' };
-
-      const admins = group.members.filter((member) => member.role === 'ADMIN');
-      const isSoleAdmin = admins.length === 1 && admins[0].id === currentUser.id;
-      if (isSoleAdmin) return { ok: false, reason: 'LAST_ADMIN' };
-
-      setGroups((prev) => prev.map((g) => (g.id !== groupId ? g : {
-        ...g,
-        members: g.members.filter((member) => member.id !== currentUser.id),
-      })));
-      return { ok: true };
+    async leaveGroup(groupId) {
+      try {
+        await groupsApi.leave(groupId);
+        await refreshGroups();
+        return { ok: true };
+      } catch (err) {
+        if (err.status === 403) return { ok: false, reason: 'LAST_ADMIN' };
+        throw err;
+      }
     },
-    deleteGroup(groupId) {
-      setGroups((prev) => prev.filter((group) => group.id !== groupId));
-      setLists((prev) => prev.filter((list) => list.groupId !== groupId));
+    async deleteGroup(groupId) {
+      await groupsApi.remove(groupId);
+      await refreshGroups();
     },
 
     lists,
@@ -181,7 +189,7 @@ function AppProvider({ children }) {
     deletePoll(pollId) {
       setPolls((prev) => prev.filter((poll) => poll.id !== pollId));
     },
-  }), [currentUser, personalSpace, groups, lists, tasks, polls]);
+  }), [currentUser, personalSpace, groups, lists, tasks, polls, refreshGroups]);
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
 }
