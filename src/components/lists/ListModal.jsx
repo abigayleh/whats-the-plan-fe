@@ -3,11 +3,13 @@ import { CloseIcon } from '../layout/icons';
 import { TASK_ICONS } from '../../constants/taskIcons';
 import useAppData from '../../hooks/useAppData';
 
-function ListModal({ groups, onClose, onSave }) {
+// Create a list, or edit an existing one. Scope is fixed once a list exists.
+function ListModal({ list, groups, onClose, onSave }) {
   const { personalSpace } = useAppData();
-  const [name, setName] = useState('');
-  const [groupId, setGroupId] = useState(null);
-  const [icon, setIcon] = useState(null);
+  const isEdit = Boolean(list);
+  const [name, setName] = useState(list?.name ?? '');
+  const [groupId, setGroupId] = useState(list?.groupId ?? null);
+  const [icon, setIcon] = useState(list?.icon ?? null);
   const [error, setError] = useState(null);
   const [saving, setSaving] = useState(false);
 
@@ -19,7 +21,7 @@ function ListModal({ groups, onClose, onSave }) {
     try {
       await onSave({ name: name.trim(), groupId, icon });
     } catch (err) {
-      setError(err.message || 'Could not create list');
+      setError(err.message || `Could not ${isEdit ? 'save' : 'create'} list`);
       setSaving(false);
     }
   }
@@ -28,7 +30,7 @@ function ListModal({ groups, onClose, onSave }) {
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal" onClick={(e) => e.stopPropagation()}>
         <div className="modal__header">
-          <h2 className="modal__title">New List</h2>
+          <h2 className="modal__title">{isEdit ? 'Edit List' : 'New List'}</h2>
           <button type="button" className="modal__close" onClick={onClose} aria-label="Close">
             <CloseIcon />
           </button>
@@ -56,6 +58,7 @@ function ListModal({ groups, onClose, onSave }) {
                 type="button"
                 className={`scope-picker__option${groupId === null ? ' scope-picker__option--active' : ''}`}
                 onClick={() => setGroupId(null)}
+                disabled={isEdit}
               >
                 {personalSpace.name}
               </button>
@@ -65,11 +68,13 @@ function ListModal({ groups, onClose, onSave }) {
                   type="button"
                   className={`scope-picker__option${groupId === group.id ? ' scope-picker__option--active' : ''}`}
                   onClick={() => setGroupId(group.id)}
+                  disabled={isEdit}
                 >
                   {group.name}
                 </button>
               ))}
             </div>
+            {isEdit && <p className="modal__hint">A list stays in the space it was created in.</p>}
           </div>
 
           <div className="modal__field">
@@ -105,7 +110,7 @@ function ListModal({ groups, onClose, onSave }) {
               Cancel
             </button>
             <button type="submit" className="button button--primary" disabled={saving}>
-              {saving ? 'Creating…' : 'Create'}
+              {saving ? 'Saving…' : (isEdit ? 'Save' : 'Create')}
             </button>
           </div>
         </form>

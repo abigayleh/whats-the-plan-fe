@@ -2,6 +2,7 @@ import { apiFetch } from './client';
 
 export const list = () => apiFetch('/api/lists');
 export const create = (body) => apiFetch('/api/lists', { method: 'POST', body });
+export const update = (id, body) => apiFetch(`/api/lists/${id}`, { method: 'PATCH', body });
 export const remove = (id) => apiFetch(`/api/lists/${id}`, { method: 'DELETE' });
 
 export const tasks = (listId) => apiFetch(`/api/lists/${listId}/tasks`);

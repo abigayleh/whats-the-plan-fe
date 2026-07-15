@@ -12,9 +12,9 @@ import {
 function ListsPage() {
   const {
     groups, lists, tasks, currentUser, personalSpace,
-    addList, deleteList, addTask, updateTask, deleteTask, toggleTaskStatus,
+    addList, updateList, deleteList, addTask, updateTask, deleteTask, toggleTaskStatus,
   } = useAppData();
-  const [showListModal, setShowListModal] = useState(false);
+  const [listModal, setListModal] = useState(null); // null | { mode:'new' } | { mode:'edit', list }
   const [editingTask, setEditingTask] = useState(null); // task object | 'new' | null
   const [newTaskListId, setNewTaskListId] = useState(null);
   const [showCompleted, setShowCompleted] = useLocalStorageState('lists-show-completed', true);
@@ -46,9 +46,10 @@ function ListsPage() {
     }));
   }
 
-  async function handleAddList(payload) {
-    await addList(payload);
-    setShowListModal(false);
+  async function handleSaveList(payload) {
+    if (listModal.mode === 'edit') await updateList(listModal.list.id, payload);
+    else await addList(payload);
+    setListModal(null);
   }
 
   function handleDeleteList(list) {
@@ -104,7 +105,7 @@ function ListsPage() {
           <button
             type="button"
             className="button button--primary"
-            onClick={() => setShowListModal(true)}
+            onClick={() => setListModal({ mode: 'new' })}
           >
             <PlusIcon width={16} height={16} />
             New List
@@ -123,13 +124,19 @@ function ListsPage() {
             onToggleTask={toggleTaskStatus}
             onEditTask={handleEditTask}
             onAddTask={handleAddTask}
+            onEditList={canManageList(list) ? (l) => setListModal({ mode: 'edit', list: l }) : null}
             onDeleteList={canManageList(list) ? handleDeleteList : null}
           />
         ))}
       </div>
 
-      {showListModal && (
-        <ListModal groups={groups} onClose={() => setShowListModal(false)} onSave={handleAddList} />
+      {listModal && (
+        <ListModal
+          list={listModal.mode === 'edit' ? listModal.list : null}
+          groups={groups}
+          onClose={() => setListModal(null)}
+          onSave={handleSaveList}
+        />
       )}
 
       {editingTask && (

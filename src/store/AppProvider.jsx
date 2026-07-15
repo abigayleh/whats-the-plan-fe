@@ -157,6 +157,11 @@ function AppProvider({ children }) {
       await refreshLists();
       return adaptList(created);
     },
+    // Scope is immutable, so only name and icon are sent.
+    async updateList(listId, { name, icon }) {
+      await listsApi.update(listId, { name, icon: icon || null });
+      await refreshLists();
+    },
     async deleteList(listId) {
       await listsApi.remove(listId);
       await refreshLists();

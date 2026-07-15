@@ -181,5 +181,10 @@
       border-color: transparent;
       color: $color-primary;
     }
+
+    &:disabled {
+      cursor: default;
+      opacity: 0.6;
+    }
   }
 }
