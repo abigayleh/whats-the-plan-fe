@@ -92,4 +92,16 @@
   &:hover {
     background: $color-primary-hover;
   }
+
+  // Sits directly above the primary action.
+  &--secondary {
+    bottom: calc(#{$spacing-xl} + 4.25rem);
+    background: $color-surface;
+    color: $color-primary;
+    border: 1px solid $color-border;
+
+    &:hover {
+      background: $color-bg;
+    }
+  }
 }

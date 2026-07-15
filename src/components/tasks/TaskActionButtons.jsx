@@ -9,7 +9,7 @@ import {
 } from '../../utils/tasks';
 
 function TaskActionButtons({ task, lists }) {
-  const { groups, updateTask, deleteTask } = useAppData();
+  const { updateTask, deleteTask } = useAppData();
   const [openPopover, setOpenPopover] = useState(null); // null | 'reschedule' | 'move'
   const timed = isTaskTimed(task);
   const writableLists = lists.filter((list) => !list.isSystem);
@@ -49,18 +49,9 @@ function TaskActionButtons({ task, lists }) {
     }
   }
 
+  // The API re-scopes the task and drops an assignee who isn't in the target group.
   function handleMove(newListId) {
-    const newList = newListId ? writableLists.find((list) => list.id === newListId) : null;
-    const newGroupId = newList?.groupId ?? null;
-    const newGroup = newGroupId ? groups.find((group) => group.id === newGroupId) : null;
-    const assigneeStillValid = !task.assignedTo
-      || (newGroup && newGroup.members?.some((member) => member.name === task.assignedTo));
-
-    updateTask(task.id, {
-      listId: newListId || null,
-      groupId: newGroupId,
-      assignedTo: assigneeStillValid ? task.assignedTo : null,
-    });
+    if (newListId && newListId !== task.listId) updateTask(task.id, { listId: newListId });
     setOpenPopover(null);
   }
 
@@ -139,9 +130,8 @@ function TaskActionButtons({ task, lists }) {
           <select
             className="modal__input"
             value={task.listId ?? ''}
-            onChange={(e) => handleMove(e.target.value || null)}
+            onChange={(e) => handleMove(e.target.value)}
           >
-            <option value="">No list</option>
             {writableLists.map((list) => (
               <option key={list.id} value={list.id}>{list.name}</option>
             ))}

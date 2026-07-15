@@ -8,11 +8,20 @@ function ListModal({ groups, onClose, onSave }) {
   const [name, setName] = useState('');
   const [groupId, setGroupId] = useState(null);
   const [icon, setIcon] = useState(null);
+  const [error, setError] = useState(null);
+  const [saving, setSaving] = useState(false);
 
-  function handleSubmit(e) {
+  async function handleSubmit(e) {
     e.preventDefault();
     if (!name.trim()) return;
-    onSave({ name: name.trim(), groupId, icon });
+    setError(null);
+    setSaving(true);
+    try {
+      await onSave({ name: name.trim(), groupId, icon });
+    } catch (err) {
+      setError(err.message || 'Could not create list');
+      setSaving(false);
+    }
   }
 
   return (
@@ -26,6 +35,8 @@ function ListModal({ groups, onClose, onSave }) {
         </div>
 
         <form className="modal__form" onSubmit={handleSubmit}>
+          {error && <p className="auth-card__error">{error}</p>}
+
           <label className="modal__field">
             <span className="modal__label">Name</span>
             <input
@@ -93,8 +104,8 @@ function ListModal({ groups, onClose, onSave }) {
             <button type="button" className="button button--ghost" onClick={onClose}>
               Cancel
             </button>
-            <button type="submit" className="button button--primary">
-              Create
+            <button type="submit" className="button button--primary" disabled={saving}>
+              {saving ? 'Creating…' : 'Create'}
             </button>
           </div>
         </form>

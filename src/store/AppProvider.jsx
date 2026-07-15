@@ -4,9 +4,13 @@ import {
 import AppContext from './AppContext';
 import useAuth from '../hooks/useAuth';
 import * as groupsApi from '../api/groups';
+import * as listsApi from '../api/lists';
+import * as attachmentsApi from '../api/attachments';
+import {
+  adaptGroup, adaptList, adaptTask, toBeTask,
+} from '../api/adapters';
 import { socket } from '../socket/socketClient';
 import { DEFAULT_PERSONAL_SPACE } from '../mocks/groups';
-import { LISTS, TASKS } from '../mocks/tasks';
 import { POLLS } from '../mocks/polls';
 
 let nextId = 1000;
@@ -15,23 +19,27 @@ function generateId(prefix) {
   return `${prefix}-${nextId}`;
 }
 
-// Maps a BE group (list shape) to what the UI expects.
-const adaptGroup = (g) => ({
-  id: g.id,
-  name: g.name,
-  colorKey: g.color || 'primary',
-  memberCount: g.memberCount,
-  role: g.role,
-});
+// Read-only views over tasks the user can already see, so they're derived here
+// rather than fetched — no second source of truth to keep in sync.
+const SYSTEM_LISTS = [
+  {
+    id: 'l-assigned', name: 'Assigned to Me', groupId: null, icon: null, isSystem: true,
+  },
+  {
+    id: 'l-due-today', name: 'Due Today', groupId: null, icon: null, isSystem: true,
+  },
+];
 
-// Groups are real (API + sockets); lists/tasks/polls are still mock until their phases.
+const LIST_EVENTS = ['list:created', 'list:updated', 'list:deleted', 'task:created', 'task:updated', 'task:deleted'];
+
+// Groups and lists/tasks are real (API + sockets); polls are still mock until Phase 5.
 function AppProvider({ children }) {
   const { user: authUser } = useAuth();
   const [currentUser, setCurrentUser] = useState({ id: null, name: '', email: '' });
   const [personalSpace, setPersonalSpace] = useState(DEFAULT_PERSONAL_SPACE);
   const [groups, setGroups] = useState([]);
-  const [lists, setLists] = useState(LISTS);
-  const [tasks, setTasks] = useState(TASKS);
+  const [lists, setLists] = useState([]);
+  const [tasks, setTasks] = useState([]);
   const [polls, setPolls] = useState(POLLS);
 
   useEffect(() => {
@@ -63,6 +71,33 @@ function AppProvider({ children }) {
       socket.off('group:deleted', onChange);
     };
   }, [authUser, refreshGroups]);
+
+  // There's no all-tasks endpoint, so tasks are gathered per visible list.
+  const refreshLists = useCallback(async () => {
+    try {
+      const adapted = (await listsApi.list()).map(adaptList);
+      setLists(adapted);
+      const perList = await Promise.all(adapted.map((l) => listsApi.tasks(l.id).catch(() => [])));
+      setTasks(perList.flat().map(adaptTask));
+    } catch {
+      // ignore — a failed refresh leaves the last known lists in place
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!authUser) {
+      setLists([]);
+      setTasks([]);
+      return undefined;
+    }
+    refreshLists();
+    const onChange = () => refreshLists();
+    LIST_EVENTS.forEach((e) => socket.on(e, onChange));
+    return () => LIST_EVENTS.forEach((e) => socket.off(e, onChange));
+  }, [authUser, refreshLists]);
+
+  // A task's list is the only place its scope lives, so mutations look it up here.
+  const listIdOf = useCallback((taskId) => tasks.find((t) => t.id === taskId)?.listId, [tasks]);
 
   const value = useMemo(() => ({
     currentUser,
@@ -115,46 +150,54 @@ function AppProvider({ children }) {
       await refreshGroups();
     },
 
-    lists,
+    lists: [...lists, ...SYSTEM_LISTS],
     tasks,
-    addList(list) {
-      const newList = { icon: null, ...list, id: generateId('l'), isSystem: false };
-      setLists((prev) => [...prev, newList]);
-      return newList;
+    async addList({ name, groupId, icon }) {
+      const created = await listsApi.create({ name, groupId: groupId || null, icon: icon || null });
+      await refreshLists();
+      return adaptList(created);
     },
-    deleteList(listId) {
-      setLists((prev) => prev.filter((list) => list.id !== listId));
-      setTasks((prev) => prev.filter((task) => task.listId !== listId));
+    async deleteList(listId) {
+      await listsApi.remove(listId);
+      await refreshLists();
     },
-    addTask(task) {
-      const newTask = {
-        listId: null,
-        groupId: null,
-        description: '',
-        status: 'todo',
-        dueDate: null,
-        scheduledStart: null,
-        scheduledEnd: null,
-        assignedTo: null,
-        subtasks: [],
-        attachments: [],
-        recurrenceRule: null,
-        ...task,
-        id: generateId('tk'),
-      };
-      setTasks((prev) => [...prev, newTask]);
-      return newTask;
+    // Attachments hang off a task, so the task must exist before they can upload. Once it
+    // does, a failed upload is reported rather than thrown — throwing would leave the modal
+    // open over an already-created task, and saving again would duplicate it.
+    async addTask({ listId, attachments = [], ...fields }) {
+      const created = await listsApi.createTask(listId, toBeTask(fields));
+      let attachmentError = null;
+      if (attachments.length) {
+        try {
+          await attachmentsApi.sync(created.id, attachments, []);
+        } catch (err) {
+          attachmentError = err.message || 'Attachments failed to upload';
+        }
+      }
+      await refreshLists();
+      return { task: adaptTask(created), attachmentError };
     },
-    updateTask(taskId, patch) {
-      setTasks((prev) => prev.map((task) => (task.id === taskId ? { ...task, ...patch } : task)));
+    async updateTask(taskId, { attachments, ...patch }) {
+      const task = tasks.find((t) => t.id === taskId);
+      if (!task) return;
+      try {
+        if (Object.keys(patch).length) await listsApi.updateTask(task.listId, taskId, toBeTask(patch));
+        if (attachments) await attachmentsApi.sync(taskId, attachments, task.attachments);
+      } finally {
+        await refreshLists(); // a partial write must not leave stale attachments behind for a retry
+      }
     },
-    deleteTask(taskId) {
-      setTasks((prev) => prev.filter((task) => task.id !== taskId));
+    async deleteTask(taskId) {
+      const listId = listIdOf(taskId);
+      if (!listId) return;
+      await listsApi.removeTask(listId, taskId);
+      await refreshLists();
     },
-    toggleTaskStatus(taskId) {
-      setTasks((prev) => prev.map((task) => (
-        task.id === taskId ? { ...task, status: task.status === 'done' ? 'todo' : 'done' } : task
-      )));
+    async toggleTaskStatus(taskId) {
+      const task = tasks.find((t) => t.id === taskId);
+      if (!task) return;
+      await listsApi.updateTask(task.listId, taskId, { status: task.status === 'done' ? 'TODO' : 'DONE' });
+      await refreshLists();
     },
 
     polls,
@@ -189,7 +232,7 @@ function AppProvider({ children }) {
     deletePoll(pollId) {
       setPolls((prev) => prev.filter((poll) => poll.id !== pollId));
     },
-  }), [currentUser, personalSpace, groups, lists, tasks, polls, refreshGroups]);
+  }), [currentUser, personalSpace, groups, lists, tasks, polls, refreshGroups, refreshLists, listIdOf]);
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
 }

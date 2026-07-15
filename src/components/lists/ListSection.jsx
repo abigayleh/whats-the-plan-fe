@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ChevronIcon, PlusIcon } from '../layout/icons';
+import { ChevronIcon, PlusIcon, TrashIcon } from '../layout/icons';
 import TaskRow from './TaskRow';
 import { getTaskDay } from '../../utils/tasks';
 import { getTaskIcon } from '../../constants/taskIcons';
@@ -16,7 +16,7 @@ function sortTasks(tasks) {
 }
 
 function ListSection({
-  list, tasks, allLists, showCompleted, onToggleTask, onEditTask, onAddTask,
+  list, tasks, allLists, showCompleted, onToggleTask, onEditTask, onAddTask, onDeleteList,
 }) {
   const [collapsed, setCollapsed] = useState(false);
   const sorted = sortTasks(tasks);
@@ -50,6 +50,17 @@ function ListSection({
           <button type="button" className="list-section__add-task-button" onClick={() => onAddTask(list.id)}>
             <PlusIcon width={14} height={14} />
             Add task
+          </button>
+        )}
+        {onDeleteList && (
+          <button
+            type="button"
+            className="task-actions__button task-actions__button--danger"
+            onClick={() => onDeleteList(list)}
+            aria-label={`Delete ${list.name}`}
+            data-tooltip="Delete list"
+          >
+            <TrashIcon width={15} height={15} />
           </button>
         )}
       </div>

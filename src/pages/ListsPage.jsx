@@ -11,10 +11,11 @@ import {
 
 function ListsPage() {
   const {
-    groups, lists, tasks, currentUser, personalSpace, addList, addTask, updateTask, deleteTask, toggleTaskStatus,
+    groups, lists, tasks, currentUser, personalSpace,
+    addList, deleteList, addTask, updateTask, deleteTask, toggleTaskStatus,
   } = useAppData();
   const [showListModal, setShowListModal] = useState(false);
-  const [editingTask, setEditingTask] = useState(null); // task object | null
+  const [editingTask, setEditingTask] = useState(null); // task object | 'new' | null
   const [newTaskListId, setNewTaskListId] = useState(null);
   const [showCompleted, setShowCompleted] = useLocalStorageState('lists-show-completed', true);
 
@@ -22,12 +23,19 @@ function ListsPage() {
     .sort((a, b) => Number(a.isSystem) - Number(b.isSystem))
     .map((list) => ({ ...list, colorKey: getListColorKey(list, groups, personalSpace) }));
 
+  // Only the list's owner or an admin of its group may remove it (mirrors the API).
+  function canManageList(list) {
+    if (list.isSystem) return false;
+    if (!list.groupId) return true;
+    return list.ownerId === currentUser.id || groups.find((g) => g.id === list.groupId)?.role === 'ADMIN';
+  }
+
   function tasksForList(list) {
     let matching;
     if (list.id === 'l-due-today') {
       matching = tasks.filter((task) => isTaskOnDay(task, new Date()));
     } else if (list.isSystem) {
-      matching = tasks.filter((task) => task.assignedTo === currentUser.name);
+      matching = tasks.filter((task) => task.assignedToId === currentUser.id);
     } else {
       matching = tasks.filter((task) => task.listId === list.id);
     }
@@ -38,9 +46,16 @@ function ListsPage() {
     }));
   }
 
-  function handleAddList(payload) {
-    addList(payload);
+  async function handleAddList(payload) {
+    await addList(payload);
     setShowListModal(false);
+  }
+
+  function handleDeleteList(list) {
+    const count = tasks.filter((t) => t.listId === list.id).length;
+    const warning = count ? ` and its ${count} task${count === 1 ? '' : 's'}` : '';
+    // eslint-disable-next-line no-alert
+    if (window.confirm(`Delete "${list.name}"${warning}? This can't be undone.`)) deleteList(list.id);
   }
 
   function handleAddTask(listId) {
@@ -53,17 +68,20 @@ function ListsPage() {
     setEditingTask(task);
   }
 
-  function handleSaveTask(payload) {
+  // Errors propagate so the modal can show them and stay open.
+  async function handleSaveTask(payload) {
     if (editingTask && editingTask !== 'new') {
-      updateTask(editingTask.id, payload);
+      await updateTask(editingTask.id, payload);
     } else {
-      addTask(payload);
+      const { attachmentError } = await addTask(payload);
+      // eslint-disable-next-line no-alert
+      if (attachmentError) window.alert(`Task created, but its files didn't upload: ${attachmentError}`);
     }
     setEditingTask(null);
   }
 
-  function handleDeleteTask(taskId) {
-    deleteTask(taskId);
+  async function handleDeleteTask(taskId) {
+    await deleteTask(taskId);
     setEditingTask(null);
   }
 
@@ -105,6 +123,7 @@ function ListsPage() {
             onToggleTask={toggleTaskStatus}
             onEditTask={handleEditTask}
             onAddTask={handleAddTask}
+            onDeleteList={canManageList(list) ? handleDeleteList : null}
           />
         ))}
       </div>

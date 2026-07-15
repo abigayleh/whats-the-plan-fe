@@ -1,7 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { CheckIcon, CloseIcon } from '../layout/icons';
 import { RECURRENCE_OPTIONS } from '../../constants/recurrence';
-import useAppData from '../../hooks/useAppData';
+import useGroupMembers from '../../hooks/useGroupMembers';
 import AttachmentUploader from './AttachmentUploader';
 import {
   combineDateAndTime, getTaskDay, isTaskTimed, toDateInputValue, toTimeInputValue,
@@ -10,21 +10,21 @@ import {
 function TaskModal({
   lists, defaultListId, defaultSchedule, task, onClose, onSave, onDelete,
 }) {
-  const { groups, personalSpace } = useAppData();
   const isEdit = Boolean(task);
   // When creating from a calendar slot click/drop, defaultSchedule seeds the date/time
   // fields the same way an existing task would — it just isn't a real task yet.
   const seed = task ?? defaultSchedule ?? null;
   const writableLists = lists.filter((l) => !l.isSystem);
-  const initialListId = task?.listId ?? defaultListId ?? '';
-  const initialList = writableLists.find((l) => l.id === initialListId);
 
-  const [listId, setListId] = useState(initialListId);
-  const [groupId, setGroupId] = useState(task?.groupId ?? initialList?.groupId ?? '');
+  const [listId, setListId] = useState(task?.listId ?? defaultListId ?? writableLists[0]?.id ?? '');
   const list = writableLists.find((l) => l.id === listId);
-  const effectiveGroupId = list ? (list.groupId ?? '') : groupId;
-  const effectiveGroup = effectiveGroupId ? groups.find((g) => g.id === effectiveGroupId) : null;
-  const groupMembers = effectiveGroup?.members ? effectiveGroup.members.map((member) => member.name) : [];
+  const members = useGroupMembers(list?.groupId);
+
+  // Lists may still be loading when the modal opens, so adopt the first one once it arrives.
+  const firstListId = writableLists[0]?.id;
+  useEffect(() => {
+    if (!listId && firstListId) setListId(firstListId);
+  }, [listId, firstListId]);
 
   const [title, setTitle] = useState(task?.title ?? '');
   const [description, setDescription] = useState(task?.description ?? '');
@@ -34,15 +34,18 @@ function TaskModal({
   const [timed, setTimed] = useState(seed ? isTaskTimed(seed) : false);
   const [startTime, setStartTime] = useState(seed?.scheduledStart ? toTimeInputValue(seed.scheduledStart) : '09:00');
   const [endTime, setEndTime] = useState(seed?.scheduledEnd ? toTimeInputValue(seed.scheduledEnd) : '10:00');
-  const [assignedTo, setAssignedTo] = useState(task?.assignedTo ?? '');
+  const [assignedToId, setAssignedToId] = useState(task?.assignedToId ?? '');
   const [subtasks, setSubtasks] = useState(task?.subtasks ?? []);
   const [newSubtask, setNewSubtask] = useState('');
   const [attachments, setAttachments] = useState(task?.attachments ?? []);
+  const [error, setError] = useState(null);
+  const [saving, setSaving] = useState(false);
 
+  // The assignee must belong to the new list's group, so a move that orphans them clears it.
   function handleListChange(newListId) {
     setListId(newListId);
-    const newList = writableLists.find((l) => l.id === newListId);
-    if (newList) setGroupId(newList.groupId ?? '');
+    const newGroupId = writableLists.find((l) => l.id === newListId)?.groupId ?? null;
+    if (newGroupId !== list?.groupId) setAssignedToId('');
   }
 
   function handleAddSubtask() {
@@ -60,17 +63,21 @@ function TaskModal({
     setSubtasks((prev) => prev.filter((s) => s.id !== subtaskId));
   }
 
-  function handleSubmit(e) {
+  async function handleSubmit(e) {
     e.preventDefault();
-    if (!title.trim()) return;
+    if (!title.trim() || !listId) return;
+    if (timed && !dueDate) {
+      setError('Pick a date before setting a time');
+      return;
+    }
 
     const payload = {
-      listId: listId || null,
-      groupId: effectiveGroupId || null,
+      listId,
       title: title.trim(),
       description: description.trim(),
-      status: done ? 'done' : 'todo',
-      assignedTo: assignedTo || null,
+      // The checkbox only models done/not-done, so an in-progress task keeps that status.
+      status: done ? 'done' : (task?.status === 'in-progress' ? 'in-progress' : 'todo'),
+      assignedToId: assignedToId || null,
       subtasks,
       attachments,
       recurrenceRule: dueDate && recurrence ? { frequency: recurrence, interval: 1 } : null,
@@ -80,13 +87,24 @@ function TaskModal({
       payload.scheduledStart = combineDateAndTime(dueDate, startTime);
       payload.scheduledEnd = combineDateAndTime(dueDate, endTime);
       payload.dueDate = null;
+      if (payload.scheduledEnd < payload.scheduledStart) {
+        setError('End time must be after start time');
+        return;
+      }
     } else {
       payload.scheduledStart = null;
       payload.scheduledEnd = null;
       payload.dueDate = dueDate ? combineDateAndTime(dueDate, '00:00') : null;
     }
 
-    onSave(payload);
+    setError(null);
+    setSaving(true);
+    try {
+      await onSave(payload);
+    } catch (err) {
+      setError(err.message || 'Could not save task');
+      setSaving(false);
+    }
   }
 
   return (
@@ -100,35 +118,22 @@ function TaskModal({
         </div>
 
         <form className="modal__form" onSubmit={handleSubmit}>
+          {error && <p className="auth-card__error">{error}</p>}
+
           <label className="modal__field">
             <span className="modal__label">List</span>
             <select
               className="modal__input"
               value={listId}
               onChange={(e) => handleListChange(e.target.value)}
+              required
             >
-              <option value="">No list</option>
+              {writableLists.length === 0 && <option value="">Create a list first</option>}
               {writableLists.map((l) => (
                 <option key={l.id} value={l.id}>{l.name}</option>
               ))}
             </select>
           </label>
-
-          {!list && (
-            <label className="modal__field">
-              <span className="modal__label">Group</span>
-              <select
-                className="modal__input"
-                value={groupId}
-                onChange={(e) => setGroupId(e.target.value)}
-              >
-                <option value="">{personalSpace.name}</option>
-                {groups.map((g) => (
-                  <option key={g.id} value={g.id}>{g.name}</option>
-                ))}
-              </select>
-            </label>
-          )}
 
           <label className="modal__field">
             <span className="modal__label">Title</span>
@@ -211,7 +216,10 @@ function TaskModal({
 
           <div className="modal__field">
             <span className="modal__label">Attachments</span>
-            <AttachmentUploader attachments={attachments} onChange={setAttachments} max={5} />
+            <AttachmentUploader attachments={attachments} onChange={setAttachments} />
+            {!isEdit && attachments.length > 0 && (
+              <p className="modal__hint">Files upload once the task is created.</p>
+            )}
           </div>
 
           <label className="modal__field">
@@ -273,17 +281,17 @@ function TaskModal({
             </div>
           )}
 
-          {effectiveGroup && (
+          {list?.groupId && (
             <label className="modal__field">
               <span className="modal__label">Assigned to</span>
               <select
                 className="modal__input"
-                value={assignedTo}
-                onChange={(e) => setAssignedTo(e.target.value)}
+                value={assignedToId}
+                onChange={(e) => setAssignedToId(e.target.value)}
               >
                 <option value="">Unassigned</option>
-                {groupMembers.map((member) => (
-                  <option key={member} value={member}>{member}</option>
+                {members.map((member) => (
+                  <option key={member.id} value={member.id}>{member.name || member.email}</option>
                 ))}
               </select>
             </label>
@@ -294,7 +302,13 @@ function TaskModal({
               <button
                 type="button"
                 className="button button--danger"
-                onClick={() => onDelete(task.id)}
+                onClick={async () => {
+                  try {
+                    await onDelete(task.id);
+                  } catch (err) {
+                    setError(err.message || 'Could not delete task');
+                  }
+                }}
               >
                 Delete
               </button>
@@ -303,8 +317,8 @@ function TaskModal({
             <button type="button" className="button button--ghost" onClick={onClose}>
               Cancel
             </button>
-            <button type="submit" className="button button--primary">
-              Save
+            <button type="submit" className="button button--primary" disabled={saving || !listId}>
+              {saving ? 'Saving…' : 'Save'}
             </button>
           </div>
         </form>

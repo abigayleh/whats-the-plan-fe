@@ -29,9 +29,13 @@ export class ApiError extends Error {
 }
 
 function rawFetch(path, { method = 'GET', body, auth = true } = {}) {
-  const headers = { 'Content-Type': 'application/json' };
+  // FormData sets its own multipart Content-Type (with boundary) — don't override it.
+  const isForm = body instanceof FormData;
+  const headers = isForm ? {} : { 'Content-Type': 'application/json' };
   if (auth && accessToken) headers.Authorization = `Bearer ${accessToken}`;
-  return fetch(BASE + path, { method, headers, body: body !== undefined ? JSON.stringify(body) : undefined });
+  let payload;
+  if (body !== undefined) payload = isForm ? body : JSON.stringify(body);
+  return fetch(BASE + path, { method, headers, body: payload });
 }
 
 // Refresh the access token once; concurrent callers share a single in-flight request.
@@ -71,4 +75,15 @@ export async function apiFetch(path, options = {}) {
   const data = await res.json().catch(() => null);
   if (!res.ok) throw new ApiError(data?.error || 'Request failed', res.status, data?.code);
   return data;
+}
+
+// Files sit behind Bearer auth, so they can't be loaded via a plain <img src>.
+export async function apiFetchBlob(path) {
+  let res = await rawFetch(path);
+  if (res.status === 401) {
+    await refreshTokens();
+    res = await rawFetch(path);
+  }
+  if (!res.ok) throw new ApiError('Request failed', res.status);
+  return res.blob();
 }
