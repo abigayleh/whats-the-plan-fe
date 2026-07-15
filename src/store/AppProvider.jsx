@@ -1,5 +1,5 @@
 import {
-  useMemo, useState, useEffect, useCallback,
+  useMemo, useState, useEffect, useCallback, useRef,
 } from 'react';
 import AppContext from './AppContext';
 import useAuth from '../hooks/useAuth';
@@ -11,13 +11,6 @@ import {
 } from '../api/adapters';
 import { socket } from '../socket/socketClient';
 import { DEFAULT_PERSONAL_SPACE } from '../mocks/groups';
-import { POLLS } from '../mocks/polls';
-
-let nextId = 1000;
-function generateId(prefix) {
-  nextId += 1;
-  return `${prefix}-${nextId}`;
-}
 
 // Read-only views over tasks the user can already see, so they're derived here
 // rather than fetched — no second source of truth to keep in sync.
@@ -32,7 +25,7 @@ const SYSTEM_LISTS = [
 
 const LIST_EVENTS = ['list:created', 'list:updated', 'list:deleted', 'task:created', 'task:updated', 'task:deleted'];
 
-// Groups and lists/tasks are real (API + sockets); polls are still mock until Phase 5.
+// Groups and lists/tasks are shared app-wide; polls live in usePolls, on the one page that needs them.
 function AppProvider({ children }) {
   const { user: authUser } = useAuth();
   const [currentUser, setCurrentUser] = useState({ id: null, name: '', email: '' });
@@ -40,7 +33,6 @@ function AppProvider({ children }) {
   const [groups, setGroups] = useState([]);
   const [lists, setLists] = useState([]);
   const [tasks, setTasks] = useState([]);
-  const [polls, setPolls] = useState(POLLS);
 
   useEffect(() => {
     if (authUser) setCurrentUser({ id: authUser.id, name: authUser.name || authUser.email, email: authUser.email });
@@ -72,12 +64,19 @@ function AppProvider({ children }) {
     };
   }, [authUser, refreshGroups]);
 
-  // There's no all-tasks endpoint, so tasks are gathered per visible list.
+  // There's no all-tasks endpoint, so tasks are gathered per visible list. Every mutation
+  // refreshes twice (its own await + the socket echo), so results are ticketed to stop a
+  // slower earlier refresh from overwriting a newer one.
+  const latestRefresh = useRef(0);
   const refreshLists = useCallback(async () => {
+    const ticket = latestRefresh.current + 1;
+    latestRefresh.current = ticket;
     try {
       const adapted = (await listsApi.list()).map(adaptList);
+      if (ticket !== latestRefresh.current) return;
       setLists(adapted);
       const perList = await Promise.all(adapted.map((l) => listsApi.tasks(l.id).catch(() => [])));
+      if (ticket !== latestRefresh.current) return;
       setTasks(perList.flat().map(adaptTask));
     } catch {
       // ignore — a failed refresh leaves the last known lists in place
@@ -205,39 +204,7 @@ function AppProvider({ children }) {
       await refreshLists();
     },
 
-    polls,
-    addPoll({
-      question, groupId, expiresAt, optionTexts,
-    }) {
-      const newPoll = {
-        id: generateId('p'),
-        question,
-        groupId,
-        expiresAt: expiresAt ?? null,
-        options: optionTexts.map((text) => ({ id: generateId('po'), text, votes: [] })),
-      };
-      setPolls((prev) => [...prev, newPoll]);
-      return newPoll;
-    },
-    vote(pollId, optionId) {
-      setPolls((prev) => prev.map((poll) => {
-        if (poll.id !== pollId) return poll;
-        const votedThisOption = poll.options
-          .find((option) => option.id === optionId)?.votes.includes(currentUser.id);
-        return {
-          ...poll,
-          options: poll.options.map((option) => {
-            const votes = option.votes.filter((userId) => userId !== currentUser.id);
-            if (option.id === optionId && !votedThisOption) votes.push(currentUser.id);
-            return { ...option, votes };
-          }),
-        };
-      }));
-    },
-    deletePoll(pollId) {
-      setPolls((prev) => prev.filter((poll) => poll.id !== pollId));
-    },
-  }), [currentUser, personalSpace, groups, lists, tasks, polls, refreshGroups, refreshLists, listIdOf]);
+  }), [currentUser, personalSpace, groups, lists, tasks, refreshGroups, refreshLists, listIdOf]);
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
 }

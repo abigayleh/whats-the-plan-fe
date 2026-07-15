@@ -66,6 +66,21 @@ export const adaptCalendarTask = (t) => ({
   rule: t.recurrenceRule,
 });
 
+// Results come pre-tallied: options carry voteCount, and myVote is computed per request.
+// The server's `closed` is dropped on purpose — it's a snapshot taken at fetch time, so a
+// page left open would never notice the expiry pass. PollCard derives it at render instead.
+export const adaptPoll = (p) => ({
+  id: p.id,
+  groupId: p.groupId,
+  question: p.question,
+  options: p.options,
+  totalVotes: p.totalVotes,
+  myVote: p.myVote,
+  expiresAt: toDate(p.expiresAt),
+  createdById: p.createdById,
+  createdAt: toDate(p.createdAt),
+});
+
 // FE task patch → BE body. Only maps keys that are present, so PATCH stays partial.
 // Attachments are excluded — they're synced through the attachments API, not the task body.
 export function toBeTask(patch) {

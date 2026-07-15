@@ -1,11 +1,15 @@
 import { useState } from 'react';
 import { CloseIcon, PlusIcon } from '../layout/icons';
 
+const MAX_OPTIONS = 20; // mirrors the API
+
 function PollCreateModal({ groups, onClose, onSave }) {
   const [question, setQuestion] = useState('');
   const [groupId, setGroupId] = useState(groups[0]?.id ?? '');
   const [expiresAt, setExpiresAt] = useState('');
   const [options, setOptions] = useState(['', '']);
+  const [error, setError] = useState(null);
+  const [saving, setSaving] = useState(false);
 
   function updateOption(index, value) {
     setOptions((prev) => prev.map((option, i) => (i === index ? value : option)));
@@ -19,17 +23,31 @@ function PollCreateModal({ groups, onClose, onSave }) {
     setOptions((prev) => prev.filter((_, i) => i !== index));
   }
 
-  function handleSubmit(e) {
+  async function handleSubmit(e) {
     e.preventDefault();
     const optionTexts = options.map((option) => option.trim()).filter(Boolean);
-    if (!question.trim() || !groupId || optionTexts.length < 2) return;
+    if (!question.trim() || !groupId) return;
+    if (optionTexts.length < 2) {
+      setError('Give the poll at least 2 options');
+      return;
+    }
+    // Polls close at end of day, so today is still a valid (future) expiry.
+    const expiry = expiresAt ? new Date(`${expiresAt}T23:59:59`) : null;
+    if (expiry && expiry <= new Date()) {
+      setError('Expiry must be in the future');
+      return;
+    }
 
-    onSave({
-      question: question.trim(),
-      groupId,
-      expiresAt: expiresAt ? new Date(`${expiresAt}T23:59:59`) : null,
-      optionTexts,
-    });
+    setError(null);
+    setSaving(true);
+    try {
+      await onSave({
+        question: question.trim(), groupId, expiresAt: expiry, optionTexts,
+      });
+    } catch (err) {
+      setError(err.message || 'Could not create poll');
+      setSaving(false);
+    }
   }
 
   return (
@@ -43,6 +61,8 @@ function PollCreateModal({ groups, onClose, onSave }) {
         </div>
 
         <form className="modal__form" onSubmit={handleSubmit}>
+          {error && <p className="auth-card__error">{error}</p>}
+
           <label className="modal__field">
             <span className="modal__label">Group</span>
             <select className="modal__input" value={groupId} onChange={(e) => setGroupId(e.target.value)}>
@@ -88,10 +108,12 @@ function PollCreateModal({ groups, onClose, onSave }) {
                   )}
                 </div>
               ))}
-              <button type="button" className="button button--ghost" onClick={addOption}>
-                <PlusIcon width={14} height={14} />
-                Add option
-              </button>
+              {options.length < MAX_OPTIONS && (
+                <button type="button" className="button button--ghost" onClick={addOption}>
+                  <PlusIcon width={14} height={14} />
+                  Add option
+                </button>
+              )}
             </div>
           </div>
 
@@ -110,8 +132,8 @@ function PollCreateModal({ groups, onClose, onSave }) {
             <button type="button" className="button button--ghost" onClick={onClose}>
               Cancel
             </button>
-            <button type="submit" className="button button--primary">
-              Create
+            <button type="submit" className="button button--primary" disabled={saving}>
+              {saving ? 'Creating…' : 'Create'}
             </button>
           </div>
         </form>
