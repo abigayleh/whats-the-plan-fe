@@ -100,9 +100,6 @@ function AppProvider({ children }) {
 
   const value = useMemo(() => ({
     currentUser,
-    updateCurrentUser(patch) {
-      setCurrentUser((prev) => ({ ...prev, ...patch }));
-    },
 
     personalSpace,
     updatePersonalSpace(patch) {
