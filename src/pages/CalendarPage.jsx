@@ -10,6 +10,8 @@ import PlanItemModal from '../components/items/PlanItemModal';
 import useAppData from '../hooks/useAppData';
 import usePlanItems from '../hooks/usePlanItems';
 import useLocalStorageState from '../hooks/useLocalStorageState';
+import useLocalStorageDate from '../hooks/useLocalStorageDate';
+import useLocalStorageSet from '../hooks/useLocalStorageSet';
 import useCalendarItems from '../hooks/useCalendarItems';
 import { getGroupColorKey, getListColorKey } from '../utils/tasks';
 import {
@@ -28,9 +30,9 @@ function CalendarPage() {
   const [contentFilter, setContentFilter] = useLocalStorageState('calendar-content-filter', 'all');
   const [onlyMine, setOnlyMine] = useLocalStorageState('calendar-only-mine', false);
   const [showCompleted, setShowCompleted] = useLocalStorageState('calendar-show-completed', true);
-  const [focusDate, setFocusDate] = useState(new Date());
-  const [hiddenGroupIds, setHiddenGroupIds] = useState(() => new Set());
-  const [hiddenListIds, setHiddenListIds] = useState(() => new Set());
+  const [focusDate, setFocusDate] = useLocalStorageDate('calendar-focus-date', new Date());
+  const [hiddenGroupIds, setHiddenGroupIds] = useLocalStorageSet('calendar-hidden-groups');
+  const [hiddenListIds, setHiddenListIds] = useLocalStorageSet('calendar-hidden-lists');
   // null | { mode:'new', seed, defaultOrigin } | { mode:'edit', item }
   const [planItemModal, setPlanItemModal] = useState(null);
 
@@ -164,6 +166,10 @@ function CalendarPage() {
     refetch();
   }
 
+  function openNewTodo() {
+    setPlanItemModal({ mode: 'new', defaultOrigin: 'task', seed: { dueDate: focusDate } });
+  }
+
   const label = view === 'month'
     ? formatMonthYear(focusDate)
     : view === 'week'
@@ -218,6 +224,11 @@ function CalendarPage() {
       </div>
 
       <div className="calendar-view">
+        {view !== 'month' && (
+          <button type="button" className="filter-toggle calendar-view__add-todo" onClick={openNewTodo}>
+            + Add to-do
+          </button>
+        )}
         {view === 'month' && (
           <CalendarMonthly focusDate={focusDate} tasks={filteredItems} onSelectDay={handleSelectDay} />
         )}
@@ -239,6 +250,7 @@ function CalendarPage() {
             onToggleTask={toggleItemStatus}
             onOpenTask={openItem}
             onCreateTask={createEventAt}
+            onMoveTask={handleMoveItem}
           />
         )}
       </div>
@@ -246,7 +258,7 @@ function CalendarPage() {
       <button
         type="button"
         className="floating-action-button floating-action-button--secondary"
-        onClick={() => setPlanItemModal({ mode: 'new', defaultOrigin: 'task', seed: { dueDate: focusDate } })}
+        onClick={openNewTodo}
         aria-label="Add to-do"
         data-tooltip="Add to-do"
       >

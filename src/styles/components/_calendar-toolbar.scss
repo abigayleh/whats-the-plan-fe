@@ -132,6 +132,10 @@
   }
 }
 
+.calendar-view__add-todo {
+  margin-bottom: $spacing-sm;
+}
+
 .calendar-toolbar {
   display: flex;
   align-items: center;
