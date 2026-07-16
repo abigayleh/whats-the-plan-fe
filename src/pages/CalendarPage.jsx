@@ -6,6 +6,7 @@ import ToggleChips from '../components/calendar/ToggleChips';
 import CalendarMonthly from '../components/calendar/CalendarMonthly';
 import CalendarWeekly from '../components/calendar/CalendarWeekly';
 import CalendarDaily from '../components/calendar/CalendarDaily';
+import UnscheduledPanel from '../components/calendar/UnscheduledPanel';
 import PlanItemModal from '../components/items/PlanItemModal';
 import useAppData from '../hooks/useAppData';
 import usePlanItems from '../hooks/usePlanItems';
@@ -14,7 +15,7 @@ import useLocalStorageDate from '../hooks/useLocalStorageDate';
 import useLocalStorageSet from '../hooks/useLocalStorageSet';
 import useCalendarItems from '../hooks/useCalendarItems';
 import {
-  getGroupColorKey, getListColorKey, getTaskDay, isTaskTimed,
+  getGroupColorKey, getListColorKey, getTaskColorKey, getTaskIconKey, getTaskDay, isTaskTimed,
 } from '../utils/tasks';
 import {
   addDays, addMonths, startOfDay, getMonthGrid, getWeekDays,
@@ -32,6 +33,7 @@ function CalendarPage() {
   const [contentFilter, setContentFilter] = useLocalStorageState('calendar-content-filter', 'all');
   const [onlyMine, setOnlyMine] = useLocalStorageState('calendar-only-mine', false);
   const [showCompleted, setShowCompleted] = useLocalStorageState('calendar-show-completed', true);
+  const [showUnscheduledTray, setShowUnscheduledTray] = useLocalStorageState('calendar-show-unscheduled', false);
   const [focusDate, setFocusDate] = useLocalStorageDate('calendar-focus-date', new Date());
   const [hiddenGroupIds, setHiddenGroupIds] = useLocalStorageSet('calendar-hidden-groups');
   const [hiddenListIds, setHiddenListIds] = useLocalStorageSet('calendar-hidden-lists');
@@ -81,7 +83,31 @@ function CalendarPage() {
     .map((item) => ({ ...item, colorKey: getGroupColorKey(item.groupId, groups, personalSpace) })),
   [items, groups, personalSpace, hiddenGroupIds, hiddenListIds, contentFilter, onlyMine, showCompleted, currentUser]);
 
-  const itemById = (id) => items.find((it) => it.id === id);
+  // To-dos with no date at all never appear in `items` (the calendar only fetches within a
+  // date range), so they're read straight from useAppData and filtered the same way as above.
+  const unscheduledTasks = useMemo(() => tasks
+    .filter((task) => getTaskDay(task) == null)
+    .filter((task) => {
+      if (hiddenGroupIds.has(task.groupId ?? null)) return false;
+      if (task.listId && hiddenListIds.has(task.listId)) return false;
+      if (onlyMine && task.assignedToId && task.assignedToId !== currentUser.id) return false;
+      return true;
+    })
+    .map((task) => ({
+      ...task,
+      colorKey: getTaskColorKey(task, lists, groups, personalSpace),
+      icon: getTaskIconKey(task, lists),
+    })),
+  [tasks, lists, groups, personalSpace, hiddenGroupIds, hiddenListIds, onlyMine, currentUser]);
+
+  // Falls back to a raw (unscheduled) task when dragging it in from UnscheduledPanel, since
+  // those rows carry the real task id rather than a calendar occurrence id.
+  function itemById(id) {
+    const found = items.find((it) => it.id === id);
+    if (found) return found;
+    const task = tasks.find((t) => t.id === id);
+    return task ? { origin: 'task', id: task.id, sourceId: task.id } : null;
+  }
   // Calendar occurrences of to-dos are lightweight; the real row carries subtasks/attachments.
   const taskOf = (item) => tasks.find((t) => t.id === item.sourceId);
 
@@ -197,6 +223,32 @@ function CalendarPage() {
       ? formatWeekRange(getWeekDays(focusDate))
       : formatFullDate(focusDate);
 
+  // Day + "Both" gets its own split layout (#9); the toggle tray (#11) covers the rest —
+  // week view, and day view when the split isn't already showing the panel. Neither applies
+  // to month view or when to-dos are filtered out entirely.
+  const showUnscheduledSplit = view === 'day' && contentFilter === 'all';
+  const showUnscheduledTrayPanel = showUnscheduledTray && contentFilter !== 'events'
+    && view !== 'month' && !showUnscheduledSplit;
+
+  const dailyView = (
+    <CalendarDaily
+      focusDate={focusDate}
+      tasks={filteredItems}
+      onToggleTask={toggleItemStatus}
+      onOpenTask={openItem}
+      onCreateTask={createEventAt}
+      onMoveTask={handleMoveItem}
+    />
+  );
+  const unscheduledPanel = (
+    <UnscheduledPanel
+      tasks={unscheduledTasks}
+      lists={lists}
+      onToggle={toggleItemStatus}
+      onOpen={(task) => openItem({ origin: 'task', sourceId: task.id })}
+    />
+  );
+
   return (
     <section className="page">
       <div className="page__header">
@@ -242,6 +294,15 @@ function CalendarPage() {
         >
           {showCompleted ? 'Hide completed' : 'Show completed'}
         </button>
+        <button
+          type="button"
+          className={`filter-toggle${showUnscheduledTray ? ' filter-toggle--active' : ''}`}
+          onClick={() => setShowUnscheduledTray((prev) => !prev)}
+          aria-pressed={showUnscheduledTray}
+          disabled={contentFilter === 'events'}
+        >
+          Show unscheduled to-dos
+        </button>
       </div>
 
       <div className="calendar-view">
@@ -254,25 +315,30 @@ function CalendarPage() {
           <CalendarMonthly focusDate={focusDate} tasks={filteredItems} onSelectDay={handleSelectDay} />
         )}
         {view === 'week' && (
-          <CalendarWeekly
-            focusDate={focusDate}
-            tasks={filteredItems}
-            onSelectDay={handleSelectDay}
-            onToggleTask={toggleItemStatus}
-            onOpenTask={openItem}
-            onCreateTask={createEventAt}
-            onMoveTask={handleMoveItem}
-          />
+          <>
+            <CalendarWeekly
+              focusDate={focusDate}
+              tasks={filteredItems}
+              onSelectDay={handleSelectDay}
+              onToggleTask={toggleItemStatus}
+              onOpenTask={openItem}
+              onCreateTask={createEventAt}
+              onMoveTask={handleMoveItem}
+            />
+            {showUnscheduledTrayPanel && unscheduledPanel}
+          </>
         )}
-        {view === 'day' && (
-          <CalendarDaily
-            focusDate={focusDate}
-            tasks={filteredItems}
-            onToggleTask={toggleItemStatus}
-            onOpenTask={openItem}
-            onCreateTask={createEventAt}
-            onMoveTask={handleMoveItem}
-          />
+        {view === 'day' && showUnscheduledSplit && (
+          <div className="calendar-day-split">
+            {dailyView}
+            {unscheduledPanel}
+          </div>
+        )}
+        {view === 'day' && !showUnscheduledSplit && (
+          <>
+            {dailyView}
+            {showUnscheduledTrayPanel && unscheduledPanel}
+          </>
         )}
       </div>
 

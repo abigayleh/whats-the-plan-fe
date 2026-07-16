@@ -130,6 +130,11 @@
     border-color: transparent;
     color: $color-primary;
   }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
 }
 
 .calendar-view__add-todo {

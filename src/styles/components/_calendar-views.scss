@@ -240,3 +240,29 @@ $timeline-allday-height: 2.75rem;
     grid-template-columns: $week-gutter 1fr;
   }
 }
+
+// Day view + "Both" filter: CalendarDaily on the left, UnscheduledPanel on the right (#9).
+.calendar-day-split {
+  display: grid;
+  grid-template-columns: 1fr 18rem;
+  align-items: start;
+  gap: $spacing-md;
+}
+
+// Draggable tray of to-dos with no date — the day-Both split panel and the week/day
+// toggle tray both render this (see UnscheduledPanel.jsx).
+.unscheduled-panel {
+  @include card;
+
+  &__title {
+    margin: 0 0 $spacing-sm;
+    font-size: $font-size-base;
+    font-weight: 600;
+  }
+
+  &__empty {
+    margin: 0;
+    color: $color-text-muted;
+    font-size: $font-size-sm;
+  }
+}
