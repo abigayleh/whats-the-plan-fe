@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { CalendarIcon, ListsIcon, PlusIcon } from '../components/layout/icons';
 import CalendarViewSwitcher from '../components/calendar/CalendarViewSwitcher';
 import CalendarContentToggle from '../components/calendar/CalendarContentToggle';
@@ -95,13 +95,21 @@ function CalendarPage() {
     [listOptions, hiddenListIds],
   );
 
+  // A to-do's group lives on its list (to-do rows carry no groupId of their own); events
+  // carry their own. Used so the group toggle catches list-backed to-dos everywhere.
+  const groupIdOf = useCallback((item) => (
+    item.origin === 'task' && item.listId
+      ? (lists.find((l) => l.id === item.listId)?.groupId ?? null)
+      : (item.groupId ?? null)
+  ), [lists]);
+
   // Filters shared by week/month (contentFilter-aware) and day view (which always shows
   // events + to-dos side by side, ignoring contentFilter since its toggle is hidden there).
   const baseVisibleItems = useMemo(() => items
     .filter((item) => {
       // Filter on what's explicitly hidden: items load independently of groups/lists,
       // so anything not yet known must stay visible rather than blink out.
-      if (hiddenGroupIds.has(item.groupId ?? null)) return false;
+      if (hiddenGroupIds.has(groupIdOf(item))) return false;
       if (item.listId && hiddenListIds.has(item.listId)) return false;
       if (!showCompleted && item.status === 'done') return false;
       if (onlyMine && item.assignedToId && item.assignedToId !== currentUser.id) return false;
@@ -110,7 +118,7 @@ function CalendarPage() {
     // List color wins when the item's list has one set; otherwise falls back to group color
     // (bare events, with no list, always take this path).
     .map((item) => ({ ...item, colorKey: getTaskColorKey(item, lists, groups, personalSpace) })),
-  [items, lists, groups, personalSpace, hiddenGroupIds, hiddenListIds, onlyMine, showCompleted, currentUser]);
+  [items, lists, groups, personalSpace, hiddenGroupIds, hiddenListIds, onlyMine, showCompleted, currentUser, groupIdOf]);
 
   const filteredItems = useMemo(() => baseVisibleItems.filter((item) => {
     // 'Events' = calendar-only items (origin 'event', no list); 'To-Dos' = list-backed items.
@@ -133,7 +141,7 @@ function CalendarPage() {
   const unscheduledTasks = useMemo(() => tasks
     .filter((task) => getTaskDay(task) == null)
     .filter((task) => {
-      if (hiddenGroupIds.has(task.groupId ?? null)) return false;
+      if (hiddenGroupIds.has(groupIdOf(task))) return false;
       if (task.listId && hiddenListIds.has(task.listId)) return false;
       if (onlyMine && task.assignedToId && task.assignedToId !== currentUser.id) return false;
       // A list can hide its unscheduled to-dos from the calendar.
@@ -146,7 +154,7 @@ function CalendarPage() {
       colorKey: getTaskColorKey(task, lists, groups, personalSpace),
       icon: getTaskIconKey(task, lists),
     })),
-  [tasks, lists, groups, personalSpace, hiddenGroupIds, hiddenListIds, onlyMine, currentUser]);
+  [tasks, lists, groups, personalSpace, hiddenGroupIds, hiddenListIds, onlyMine, currentUser, groupIdOf]);
 
   // Falls back to a raw (unscheduled) task when dragging it in from UnscheduledPanel, since
   // those rows carry the real task id rather than a calendar occurrence id.
