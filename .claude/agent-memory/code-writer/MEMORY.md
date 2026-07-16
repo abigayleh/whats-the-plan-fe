@@ -1,0 +1,1 @@
+- [PlanItem unification (Phase 1)](project_planitem_unification.md) — events + to-dos merged into one FE shape/modal/write-hook; where the pieces live and the origin/sourceId contract.

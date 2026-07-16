@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import { ListsIcon, PlusIcon } from '../components/layout/icons';
 import ListSection from '../components/lists/ListSection';
-import TaskModal from '../components/lists/TaskModal';
+import PlanItemModal from '../components/items/PlanItemModal';
 import ListModal from '../components/lists/ListModal';
 import useAppData from '../hooks/useAppData';
+import usePlanItems from '../hooks/usePlanItems';
 import useLocalStorageState from '../hooks/useLocalStorageState';
 import {
   getListColorKey, getTaskColorKey, getTaskIconKey, isTaskOnDay,
@@ -12,8 +13,9 @@ import {
 function ListsPage() {
   const {
     groups, lists, tasks, currentUser, personalSpace,
-    addList, updateList, deleteList, addTask, updateTask, deleteTask, toggleTaskStatus,
+    addList, updateList, deleteList, toggleTaskStatus,
   } = useAppData();
+  const { saveItem, deleteItem } = usePlanItems();
   const [listModal, setListModal] = useState(null); // null | { mode:'new' } | { mode:'edit', list }
   const [editingTask, setEditingTask] = useState(null); // task object | 'new' | null
   const [newTaskListId, setNewTaskListId] = useState(null);
@@ -71,18 +73,15 @@ function ListsPage() {
 
   // Errors propagate so the modal can show them and stay open.
   async function handleSaveTask(payload) {
-    if (editingTask && editingTask !== 'new') {
-      await updateTask(editingTask.id, payload);
-    } else {
-      const { attachmentError } = await addTask(payload);
-      // eslint-disable-next-line no-alert
-      if (attachmentError) window.alert(`Task created, but its files didn't upload: ${attachmentError}`);
-    }
+    const editing = editingTask && editingTask !== 'new' ? editingTask : null;
+    const { attachmentError } = await saveItem(editing, payload);
+    // eslint-disable-next-line no-alert
+    if (attachmentError) window.alert(`Task created, but its files didn't upload: ${attachmentError}`);
     setEditingTask(null);
   }
 
-  async function handleDeleteTask(taskId) {
-    await deleteTask(taskId);
+  async function handleDeleteTask(item) {
+    await deleteItem(item);
     setEditingTask(null);
   }
 
@@ -140,10 +139,12 @@ function ListsPage() {
       )}
 
       {editingTask && (
-        <TaskModal
+        <PlanItemModal
           lists={lists}
+          groups={groups}
+          personalSpace={personalSpace}
           defaultListId={newTaskListId}
-          task={editingTask === 'new' ? null : editingTask}
+          item={editingTask === 'new' ? null : editingTask}
           onClose={() => setEditingTask(null)}
           onSave={handleSaveTask}
           onDelete={handleDeleteTask}

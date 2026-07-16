@@ -6,13 +6,12 @@ import ToggleChips from '../components/calendar/ToggleChips';
 import CalendarMonthly from '../components/calendar/CalendarMonthly';
 import CalendarWeekly from '../components/calendar/CalendarWeekly';
 import CalendarDaily from '../components/calendar/CalendarDaily';
-import EventModal from '../components/calendar/EventModal';
-import TaskModal from '../components/lists/TaskModal';
+import PlanItemModal from '../components/items/PlanItemModal';
 import useAppData from '../hooks/useAppData';
+import usePlanItems from '../hooks/usePlanItems';
 import useLocalStorageState from '../hooks/useLocalStorageState';
 import useCalendarItems from '../hooks/useCalendarItems';
-import * as eventsApi from '../api/events';
-import { getGroupColorKey, getListColorKey, isTaskTimed } from '../utils/tasks';
+import { getGroupColorKey, getListColorKey } from '../utils/tasks';
 import {
   addDays, addMonths, startOfDay, getMonthGrid, getWeekDays,
   formatFullDate, formatMonthYear, formatWeekRange,
@@ -22,8 +21,9 @@ const DAY_MS = 86400000;
 
 function CalendarPage() {
   const {
-    groups, lists, tasks, currentUser, personalSpace, addTask, updateTask, deleteTask, toggleTaskStatus,
+    groups, lists, tasks, currentUser, personalSpace,
   } = useAppData();
+  const { saveItem, deleteItem, moveItem, toggleStatus } = usePlanItems();
   const [view, setView] = useLocalStorageState('calendar-view', 'month');
   const [contentFilter, setContentFilter] = useLocalStorageState('calendar-content-filter', 'all');
   const [onlyMine, setOnlyMine] = useLocalStorageState('calendar-only-mine', false);
@@ -31,8 +31,8 @@ function CalendarPage() {
   const [focusDate, setFocusDate] = useState(new Date());
   const [hiddenGroupIds, setHiddenGroupIds] = useState(() => new Set());
   const [hiddenListIds, setHiddenListIds] = useState(() => new Set());
-  const [eventModal, setEventModal] = useState(null); // null | { mode:'new', start, end } | { mode:'edit', event }
-  const [taskModal, setTaskModal] = useState(null); // null | { mode:'new' } | { mode:'edit', task }
+  // null | { mode:'new', seed, defaultOrigin } | { mode:'edit', item }
+  const [planItemModal, setPlanItemModal] = useState(null);
 
   const range = useMemo(() => {
     let days;
@@ -63,12 +63,13 @@ function CalendarPage() {
 
   const filteredItems = useMemo(() => items
     .filter((item) => {
-      if (contentFilter === 'events' && !item.isEvent) return false;
-      if (contentFilter === 'tasks' && item.isEvent) return false;
+      // 'Events' = calendar-only items (origin 'event', no list); 'To-Dos' = list-backed items.
+      if (contentFilter === 'events' && item.origin !== 'event') return false;
+      if (contentFilter === 'tasks' && item.origin === 'event') return false;
       // Filter on what's explicitly hidden: items load independently of groups/lists,
       // so anything not yet known must stay visible rather than blink out.
       if (hiddenGroupIds.has(item.groupId ?? null)) return false;
-      if (!item.isEvent && item.listId && hiddenListIds.has(item.listId)) return false;
+      if (item.listId && hiddenListIds.has(item.listId)) return false;
       if (!showCompleted && item.status === 'done') return false;
       if (onlyMine && item.assignedToId && item.assignedToId !== currentUser.id) return false;
       return true;
@@ -77,8 +78,8 @@ function CalendarPage() {
   [items, groups, personalSpace, hiddenGroupIds, hiddenListIds, contentFilter, onlyMine, showCompleted, currentUser]);
 
   const itemById = (id) => items.find((it) => it.id === id);
-  // Calendar items are expanded occurrences; the real task carries subtasks/attachments.
-  const taskOf = (item) => tasks.find((t) => t.id === item.taskId);
+  // Calendar occurrences of to-dos are lightweight; the real row carries subtasks/attachments.
+  const taskOf = (item) => tasks.find((t) => t.id === item.sourceId);
 
   const toggleIn = (setHidden) => (id) => setHidden((prev) => {
     const next = new Set(prev);
@@ -109,95 +110,57 @@ function CalendarPage() {
 
   async function toggleItemStatus(id) {
     const item = itemById(id);
-    if (!item || item.isEvent) return;
+    if (!item) return;
     try {
-      await toggleTaskStatus(item.taskId);
+      await toggleStatus(item);
       refetch();
     } catch { /* ignore */ }
   }
 
   function openItem(item) {
-    if (item.isEvent) {
-      setEventModal({ mode: 'edit', event: item });
+    if (item.origin === 'event') {
+      setPlanItemModal({ mode: 'edit', item });
       return;
     }
     const task = taskOf(item);
-    if (task) setTaskModal({ mode: 'edit', task });
+    if (task) setPlanItemModal({ mode: 'edit', item: task });
   }
 
   function createEventAt(day, hour, minute = 0) {
     const start = new Date(day);
     start.setHours(hour, minute, 0, 0);
-    setEventModal({ mode: 'new', start, end: new Date(start.getTime() + 60 * 60000) });
+    setPlanItemModal({
+      mode: 'new',
+      defaultOrigin: 'event',
+      seed: { scheduledStart: start, scheduledEnd: new Date(start.getTime() + 60 * 60000) },
+    });
   }
 
-  // Dragging preserves a task's kind: a timed task keeps its duration, a due-date one just changes day.
-  async function rescheduleTask(task, { day, hour, minute, timed }) {
-    if (!isTaskTimed(task)) {
-      await updateTask(task.id, { dueDate: startOfDay(day) });
-      return;
-    }
-    const duration = task.scheduledEnd - task.scheduledStart;
-    const start = new Date(day);
-    if (timed) start.setHours(hour, minute, 0, 0);
-    else start.setHours(task.scheduledStart.getHours(), task.scheduledStart.getMinutes(), 0, 0);
-    await updateTask(task.id, { scheduledStart: start, scheduledEnd: new Date(start.getTime() + duration) });
-  }
-
-  async function moveItem(id, {
+  async function handleMoveItem(id, {
     day, hour, minute = 0, timed,
   }) {
     const item = itemById(id);
     if (!item) return;
     try {
-      if (item.isEvent) {
-        if (!timed) return; // events always occupy a time slot
-        const duration = item.scheduledEnd - item.scheduledStart;
-        const start = new Date(day);
-        start.setHours(hour, minute, 0, 0);
-        await eventsApi.update(item.eventId, {
-          startAt: start.toISOString(),
-          endAt: new Date(start.getTime() + duration).toISOString(),
-        });
-      } else {
-        const task = taskOf(item);
-        if (!task) return;
-        await rescheduleTask(task, { day, hour, minute, timed });
-      }
+      await moveItem(item, {
+        day, hour, minute, timed,
+      });
       refetch();
     } catch { /* ignore */ }
   }
 
-  async function handleEventSubmit(payload) {
-    if (eventModal.mode === 'edit') await eventsApi.update(eventModal.event.eventId, payload);
-    else await eventsApi.create(payload);
-    setEventModal(null);
+  async function handleItemSubmit(payload) {
+    const editing = planItemModal.mode === 'edit' ? planItemModal.item : null;
+    const { attachmentError } = await saveItem(editing, payload);
+    // eslint-disable-next-line no-alert
+    if (attachmentError) window.alert(`To-do created, but its files didn't upload: ${attachmentError}`);
+    setPlanItemModal(null);
     refetch();
   }
 
-  async function handleEventDelete(eventId) {
-    try {
-      await eventsApi.remove(eventId);
-    } catch { /* ignore */ }
-    setEventModal(null);
-    refetch();
-  }
-
-  async function handleTaskSubmit(payload) {
-    if (taskModal.mode === 'edit') {
-      await updateTask(taskModal.task.id, payload);
-    } else {
-      const { attachmentError } = await addTask(payload);
-      // eslint-disable-next-line no-alert
-      if (attachmentError) window.alert(`To-do created, but its files didn't upload: ${attachmentError}`);
-    }
-    setTaskModal(null);
-    refetch();
-  }
-
-  async function handleTaskDelete(taskId) {
-    await deleteTask(taskId);
-    setTaskModal(null);
+  async function handleItemDelete(item) {
+    await deleteItem(item);
+    setPlanItemModal(null);
     refetch();
   }
 
@@ -266,7 +229,7 @@ function CalendarPage() {
             onToggleTask={toggleItemStatus}
             onOpenTask={openItem}
             onCreateTask={createEventAt}
-            onMoveTask={moveItem}
+            onMoveTask={handleMoveItem}
           />
         )}
         {view === 'day' && (
@@ -283,7 +246,7 @@ function CalendarPage() {
       <button
         type="button"
         className="floating-action-button floating-action-button--secondary"
-        onClick={() => setTaskModal({ mode: 'new' })}
+        onClick={() => setPlanItemModal({ mode: 'new', defaultOrigin: 'task', seed: { dueDate: focusDate } })}
         aria-label="Add to-do"
         data-tooltip="Add to-do"
       >
@@ -296,7 +259,11 @@ function CalendarPage() {
         onClick={() => {
           const start = new Date(focusDate);
           start.setHours(9, 0, 0, 0);
-          setEventModal({ mode: 'new', start, end: new Date(start.getTime() + 60 * 60000) });
+          setPlanItemModal({
+            mode: 'new',
+            defaultOrigin: 'event',
+            seed: { scheduledStart: start, scheduledEnd: new Date(start.getTime() + 60 * 60000) },
+          });
         }}
         aria-label="Add event"
         data-tooltip="Add event"
@@ -304,25 +271,17 @@ function CalendarPage() {
         <PlusIcon />
       </button>
 
-      {taskModal && (
-        <TaskModal
+      {planItemModal && (
+        <PlanItemModal
           lists={lists}
-          task={taskModal.mode === 'edit' ? taskModal.task : null}
-          defaultSchedule={taskModal.mode === 'new' ? { dueDate: focusDate } : null}
-          onClose={() => setTaskModal(null)}
-          onSave={handleTaskSubmit}
-          onDelete={handleTaskDelete}
-        />
-      )}
-
-      {eventModal && (
-        <EventModal
-          event={eventModal.mode === 'edit' ? eventModal.event : null}
-          defaultStart={eventModal.mode === 'new' ? eventModal.start : null}
-          defaultEnd={eventModal.mode === 'new' ? eventModal.end : null}
-          onClose={() => setEventModal(null)}
-          onSubmit={handleEventSubmit}
-          onDelete={handleEventDelete}
+          groups={groups}
+          personalSpace={personalSpace}
+          defaultOrigin={planItemModal.mode === 'new' ? planItemModal.defaultOrigin : undefined}
+          defaultSchedule={planItemModal.mode === 'new' ? planItemModal.seed : null}
+          item={planItemModal.mode === 'edit' ? planItemModal.item : null}
+          onClose={() => setPlanItemModal(null)}
+          onSave={handleItemSubmit}
+          onDelete={handleItemDelete}
         />
       )}
     </section>

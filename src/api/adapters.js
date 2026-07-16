@@ -35,36 +35,57 @@ export const adaptAttachment = (a) => ({
   previewUrl: null,
 });
 
-export const adaptTask = (t) => ({
-  id: t.id,
-  listId: t.listId,
-  title: t.title,
-  description: t.description || '',
-  status: STATUS_TO_FE[t.status] || 'todo',
-  dueDate: toDate(t.dueDate),
-  scheduledStart: toDate(t.scheduledStart),
-  scheduledEnd: toDate(t.scheduledEnd),
-  recurrenceRule: t.recurrenceRule || null,
-  subtasks: t.subtasks || [],
-  assignedToId: t.assignedToId,
-  assignedTo: t.assignee?.name || null,
-  attachments: (t.attachments || []).map(adaptAttachment),
-  createdById: t.createdById,
-});
+// A PlanItem is the one shape the frontend works in for both events and to-dos.
+// `origin` ('event' | 'task') is persistence routing ONLY — see hooks/usePlanItems — never
+// a UI identity check. `sourceId` is always the real DB row id (for writes); `id` is the
+// React-key/occurrence identity, which differs from sourceId for expanded calendar occurrences.
+// An event has no completion concept, so status/subtasks/assignee/attachments are fixed empty.
+export function adaptItem(raw, origin) {
+  const isEvent = origin === 'event';
+  return {
+    origin,
+    id: raw.id,
+    sourceId: raw.id,
+    title: raw.title,
+    description: raw.description || '',
+    createdById: raw.createdById,
+    groupId: raw.groupId ?? null,
+    listId: isEvent ? null : (raw.listId ?? null),
+    status: isEvent ? 'todo' : (STATUS_TO_FE[raw.status] || 'todo'),
+    dueDate: isEvent ? null : toDate(raw.dueDate),
+    scheduledStart: toDate(raw.scheduledStart ?? raw.startAt),
+    scheduledEnd: toDate(raw.scheduledEnd ?? raw.endAt),
+    recurrenceRule: raw.recurrenceRule || null,
+    subtasks: isEvent ? [] : (raw.subtasks || []),
+    assignedToId: isEvent ? null : (raw.assignedToId ?? null),
+    assignedTo: isEvent ? null : (raw.assignee?.name || null),
+    attachments: isEvent ? [] : (raw.attachments || []).map(adaptAttachment),
+    itineraryId: raw.itineraryId ?? null,
+  };
+}
 
-// A calendar task is one expanded occurrence, so it keys off instanceId, not task id.
-// recurrenceRule is dropped for the same reason as events: the server already expanded
-// the series, and isTaskOnDay would re-expand every occurrence across the whole window.
-export const adaptCalendarTask = (t) => ({
-  ...adaptTask(t),
-  id: `task-${t.instanceId}`,
-  taskId: t.id,
-  isEvent: false,
-  groupId: t.groupId,
-  isRecurring: t.isRecurring,
-  recurrenceRule: null,
-  rule: t.recurrenceRule,
-});
+// Row-level to-do (list detail): real DB id, live recurrenceRule — expanded on read by the client.
+export const adaptTask = (t) => adaptItem(t, 'task');
+
+// A calendar occurrence keys off instanceId, not the row id, so id/sourceId diverge on purpose:
+// id is unique per occurrence (for React keys + drag identity), sourceId is the real row a
+// write applies to. recurrenceRule is nulled for the same reason on both kinds of occurrence:
+// the server already expanded the series, and isTaskOnDay would re-expand every occurrence
+// across the whole visible window, duplicating chips. `rule` keeps the series definition
+// around for display (e.g. the repeat icon) without re-triggering expansion.
+function adaptOccurrence(raw, origin) {
+  return {
+    ...adaptItem(raw, origin),
+    id: `${origin}-${raw.instanceId}`,
+    sourceId: raw.id,
+    isRecurring: raw.isRecurring,
+    recurrenceRule: null,
+    rule: raw.recurrenceRule,
+  };
+}
+
+export const adaptCalendarTask = (t) => adaptOccurrence(t, 'task');
+export const adaptEvent = (ev) => adaptOccurrence(ev, 'event');
 
 // Results come pre-tallied: options carry voteCount, and myVote is computed per request.
 // The server's `closed` is dropped on purpose — it's a snapshot taken at fetch time, so a
@@ -81,10 +102,24 @@ export const adaptPoll = (p) => ({
   createdAt: toDate(p.createdAt),
 });
 
-// FE task patch → BE body. Only maps keys that are present, so PATCH stays partial.
-// Attachments are excluded — they're synced through the attachments API, not the task body.
-export function toBeTask(patch) {
+// FE PlanItem patch → BE body. Only maps keys that are present, so PATCH stays partial.
+// Attachments are excluded — they're synced through the attachments API, not the item body.
+// An event has no status/subtasks/assignee/list, and maps its schedule to startAt/endAt
+// rather than scheduledStart/scheduledEnd/dueDate.
+export function toBeItem(patch, origin) {
   const body = {};
+  if (origin === 'event') {
+    ['title', 'description', 'recurrenceRule', 'groupId'].forEach((key) => {
+      if (patch[key] !== undefined) body[key] = patch[key];
+    });
+    if (patch.scheduledStart !== undefined) {
+      body.startAt = patch.scheduledStart ? new Date(patch.scheduledStart).toISOString() : null;
+    }
+    if (patch.scheduledEnd !== undefined) {
+      body.endAt = patch.scheduledEnd ? new Date(patch.scheduledEnd).toISOString() : null;
+    }
+    return body;
+  }
   const copy = ['title', 'description', 'recurrenceRule', 'subtasks', 'assignedToId', 'listId'];
   copy.forEach((key) => {
     if (patch[key] !== undefined) body[key] = patch[key];
@@ -96,20 +131,4 @@ export function toBeTask(patch) {
   return body;
 }
 
-export const adaptEvent = (ev) => ({
-  id: ev.instanceId,
-  eventId: ev.id,
-  isEvent: true,
-  title: ev.title,
-  description: ev.description || '',
-  groupId: ev.groupId,
-  scheduledStart: toDate(ev.startAt),
-  scheduledEnd: toDate(ev.endAt),
-  dueDate: null,
-  status: 'todo',
-  isRecurring: ev.isRecurring,
-  rule: ev.recurrenceRule,
-  recurrenceRule: null, // occurrences are pre-expanded server-side; don't re-expand on the client
-  itineraryId: ev.itineraryId,
-  createdById: ev.createdById,
-});
+export const toBeTask = (patch) => toBeItem(patch, 'task');
