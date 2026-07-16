@@ -2,7 +2,9 @@ import {
   createContext, useState, useEffect, useCallback,
 } from 'react';
 import * as authApi from '../api/auth';
-import { setTokens, getRefreshToken, setOnAuthFailure } from '../api/client';
+import {
+  setTokens, clearTokens, getRefreshToken, setOnAuthFailure,
+} from '../api/client';
 import { connectSocket, disconnectSocket } from '../socket/socketClient';
 
 // eslint-disable-next-line react-refresh/only-export-components
@@ -24,6 +26,18 @@ export default function AuthProvider({ children }) {
     disconnectSocket();
     setUser(null);
     setStatus('anon');
+  }, []);
+
+  // Account is already gone server-side, so skip the best-effort /logout call.
+  const deleteAccount = useCallback(() => {
+    clearTokens();
+    disconnectSocket();
+    setUser(null);
+    setStatus('anon');
+  }, []);
+
+  const updateUser = useCallback((patch) => {
+    setUser((prev) => (prev ? { ...prev, ...patch } : prev));
   }, []);
 
   // Restore the session on load: a stored refresh token mints a fresh access token via /me.
@@ -60,7 +74,7 @@ export default function AuthProvider({ children }) {
 
   return (
     <AuthContext.Provider value={{
-      user, status, login, register, signOut,
+      user, status, login, register, signOut, updateUser, deleteAccount,
     }}
     >
       {children}

@@ -9,6 +9,7 @@ import PollsPage from './pages/PollsPage';
 import ChatPage from './pages/ChatPage';
 import GroupsPage from './pages/GroupsPage';
 import GroupSettingsPage from './pages/GroupSettingsPage';
+import ProfilePage from './pages/ProfilePage';
 import AuthProvider from './store/AuthProvider';
 import AppProvider from './store/AppProvider';
 
@@ -28,6 +29,7 @@ function App() {
                 <Route path="chat" element={<ChatPage />} />
                 <Route path="groups" element={<GroupsPage />} />
                 <Route path="groups/:groupId/settings" element={<GroupSettingsPage />} />
+                <Route path="profile" element={<ProfilePage />} />
               </Route>
             </Route>
           </Routes>
