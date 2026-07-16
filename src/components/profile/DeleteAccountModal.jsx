@@ -14,12 +14,12 @@ function DeleteAccountModal({ email, onCancel, onConfirm }) {
   }, []);
 
   useEffect(() => {
-    const onKeyDown = (e) => { if (e.key === 'Escape') onCancel(); };
+    const onKeyDown = (e) => { if (e.key === 'Escape' && !busy) onCancel(); };
     document.addEventListener('keydown', onKeyDown);
     return () => document.removeEventListener('keydown', onKeyDown);
-  }, [onCancel]);
+  }, [onCancel, busy]);
 
-  const canDelete = confirmText === email;
+  const canDelete = confirmText.trim() === email;
 
   async function handleConfirm() {
     if (!canDelete) return;
@@ -36,7 +36,7 @@ function DeleteAccountModal({ email, onCancel, onConfirm }) {
   }
 
   return (
-    <div className="modal-overlay" onClick={onCancel}>
+    <div className="modal-overlay" onClick={busy ? undefined : onCancel}>
       <div
         className="modal"
         role="dialog"
@@ -64,7 +64,7 @@ function DeleteAccountModal({ email, onCancel, onConfirm }) {
         </label>
         <div className="modal__footer">
           <div className="modal__footer-spacer" />
-          <button type="button" className="button button--ghost" onClick={onCancel}>
+          <button type="button" className="button button--ghost" onClick={onCancel} disabled={busy}>
             Cancel
           </button>
           <button
