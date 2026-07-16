@@ -84,7 +84,7 @@
 
   &__soon-badge {
     flex-shrink: 0;
-    font-size: 0.625rem;
+    font-size: $font-size-xs;
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.03em;
@@ -135,7 +135,7 @@
   &__spaces-title {
     margin: 0 0 $spacing-sm;
     padding: 0 $spacing-sm;
-    font-size: 0.6875rem;
+    font-size: $font-size-xs;
     font-weight: 600;
     letter-spacing: 0.1em;
     text-transform: uppercase;
@@ -205,7 +205,7 @@
 
   &__account-plan {
     margin: 0;
-    font-size: 0.6875rem;
+    font-size: $font-size-xs;
     color: $color-text-muted;
   }
 }
