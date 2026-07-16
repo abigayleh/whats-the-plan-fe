@@ -42,8 +42,9 @@ export function getGroupColorKey(groupId, groups, personalSpace) {
   return groups.find((g) => g.id === groupId)?.colorKey ?? personalSpace.colorKey;
 }
 
+// A list's own color (set in ListModal) wins; otherwise it inherits its group's color.
 export function getListColorKey(list, groups, personalSpace) {
-  return getGroupColorKey(list.groupId, groups, personalSpace);
+  return list.color ?? getGroupColorKey(list.groupId, groups, personalSpace);
 }
 
 export function getTaskColorKey(task, lists, groups, personalSpace) {
@@ -57,6 +58,12 @@ export function getTaskColorKey(task, lists, groups, personalSpace) {
 export function getTaskIconKey(task, lists) {
   const list = task.listId ? lists.find((l) => l.id === task.listId) : null;
   return list?.icon ?? null;
+}
+
+// A recurring item's `item` may be a raw list-task (recurrenceRule) or a calendar occurrence
+// (rule/isRecurring, recurrenceRule nulled — see api/adapters.js) — check all three shapes.
+export function isItemRecurring(item) {
+  return Boolean(item?.recurrenceRule || item?.rule || item?.isRecurring);
 }
 
 export function isTaskOverdue(task) {

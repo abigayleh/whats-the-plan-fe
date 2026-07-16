@@ -19,5 +19,9 @@
     max-width: $content-max-width;
     margin: 0 auto;
     padding: 0 $spacing-xl $spacing-xl;
+
+    &--full {
+      max-width: none;
+    }
   }
 }

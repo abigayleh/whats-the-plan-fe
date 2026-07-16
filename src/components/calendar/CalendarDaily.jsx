@@ -3,7 +3,7 @@ import useNow from '../../hooks/useNow';
 import CalendarTimeline, { CalendarHourGutter } from './CalendarTimeline';
 
 function CalendarDaily({
-  focusDate, tasks, onToggleTask, onOpenTask, onCreateTask, onMoveTask,
+  focusDate, tasks, onToggleTask, onOpenTask, onCreateTask, onMoveTask, onPushToTomorrow,
 }) {
   const hasTasks = tasks.some((task) => isTaskOnDay(task, focusDate));
   const now = useNow();
@@ -21,6 +21,7 @@ function CalendarDaily({
           onOpenTask={onOpenTask}
           onCreateTask={onCreateTask}
           onMoveTask={onMoveTask}
+          onPushToTomorrow={onPushToTomorrow}
         />
       </div>
     </div>

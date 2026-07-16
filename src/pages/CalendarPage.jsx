@@ -15,7 +15,7 @@ import useLocalStorageDate from '../hooks/useLocalStorageDate';
 import useLocalStorageSet from '../hooks/useLocalStorageSet';
 import useCalendarItems from '../hooks/useCalendarItems';
 import {
-  getGroupColorKey, getListColorKey, getTaskColorKey, getTaskIconKey, getTaskDay, isTaskTimed,
+  getListColorKey, getTaskColorKey, getTaskIconKey, getTaskDay, isTaskTimed,
 } from '../utils/tasks';
 import {
   addDays, addMonths, startOfDay, getMonthGrid, getWeekDays,
@@ -58,10 +58,22 @@ function CalendarPage() {
     [groupOptions, hiddenGroupIds],
   );
 
+  // Which lists have at least one item in the currently-fetched range — computed off the raw
+  // `items` (not filteredItems) so a list's own hidden state can't hide it from itself.
+  const scheduledListIds = useMemo(
+    () => new Set(items.filter((item) => item.listId).map((item) => item.listId)),
+    [items],
+  );
+
   const listOptions = useMemo(() => lists
     .filter((l) => !l.isSystem)
+    // Hide a list once its owning group is unselected — no point offering to toggle it alone.
+    .filter((l) => !hiddenGroupIds.has(l.groupId ?? null))
+    // Hide empty lists while unscheduled to-dos aren't shown, so the filter doesn't fill up
+    // with lists that have nothing to show; flipping the tray on reveals them again.
+    .filter((l) => showUnscheduledTray || scheduledListIds.has(l.id))
     .map((l) => ({ ...l, colorKey: getListColorKey(l, groups, personalSpace) })),
-  [lists, groups, personalSpace]);
+  [lists, groups, personalSpace, hiddenGroupIds, showUnscheduledTray, scheduledListIds]);
   const activeListIds = useMemo(
     () => new Set(listOptions.filter((l) => !hiddenListIds.has(l.id)).map((l) => l.id)),
     [listOptions, hiddenListIds],
@@ -80,8 +92,11 @@ function CalendarPage() {
       if (onlyMine && item.assignedToId && item.assignedToId !== currentUser.id) return false;
       return true;
     })
-    .map((item) => ({ ...item, colorKey: getGroupColorKey(item.groupId, groups, personalSpace) })),
-  [items, groups, personalSpace, hiddenGroupIds, hiddenListIds, contentFilter, onlyMine, showCompleted, currentUser]);
+    // List color wins when the item's list has one set; otherwise falls back to group color
+    // (bare events, with no list, always take this path).
+    .map((item) => ({ ...item, colorKey: getTaskColorKey(item, lists, groups, personalSpace) })),
+  [items, lists, groups, personalSpace, hiddenGroupIds, hiddenListIds, contentFilter, onlyMine, showCompleted,
+    currentUser]);
 
   // To-dos with no date at all never appear in `items` (the calendar only fetches within a
   // date range), so they're read straight from useAppData and filtered the same way as above.
@@ -91,6 +106,9 @@ function CalendarPage() {
       if (hiddenGroupIds.has(task.groupId ?? null)) return false;
       if (task.listId && hiddenListIds.has(task.listId)) return false;
       if (onlyMine && task.assignedToId && task.assignedToId !== currentUser.id) return false;
+      // A list can opt its unscheduled to-dos out of the calendar surfaces entirely.
+      const list = task.listId ? lists.find((l) => l.id === task.listId) : null;
+      if (list && list.showUnscheduledOnCalendar === false) return false;
       return true;
     })
     .map((task) => ({
@@ -213,6 +231,14 @@ function CalendarPage() {
     refetch();
   }
 
+  // Calendar-chip counterpart of handlePushToTomorrow: chips only carry an occurrence id
+  // (see itemById), so resolve it first — TaskChip itself disables the button for recurring items.
+  async function handleChipPushToTomorrow(id) {
+    const item = itemById(id);
+    if (!item) return;
+    await handlePushToTomorrow(item);
+  }
+
   function openNewTodo() {
     setPlanItemModal({ mode: 'new', defaultOrigin: 'task', seed: { dueDate: focusDate } });
   }
@@ -238,6 +264,7 @@ function CalendarPage() {
       onOpenTask={openItem}
       onCreateTask={createEventAt}
       onMoveTask={handleMoveItem}
+      onPushToTomorrow={handleChipPushToTomorrow}
     />
   );
   const unscheduledPanel = (
@@ -324,6 +351,7 @@ function CalendarPage() {
               onOpenTask={openItem}
               onCreateTask={createEventAt}
               onMoveTask={handleMoveItem}
+              onPushToTomorrow={handleChipPushToTomorrow}
             />
             {showUnscheduledTrayPanel && unscheduledPanel}
           </>

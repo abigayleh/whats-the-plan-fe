@@ -1,14 +1,19 @@
-import { CheckIcon, RepeatIcon } from '../layout/icons';
+import { CheckIcon, RepeatIcon, SkipForwardIcon } from '../layout/icons';
 import { formatTime } from '../../utils/date';
-import { isTaskTimed } from '../../utils/tasks';
+import { isItemRecurring, isTaskTimed } from '../../utils/tasks';
 import TaskActionButtons from '../tasks/TaskActionButtons';
 
 function TaskChip({
-  task, lists, onToggle, onOpen, compact = false, showActions = false, hideTime = false, draggable = false,
-  past = false,
+  task, lists, onToggle, onOpen, onPushToTomorrow, compact = false, showActions = false, hideTime = false,
+  draggable = false, past = false,
 }) {
   const done = task.status === 'done';
   const timed = isTaskTimed(task);
+  const isEvent = task.origin === 'event';
+  const recurring = isItemRecurring(task);
+  // Timed chips render as a solid color block (no room for the always-visible checkbox), so
+  // they get their complete-toggle in the hover bar instead; push-to-tomorrow lives there too.
+  const showHoverActions = !compact && (onPushToTomorrow || (!isEvent && timed));
 
   return (
     <div
@@ -29,7 +34,7 @@ function TaskChip({
       role={onOpen ? 'button' : undefined}
       tabIndex={onOpen ? 0 : undefined}
     >
-      {!timed && (
+      {!timed && !isEvent && (
         <button
           type="button"
           className="task-chip__check"
@@ -47,12 +52,39 @@ function TaskChip({
         <div className="task-chip__body">
           <p className="task-chip__title">
             {task.title}
-            {(task.isRecurring || task.recurrenceRule) && <RepeatIcon className="task-chip__repeat-icon" />}
+            {recurring && <RepeatIcon className="task-chip__repeat-icon" />}
           </p>
           {timed && !hideTime && (
             <p className="task-chip__time">
               {formatTime(task.scheduledStart)} – {formatTime(task.scheduledEnd)}
             </p>
+          )}
+        </div>
+      )}
+      {showHoverActions && (
+        <div className="task-chip__actions" onClick={(e) => e.stopPropagation()}>
+          {!isEvent && timed && (
+            <button
+              type="button"
+              className="task-chip__action-button"
+              onClick={() => onToggle(task.id)}
+              aria-label={done ? 'Mark as not done' : 'Mark as done'}
+              aria-pressed={done}
+            >
+              <CheckIcon width={12} height={12} />
+            </button>
+          )}
+          {onPushToTomorrow && (
+            <button
+              type="button"
+              className="task-chip__action-button"
+              onClick={() => onPushToTomorrow(task.id)}
+              disabled={recurring}
+              aria-label="Push to tomorrow"
+              data-tooltip={recurring ? "Recurring items can't be pushed individually" : 'Push to tomorrow'}
+            >
+              <SkipForwardIcon width={12} height={12} />
+            </button>
           )}
         </div>
       )}

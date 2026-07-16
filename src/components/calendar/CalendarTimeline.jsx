@@ -31,7 +31,7 @@ export function CalendarHourGutter({ showAlldayLabel = false }) {
 // absolute-positioned hour timeline below. Used by CalendarWeekly (7 columns) and
 // CalendarDaily (1 wide column) so both views share click-to-create + drag/drop.
 function CalendarTimeline({
-  day, tasks, now, onToggleTask, onOpenTask, onCreateTask, onMoveTask,
+  day, tasks, now, onToggleTask, onOpenTask, onCreateTask, onMoveTask, onPushToTomorrow,
 }) {
   const timedTasks = tasks.filter((task) => isTaskTimed(task) && isTaskOnDay(task, day));
   const alldayTasks = tasks.filter((task) => !isTaskTimed(task) && getTaskDay(task) && isTaskOnDay(task, day));
@@ -75,7 +75,14 @@ function CalendarTimeline({
         onDrop={handleAlldayDrop}
       >
         {alldayTasks.slice(0, MAX_ALLDAY_VISIBLE).map((task) => (
-          <TaskChip key={task.id} task={task} onToggle={onToggleTask} onOpen={onOpenTask} draggable />
+          <TaskChip
+            key={task.id}
+            task={task}
+            onToggle={onToggleTask}
+            onOpen={onOpenTask}
+            onPushToTomorrow={onPushToTomorrow}
+            draggable
+          />
         ))}
         {alldayTasks.length > MAX_ALLDAY_VISIBLE && (
           <span className="calendar-timeline__more">+{alldayTasks.length - MAX_ALLDAY_VISIBLE}</span>
@@ -116,6 +123,7 @@ function CalendarTimeline({
                 task={task}
                 onToggle={onToggleTask}
                 onOpen={onOpenTask}
+                onPushToTomorrow={onPushToTomorrow}
                 compact={compact}
                 hideTime
                 draggable
