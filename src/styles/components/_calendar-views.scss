@@ -177,6 +177,12 @@ $timeline-allday-height: 2.75rem;
     overflow: hidden;
     border-radius: $radius-sm;
 
+    // The chip actions' tooltip renders above the button and would otherwise be
+    // clipped by this strip's fixed height — let it escape while a chip is hovered.
+    &:hover {
+      overflow: visible;
+    }
+
     .task-chip {
       gap: 0.25rem;
       padding: 0.0625rem 0;
@@ -213,6 +219,13 @@ $timeline-allday-height: 2.75rem;
     position: absolute;
     overflow: hidden;
     cursor: grab;
+
+    // Same as .calendar-timeline__allday above — the hover-action tooltip sits right at
+    // the top of the block, so it clips against this box (worst near hour 0) unless we
+    // let it escape while hovered.
+    &:hover {
+      overflow: visible;
+    }
   }
 
   &__now-line {

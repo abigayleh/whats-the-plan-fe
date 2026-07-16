@@ -70,6 +70,7 @@ function TaskChip({
               onClick={() => onToggle(task.id)}
               aria-label={done ? 'Mark as not done' : 'Mark as done'}
               aria-pressed={done}
+              data-tooltip={done ? 'Mark as not done' : 'Mark as done'}
             >
               <CheckIcon width={12} height={12} />
             </button>
