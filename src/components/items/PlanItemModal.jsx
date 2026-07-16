@@ -27,8 +27,9 @@ function PlanItemModal({
     return defaultOrigin === 'event' ? '' : (defaultListId ?? writableLists[0]?.id ?? '');
   });
 
-  // A bare calendar item has no list — everything to-do-only (status, subtasks, attachments,
-  // assignee) is hidden for it, and scope comes from the group select instead.
+  // A bare calendar item has no list — to-do-only fields (status, attachments, assignee) are
+  // hidden for it, and scope comes from the group select instead. Subtasks ARE shared with
+  // events (below), unlike the rest of this list.
   const isCalendarItem = isEdit ? item.origin === 'event' : !listId;
   const list = writableLists.find((l) => l.id === listId);
   const members = useGroupMembers(list?.groupId);
@@ -124,6 +125,7 @@ function PlanItemModal({
         scheduledStart: startAt,
         scheduledEnd: endAt,
         recurrenceRule: recurrence ? { frequency: recurrence, interval: 1 } : null,
+        subtasks,
       };
       if (!isEdit) payload.groupId = groupId || null; // scope immutable on edit
       submit(payload);
@@ -240,72 +242,72 @@ function PlanItemModal({
           </label>
 
           {!isCalendarItem && (
-            <>
-              <label className="modal__toggle">
-                <input
-                  type="checkbox"
-                  checked={done}
-                  onChange={(e) => setDone(e.target.checked)}
-                />
-                <span>Mark as complete</span>
-              </label>
+            <label className="modal__toggle">
+              <input
+                type="checkbox"
+                checked={done}
+                onChange={(e) => setDone(e.target.checked)}
+              />
+              <span>Mark as complete</span>
+            </label>
+          )}
 
-              <div className="modal__field">
-                <span className="modal__label">Sub-to-dos</span>
-                <div className="subtask-editor">
-                  {subtasks.map((subtask) => (
-                    <div key={subtask.id} className="subtask-editor__item">
-                      <button
-                        type="button"
-                        className={`subtask-editor__item-checkbox${subtask.done ? ' subtask-editor__item-checkbox--done' : ''}`}
-                        onClick={() => toggleSubtask(subtask.id)}
-                        aria-label={subtask.done ? 'Mark as not done' : 'Mark as done'}
-                        aria-pressed={subtask.done}
-                      >
-                        {subtask.done && <CheckIcon />}
-                      </button>
-                      <span className={`subtask-editor__item-title${subtask.done ? ' subtask-editor__item-title--done' : ''}`}>
-                        {subtask.title}
-                      </span>
-                      <button
-                        type="button"
-                        className="subtask-editor__remove-button"
-                        onClick={() => removeSubtask(subtask.id)}
-                        aria-label="Remove sub-to-do"
-                      >
-                        <CloseIcon width={12} height={12} />
-                      </button>
-                    </div>
-                  ))}
-                  <div className="subtask-editor__add-row">
-                    <input
-                      type="text"
-                      className="modal__input"
-                      placeholder="Add a sub-to-do"
-                      value={newSubtask}
-                      onChange={(e) => setNewSubtask(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') {
-                          e.preventDefault();
-                          handleAddSubtask();
-                        }
-                      }}
-                    />
-                    <button type="button" className="button button--ghost" onClick={handleAddSubtask}>
-                      Add
-                    </button>
-                  </div>
+          <div className="modal__field">
+            <span className="modal__label">Sub-to-dos</span>
+            <div className="subtask-editor">
+              {subtasks.map((subtask) => (
+                <div key={subtask.id} className="subtask-editor__item">
+                  <button
+                    type="button"
+                    className={`subtask-editor__item-checkbox${subtask.done ? ' subtask-editor__item-checkbox--done' : ''}`}
+                    onClick={() => toggleSubtask(subtask.id)}
+                    aria-label={subtask.done ? 'Mark as not done' : 'Mark as done'}
+                    aria-pressed={subtask.done}
+                  >
+                    {subtask.done && <CheckIcon />}
+                  </button>
+                  <span className={`subtask-editor__item-title${subtask.done ? ' subtask-editor__item-title--done' : ''}`}>
+                    {subtask.title}
+                  </span>
+                  <button
+                    type="button"
+                    className="subtask-editor__remove-button"
+                    onClick={() => removeSubtask(subtask.id)}
+                    aria-label="Remove sub-to-do"
+                  >
+                    <CloseIcon width={12} height={12} />
+                  </button>
                 </div>
+              ))}
+              <div className="subtask-editor__add-row">
+                <input
+                  type="text"
+                  className="modal__input"
+                  placeholder="Add a sub-to-do"
+                  value={newSubtask}
+                  onChange={(e) => setNewSubtask(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      handleAddSubtask();
+                    }
+                  }}
+                />
+                <button type="button" className="button button--ghost" onClick={handleAddSubtask}>
+                  Add
+                </button>
               </div>
+            </div>
+          </div>
 
-              <div className="modal__field">
-                <span className="modal__label">Attachments</span>
-                <AttachmentUploader attachments={attachments} onChange={setAttachments} />
-                {!isEdit && attachments.length > 0 && (
-                  <p className="modal__hint">Files upload once the task is created.</p>
-                )}
-              </div>
-            </>
+          {!isCalendarItem && (
+            <div className="modal__field">
+              <span className="modal__label">Attachments</span>
+              <AttachmentUploader attachments={attachments} onChange={setAttachments} />
+              {!isEdit && attachments.length > 0 && (
+                <p className="modal__hint">Files upload once the task is created.</p>
+              )}
+            </div>
           )}
 
           <label className="modal__field">

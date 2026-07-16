@@ -39,7 +39,8 @@ export const adaptAttachment = (a) => ({
 // `origin` ('event' | 'task') is persistence routing ONLY — see hooks/usePlanItems — never
 // a UI identity check. `sourceId` is always the real DB row id (for writes); `id` is the
 // React-key/occurrence identity, which differs from sourceId for expanded calendar occurrences.
-// An event has no completion concept, so status/subtasks/assignee/attachments are fixed empty.
+// An event has no completion concept, so status/assignee/attachments are fixed empty — but
+// subtasks ARE supported on events (same shape as task subtasks), so it reads through raw.
 export function adaptItem(raw, origin) {
   const isEvent = origin === 'event';
   return {
@@ -56,7 +57,7 @@ export function adaptItem(raw, origin) {
     scheduledStart: toDate(raw.scheduledStart ?? raw.startAt),
     scheduledEnd: toDate(raw.scheduledEnd ?? raw.endAt),
     recurrenceRule: raw.recurrenceRule || null,
-    subtasks: isEvent ? [] : (raw.subtasks || []),
+    subtasks: raw.subtasks || [],
     assignedToId: isEvent ? null : (raw.assignedToId ?? null),
     assignedTo: isEvent ? null : (raw.assignee?.name || null),
     attachments: isEvent ? [] : (raw.attachments || []).map(adaptAttachment),
@@ -104,12 +105,12 @@ export const adaptPoll = (p) => ({
 
 // FE PlanItem patch → BE body. Only maps keys that are present, so PATCH stays partial.
 // Attachments are excluded — they're synced through the attachments API, not the item body.
-// An event has no status/subtasks/assignee/list, and maps its schedule to startAt/endAt
-// rather than scheduledStart/scheduledEnd/dueDate.
+// An event has no status/assignee/list, and maps its schedule to startAt/endAt rather than
+// scheduledStart/scheduledEnd/dueDate — but subtasks map the same way as for tasks.
 export function toBeItem(patch, origin) {
   const body = {};
   if (origin === 'event') {
-    ['title', 'description', 'recurrenceRule', 'groupId'].forEach((key) => {
+    ['title', 'description', 'recurrenceRule', 'groupId', 'subtasks'].forEach((key) => {
       if (patch[key] !== undefined) body[key] = patch[key];
     });
     if (patch.scheduledStart !== undefined) {
