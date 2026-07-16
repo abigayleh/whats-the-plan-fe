@@ -4,6 +4,7 @@ import {
   RECURRENCE_OPTIONS, WEEKDAY_LABELS, recurrenceRuleFor, recurrenceValueFor, recurrenceDaysOfWeekFor,
 } from '../../constants/recurrence';
 import useGroupMembers from '../../hooks/useGroupMembers';
+import useAutoGrowTextarea from '../../hooks/useAutoGrowTextarea';
 import AttachmentUploader from '../lists/AttachmentUploader';
 import {
   combineDateAndTime, getTaskDay, isTaskTimed, toDateInputValue, toTimeInputValue,
@@ -21,14 +22,10 @@ import {
 // session, so the origin (task vs. event) can't be silently flipped out from under a save.
 function PlanItemModal({
   lists, groups, personalSpace, defaultListId, defaultOrigin = 'task', defaultSchedule,
-  item, onClose, onSave, onDelete, onPushToTomorrow,
+  item, onClose, onSave, onDelete,
 }) {
   const isEdit = Boolean(item);
   const writableLists = lists.filter((l) => !l.isSystem);
-  // A recurring item's `item` may be a raw list-task (recurrenceRule) or a calendar occurrence
-  // (rule/isRecurring, recurrenceRule nulled — see api/adapters.js) — check all three shapes.
-  const isRecurringItem = Boolean(item?.recurrenceRule || item?.rule || item?.isRecurring);
-  const [pushingTomorrow, setPushingTomorrow] = useState(false);
 
   const [listId, setListId] = useState(() => {
     if (isEdit) return item.origin === 'event' ? '' : (item.listId ?? '');
@@ -53,6 +50,7 @@ function PlanItemModal({
 
   const [title, setTitle] = useState(item?.title ?? '');
   const [description, setDescription] = useState(item?.description ?? '');
+  const descriptionRef = useAutoGrowTextarea(description);
   const [done, setDone] = useState(item?.status === 'done');
   const [groupId, setGroupId] = useState(item?.groupId ?? '');
   const [date, setDate] = useState(toDateInputValue(seed ? getTaskDay(seed) : null));
@@ -227,14 +225,16 @@ function PlanItemModal({
     }
   }
 
-  // Queues an autosave; returns a promise resolving to whether the *last* queued save
-  // succeeded, so callers (e.g. Done) can decide whether it's safe to close.
+  // Queues an autosave and returns a promise resolving to whether it's safe to close: `true`
+  // when the save succeeds or there's nothing to save, `false` only on a real failure or a
+  // validation error. Never returns the queue's stale terminal value (which would wrongly
+  // block Done after an unrelated earlier save, or close it despite a live validation error).
   function commitChange(overrides = {}) {
     const result = buildPayload(overrides);
-    if (!result) return commitQueueRef.current;
+    if (!result) return Promise.resolve(true);
     if (result.error) {
       setError(result.error);
-      return commitQueueRef.current;
+      return Promise.resolve(false);
     }
     commitQueueRef.current = commitQueueRef.current.then(() => runSave(result.payload));
     return commitQueueRef.current;
@@ -243,17 +243,6 @@ function PlanItemModal({
   async function handleDone() {
     const ok = await commitChange();
     if (ok) onClose();
-  }
-
-  async function handlePushToTomorrow() {
-    setError(null);
-    setPushingTomorrow(true);
-    try {
-      await onPushToTomorrow(item);
-    } catch (err) {
-      setError(err.message || 'Could not push to tomorrow');
-      setPushingTomorrow(false);
-    }
   }
 
   const modalTitle = isCalendarItem
@@ -323,6 +312,7 @@ function PlanItemModal({
           <label className="modal__field">
             <span className="modal__label">Description</span>
             <textarea
+              ref={descriptionRef}
               className="modal__input modal__input--textarea"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
@@ -521,17 +511,6 @@ function PlanItemModal({
                 }}
               >
                 Delete
-              </button>
-            )}
-            {isEdit && onPushToTomorrow && (
-              <button
-                type="button"
-                className="button button--ghost"
-                onClick={handlePushToTomorrow}
-                disabled={isRecurringItem || pushingTomorrow}
-                title={isRecurringItem ? "Recurring items can't be pushed individually" : 'Move to tomorrow'}
-              >
-                Push to tomorrow
               </button>
             )}
             <div className="modal__footer-spacer" />

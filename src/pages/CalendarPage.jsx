@@ -458,7 +458,6 @@ function CalendarPage() {
           onClose={() => setPlanItemModal(null)}
           onSave={handleItemSubmit}
           onDelete={handleItemDelete}
-          onPushToTomorrow={planItemModal.mode === 'edit' ? handlePushToTomorrow : undefined}
         />
       )}
     </section>
