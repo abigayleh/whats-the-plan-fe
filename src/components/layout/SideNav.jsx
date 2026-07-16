@@ -27,6 +27,7 @@ function SideNav() {
           className="side-nav__collapse-toggle"
           onClick={() => setCollapsed((prev) => !prev)}
           aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+          data-tooltip={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
         >
           <ChevronIcon className={`side-nav__collapse-icon${collapsed ? ' side-nav__collapse-icon--collapsed' : ''}`} />
         </button>
@@ -40,7 +41,8 @@ function SideNav() {
             to={to}
             end={end}
             className={({ isActive }) => `side-nav__item${isActive ? ' side-nav__item--active' : ''}`}
-            title={collapsed ? label : undefined}
+            aria-label={collapsed ? label : undefined}
+            data-tooltip={collapsed ? label : undefined}
           >
             <span className="side-nav__icon">
               <Icon />
