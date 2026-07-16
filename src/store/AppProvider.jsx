@@ -146,7 +146,8 @@ function AppProvider({ children }) {
     async leaveGroup(groupId) {
       try {
         await groupsApi.leave(groupId);
-        await refreshGroups();
+        // Losing access to the group drops its lists (and their tasks) — reload both.
+        await Promise.all([refreshGroups(), refreshLists()]);
         return { ok: true };
       } catch (err) {
         if (err.status === 403) return { ok: false, reason: 'LAST_ADMIN' };
@@ -155,7 +156,8 @@ function AppProvider({ children }) {
     },
     async deleteGroup(groupId) {
       await groupsApi.remove(groupId);
-      await refreshGroups();
+      // Deleting the group cascade-deletes its lists and tasks — reload both.
+      await Promise.all([refreshGroups(), refreshLists()]);
     },
 
     lists: [...lists, ...SYSTEM_LISTS],
