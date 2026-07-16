@@ -211,3 +211,102 @@ export function LayersIcon(props) {
     </svg>
   );
 }
+
+export function MoneyIcon(props) {
+  return (
+    <svg viewBox="0 0 24 24" width="16" height="16" {...strokeProps} {...props}>
+      <circle cx="12" cy="12" r="9" />
+      <path d="M12 7v10M14.5 9.5a2.5 2.5 0 0 0-2.5-1.5c-1.4 0-2.5.8-2.5 2s1.1 1.7 2.5 2 2.5.8 2.5 2-1.1 2-2.5 2a2.5 2.5 0 0 1-2.5-1.5" />
+    </svg>
+  );
+}
+
+export function StarIcon(props) {
+  return (
+    <svg viewBox="0 0 24 24" width="16" height="16" {...strokeProps} {...props}>
+      <path d="m12 3 2.6 5.9 6.4.6-4.8 4.3 1.4 6.3L12 17l-5.6 3.1 1.4-6.3-4.8-4.3 6.4-.6Z" />
+    </svg>
+  );
+}
+
+export function GameIcon(props) {
+  return (
+    <svg viewBox="0 0 24 24" width="16" height="16" {...strokeProps} {...props}>
+      <path d="M7 8h10a4 4 0 0 1 4 4l1 5a2 2 0 0 1-3.5 1.5L16 16H8l-2.5 2.5A2 2 0 0 1 2 17l1-5a4 4 0 0 1 4-4Z" />
+      <path d="M7.5 11v3M6 12.5h3M15 12h.01M17.5 10.5h.01" />
+    </svg>
+  );
+}
+
+export function LaptopIcon(props) {
+  return (
+    <svg viewBox="0 0 24 24" width="16" height="16" {...strokeProps} {...props}>
+      <rect x="4" y="5" width="16" height="10" rx="1.5" />
+      <path d="M2 19h20M9 19l1-2h4l1 2" />
+    </svg>
+  );
+}
+
+export function BookIcon(props) {
+  return (
+    <svg viewBox="0 0 24 24" width="16" height="16" {...strokeProps} {...props}>
+      <path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v16H6.5A2.5 2.5 0 0 0 4 21.5V5.5Z" />
+      <path d="M4 19a2.5 2.5 0 0 1 2.5-2.5H20" />
+    </svg>
+  );
+}
+
+export function CartIcon(props) {
+  return (
+    <svg viewBox="0 0 24 24" width="16" height="16" {...strokeProps} {...props}>
+      <path d="M3 4h2l2.4 12.2a2 2 0 0 0 2 1.8h7.7a2 2 0 0 0 2-1.6L21 8H6" />
+      <circle cx="9.5" cy="20.5" r="1.2" />
+      <circle cx="17.5" cy="20.5" r="1.2" />
+    </svg>
+  );
+}
+
+export function HeartIcon(props) {
+  return (
+    <svg viewBox="0 0 24 24" width="16" height="16" {...strokeProps} {...props}>
+      <path d="M12 21S3.5 15.6 3.5 9.9A4.4 4.4 0 0 1 12 7.5a4.4 4.4 0 0 1 8.5 2.4C20.5 15.6 12 21 12 21Z" />
+    </svg>
+  );
+}
+
+export function MusicIcon(props) {
+  return (
+    <svg viewBox="0 0 24 24" width="16" height="16" {...strokeProps} {...props}>
+      <path d="M9 18V5l11-2v13" />
+      <circle cx="6.5" cy="18" r="2.5" />
+      <circle cx="17.5" cy="16" r="2.5" />
+    </svg>
+  );
+}
+
+export function FoodIcon(props) {
+  return (
+    <svg viewBox="0 0 24 24" width="16" height="16" {...strokeProps} {...props}>
+      <path d="M6 2v8a2 2 0 0 0 4 0V2M8 10v12M18 2c-2 1-3 3-3 6s1 4 3 4M18 2v18" />
+    </svg>
+  );
+}
+
+export function GiftIcon(props) {
+  return (
+    <svg viewBox="0 0 24 24" width="16" height="16" {...strokeProps} {...props}>
+      <rect x="3" y="9" width="18" height="4" />
+      <path d="M5 13h14v8a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1v-8ZM12 9v13" />
+      <path d="M12 9c-1-3-3-5-5-5-1.5 0-2.5 1-2.5 2.2C4.5 8 6 9 8 9h4ZM12 9c1-3 3-5 5-5 1.5 0 2.5 1 2.5 2.2C19.5 8 18 9 16 9h-4Z" />
+    </svg>
+  );
+}
+
+export function CameraIcon(props) {
+  return (
+    <svg viewBox="0 0 24 24" width="16" height="16" {...strokeProps} {...props}>
+      <path d="M4 8h3l1.5-2h7L17 8h3a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1Z" />
+      <circle cx="12" cy="14" r="3.5" />
+    </svg>
+  );
+}
