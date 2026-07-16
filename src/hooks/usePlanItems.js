@@ -46,7 +46,9 @@ export default function usePlanItems() {
 
   // Dragging preserves an item's kind: an event always stays timed (dropping it on the
   // all-day row is a no-op, handled by the `!timed` early return below); a timed to-do keeps
-  // its duration; a due-date-only to-do just moves day.
+  // its duration; a due-date-only (or fully unscheduled) to-do moves day, unless it's dropped
+  // on a timed slot — that promotes it to a timed to-do instead (e.g. dragging an unscheduled
+  // to-do onto the calendar).
   async function moveItem(item, {
     day, hour, minute = 0, timed,
   }) {
@@ -65,6 +67,16 @@ export default function usePlanItems() {
     const task = tasks.find((t) => t.id === item.sourceId);
     if (!task) return;
     if (!isTaskTimed(task)) {
+      if (timed) {
+        const start = new Date(day);
+        start.setHours(hour, minute, 0, 0);
+        await updateTask(task.id, {
+          scheduledStart: start,
+          scheduledEnd: new Date(start.getTime() + 60 * 60000),
+          dueDate: null,
+        });
+        return;
+      }
       await updateTask(task.id, { dueDate: startOfDay(day) });
       return;
     }

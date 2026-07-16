@@ -5,7 +5,7 @@ import { getTaskIcon } from '../../constants/taskIcons';
 import TaskActionButtons from '../tasks/TaskActionButtons';
 
 function TaskRow({
-  task, lists, onToggle, onClick,
+  task, lists, onToggle, onClick, draggable = false,
 }) {
   const done = task.status === 'done';
   const overdue = isTaskOverdue(task);
@@ -28,6 +28,8 @@ function TaskRow({
       }}
       role="button"
       tabIndex={0}
+      draggable={draggable}
+      onDragStart={draggable ? (e) => e.dataTransfer.setData('text/plain', task.id) : undefined}
     >
       <span
         className="task-row__check"

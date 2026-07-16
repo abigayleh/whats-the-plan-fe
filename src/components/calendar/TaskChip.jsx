@@ -5,13 +5,14 @@ import TaskActionButtons from '../tasks/TaskActionButtons';
 
 function TaskChip({
   task, lists, onToggle, onOpen, compact = false, showActions = false, hideTime = false, draggable = false,
+  past = false,
 }) {
   const done = task.status === 'done';
   const timed = isTaskTimed(task);
 
   return (
     <div
-      className={`task-chip task-chip--${task.colorKey}${done ? ' task-chip--done' : ''}${compact ? ' task-chip--compact' : ''}${timed ? ' task-chip--timed' : ''}`}
+      className={`task-chip task-chip--${task.colorKey}${done ? ' task-chip--done' : ''}${compact ? ' task-chip--compact' : ''}${timed ? ' task-chip--timed' : ''}${past ? ' task-chip--past' : ''}`}
       title={task.title}
       draggable={draggable}
       onDragStart={draggable ? (e) => e.dataTransfer.setData('text/plain', task.id) : undefined}

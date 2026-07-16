@@ -88,27 +88,21 @@
 
 // Weekly grid
 $week-gutter: 3rem;
+// Height of the all-day strip atop each timeline column — shared with .calendar-hours__allday-label
+// below so the hour grid lines up across the gutter and every day column.
+$timeline-allday-height: 2.75rem;
 
 .calendar-week {
-  &__header,
-  &__allday {
-    display: grid;
-    grid-template-columns: $week-gutter repeat(7, 1fr);
-  }
-
   &__header {
     @include card;
+    display: grid;
+    grid-template-columns: $week-gutter repeat(7, 1fr);
     padding: $spacing-sm;
     margin-bottom: $spacing-xs;
-  }
-
-  &__gutter {
-    &--label {
-      display: flex;
-      align-items: center;
-      font-size: 0.6875rem;
-      color: $color-text-muted;
-    }
+    // Keeps the day-of-week row visible now that the timeline scrolls with the page (#5).
+    position: sticky;
+    top: 0;
+    z-index: 2;
   }
 
   &__headcell {
@@ -143,18 +137,44 @@ $week-gutter: 3rem;
     font-weight: 600;
   }
 
-  &__allday {
+  &__timeline {
     @include card;
+    display: grid;
+    grid-template-columns: $week-gutter repeat(7, 1fr);
     padding: $spacing-sm;
-    margin-bottom: $spacing-md;
+  }
+}
+
+// Hour-label gutter, shared by week and day views (see CalendarTimeline.jsx's CalendarHourGutter).
+.calendar-hours {
+  position: relative;
+
+  &__allday-label {
+    height: $timeline-allday-height;
+    display: flex;
+    align-items: center;
+    font-size: 0.6875rem;
+    color: $color-text-muted;
   }
 
-  &__allday-col {
+  &__label {
+    font-size: 0.625rem;
+    color: $color-text-muted;
+    transform: translateY(-0.5em);
+  }
+}
+
+// One day's timeline column — all-day strip + absolute-positioned hour blocks.
+// Shared by week (7 narrow columns) and day (1 wide column) views.
+.calendar-timeline {
+  &__allday {
+    height: $timeline-allday-height;
     display: flex;
     flex-direction: column;
     gap: 0.125rem;
     padding: 0 0.1875rem;
     min-width: 0;
+    overflow: hidden;
     border-radius: $radius-sm;
 
     .task-chip {
@@ -177,25 +197,6 @@ $week-gutter: 3rem;
     color: $color-text-muted;
   }
 
-  &__timeline {
-    @include card;
-    display: grid;
-    grid-template-columns: $week-gutter repeat(7, 1fr);
-    overflow-y: auto;
-    max-height: 32rem;
-    padding: $spacing-sm;
-  }
-
-  &__hours {
-    position: relative;
-  }
-
-  &__hour-label {
-    font-size: 0.625rem;
-    color: $color-text-muted;
-    transform: translateY(-0.5em);
-  }
-
   &__col {
     position: relative;
     border-left: 1px solid $color-border;
@@ -206,12 +207,22 @@ $week-gutter: 3rem;
     }
   }
 
+  // left/width come from the overlap layout pass (CalendarTimeline) — always set inline,
+  // even for a lone item (left: 0.125rem margin, full width), so side-by-side items just work.
   &__block {
     position: absolute;
-    left: 0.125rem;
-    right: 0.125rem;
     overflow: hidden;
     cursor: grab;
+  }
+
+  &__now-line {
+    position: absolute;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: $color-primary;
+    z-index: 1;
+    pointer-events: none;
   }
 }
 
@@ -219,52 +230,39 @@ $week-gutter: 3rem;
 .calendar-day {
   @include card;
 
-  &__allday {
-    padding-bottom: $spacing-md;
-    margin-bottom: $spacing-md;
-    border-bottom: 1px solid $color-border;
-  }
-
-  &__allday-label {
-    margin: 0 0 $spacing-xs;
-    font-size: $font-size-sm;
-    font-weight: 600;
-    color: $color-text-muted;
-  }
-
   &__empty {
     margin: 0 0 $spacing-md;
     color: $color-text-muted;
   }
 
-  &__slot {
-    display: flex;
-    gap: $spacing-md;
-    padding: $spacing-xs 0;
-    border-top: 1px solid $color-border;
+  &__timeline {
+    display: grid;
+    grid-template-columns: $week-gutter 1fr;
+  }
+}
 
-    &:first-child {
-      border-top: none;
-    }
+// Day view + "Both" filter: CalendarDaily on the left, UnscheduledPanel on the right (#9).
+.calendar-day-split {
+  display: grid;
+  grid-template-columns: 1fr 18rem;
+  align-items: start;
+  gap: $spacing-md;
+}
+
+// Draggable tray of to-dos with no date — the day-Both split panel and the week/day
+// toggle tray both render this (see UnscheduledPanel.jsx).
+.unscheduled-panel {
+  @include card;
+
+  &__title {
+    margin: 0 0 $spacing-sm;
+    font-size: $font-size-base;
+    font-weight: 600;
   }
 
-  &__hour {
-    flex-shrink: 0;
-    width: 3.5rem;
-    font-size: $font-size-sm;
+  &__empty {
+    margin: 0;
     color: $color-text-muted;
-    padding-top: $spacing-sm;
-  }
-
-  &__slot-events {
-    flex: 1;
-    min-width: 0;
-    min-height: 1.75rem;
-    cursor: pointer;
-    border-radius: $radius-sm;
-
-    &:hover {
-      background: $color-bg;
-    }
+    font-size: $font-size-sm;
   }
 }
