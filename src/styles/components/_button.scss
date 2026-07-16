@@ -1,6 +1,10 @@
 @use '../abstracts/variables' as *;
 
 .button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: $spacing-xs;
   font-family: inherit;
   font-size: $font-size-base;
   font-weight: 600;
