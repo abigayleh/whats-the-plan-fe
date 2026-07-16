@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import {
   ChevronIcon, EditIcon, PlusIcon, TrashIcon,
 } from '../layout/icons';
 import TaskRow from './TaskRow';
+import usePlanItems from '../../hooks/usePlanItems';
 import { getTaskDay } from '../../utils/tasks';
 import { getTaskIcon } from '../../constants/taskIcons';
 
@@ -21,10 +22,37 @@ function ListSection({
   list, tasks, allLists, showCompleted, onToggleTask, onEditTask, onAddTask, onEditList, onDeleteList,
 }) {
   const [collapsed, setCollapsed] = useState(false);
+  const [draft, setDraft] = useState('');
   const sorted = sortTasks(tasks);
   const todoTasks = sorted.filter((task) => task.status !== 'done');
   const doneTasks = sorted.filter((task) => task.status === 'done');
   const ListIcon = getTaskIcon(list.icon)?.Icon;
+
+  const { saveItem } = usePlanItems();
+  // Blur can fire as a side effect of the input unmounting (e.g. navigating away) — a
+  // ref (rather than state) tracks the live draft so the commit always reads the latest
+  // text, and a mounted flag stops that unmount-triggered blur from saving anything.
+  const draftRef = useRef(draft);
+  draftRef.current = draft;
+  const mountedRef = useRef(true);
+  useEffect(() => () => {
+    mountedRef.current = false;
+  }, []);
+
+  function commitDraft() {
+    if (!mountedRef.current) return;
+    const title = draftRef.current.trim();
+    if (!title) return;
+    draftRef.current = '';
+    setDraft('');
+    saveItem(null, { origin: 'task', listId: list.id, title });
+  }
+
+  function handleDraftKeyDown(e) {
+    if (e.key !== 'Enter') return;
+    e.preventDefault();
+    commitDraft();
+  }
 
   return (
     <div className={`list-section list-section--${list.colorKey}`}>
@@ -87,6 +115,19 @@ function ListSection({
           {showCompleted && doneTasks.map((task) => (
             <TaskRow key={task.id} task={task} lists={allLists} onToggle={onToggleTask} onClick={onEditTask} />
           ))}
+          {!list.isSystem && (
+            <div className="list-section__quick-add">
+              <input
+                type="text"
+                className="list-section__quick-add-input"
+                placeholder="Add a to-do…"
+                value={draft}
+                onChange={(e) => setDraft(e.target.value)}
+                onBlur={commitDraft}
+                onKeyDown={handleDraftKeyDown}
+              />
+            </div>
+          )}
         </div>
       )}
     </div>

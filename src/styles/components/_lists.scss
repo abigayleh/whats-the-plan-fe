@@ -86,6 +86,29 @@
     margin-top: $spacing-sm;
   }
 
+  &__quick-add {
+    padding: $spacing-sm 0;
+    border-top: 1px solid $color-border;
+  }
+
+  &__quick-add-input {
+    width: 100%;
+    padding: 0.25rem 0;
+    border: none;
+    background: transparent;
+    font-family: inherit;
+    font-size: $font-size-base;
+    color: $color-text;
+
+    &::placeholder {
+      color: $color-text-muted;
+    }
+
+    &:focus {
+      outline: none;
+    }
+  }
+
   @each $key, $pair in $accent-map {
     &--#{$key} &__color-dot {
       background: list.nth($pair, 1);
