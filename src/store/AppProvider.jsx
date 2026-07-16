@@ -186,21 +186,32 @@ function AppProvider({ children }) {
       await listsApi.remove(listId);
       await refreshLists();
     },
-    // Attachments hang off a task, so the task must exist before they can upload. Once it
-    // does, a failed upload is reported rather than thrown — throwing would leave the modal
-    // open over an already-created task, and saving again would duplicate it.
+    // A temp-id row renders instantly for a snappy quick-add; refreshLists() below fully
+    // replaces `tasks` with server data once the real row exists, so the temp row is dropped
+    // automatically (no manual swap/de-dupe). Attachments upload after creation, so a failed
+    // upload is reported rather than thrown — throwing here would strand the created task.
     async addTask({ listId, attachments = [], ...fields }) {
-      const created = await listsApi.createTask(listId, toBeTask(fields));
-      let attachmentError = null;
-      if (attachments.length) {
-        try {
-          await attachmentsApi.sync(created.id, attachments, []);
-        } catch (err) {
-          attachmentError = err.message || 'Attachments failed to upload';
+      const tempId = `temp-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+      const optimisticTask = adaptTask({
+        ...fields, id: tempId, listId, createdById: currentUser.id,
+      });
+      setTasks((prev) => [...prev, optimisticTask]);
+      try {
+        const created = await listsApi.createTask(listId, toBeTask(fields));
+        let attachmentError = null;
+        if (attachments.length) {
+          try {
+            await attachmentsApi.sync(created.id, attachments, []);
+          } catch (err) {
+            attachmentError = err.message || 'Attachments failed to upload';
+          }
         }
+        await refreshLists();
+        return { task: adaptTask(created), attachmentError };
+      } catch (err) {
+        setTasks((prev) => prev.filter((t) => t.id !== tempId));
+        throw err;
       }
-      await refreshLists();
-      return { task: adaptTask(created), attachmentError };
     },
     async updateTask(taskId, { attachments, ...patch }) {
       const task = tasks.find((t) => t.id === taskId);

@@ -42,13 +42,18 @@ function ListSection({
     };
   }, []);
 
-  function commitDraft() {
+  async function commitDraft() {
     if (!mountedRef.current) return;
     const title = draftRef.current.trim();
     if (!title) return;
     draftRef.current = '';
     setDraft('');
-    saveItem(null, { origin: 'task', listId: list.id, title });
+    try {
+      await saveItem(null, { origin: 'task', listId: list.id, title });
+    } catch {
+      // eslint-disable-next-line no-alert
+      window.alert(`Couldn't add "${title}" — please try again.`);
+    }
   }
 
   function handleDraftKeyDown(e) {
