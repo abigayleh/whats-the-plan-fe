@@ -15,6 +15,20 @@
 
   &--collapsed {
     width: $sidenav-collapsed-width;
+
+    // Sidebar sits flush against the viewport's left edge here, so the shared
+    // centered-above [data-tooltip] pill would clip off-screen — anchor right.
+    [data-tooltip]::after {
+      top: 50%;
+      bottom: auto;
+      left: 100%;
+      transform: translate($spacing-xs, -50%);
+    }
+
+    [data-tooltip]:hover::after,
+    [data-tooltip]:focus-visible::after {
+      transform: translate($spacing-sm, -50%);
+    }
   }
 
   &__header {
