@@ -19,13 +19,16 @@ function sortTasks(tasks) {
 }
 
 function ListSection({
-  list, tasks, allLists, showCompleted, onToggleTask, onEditTask, onAddTask, onEditList, onDeleteList,
+  list, tasks, allLists, showCompleted, hideScheduled,
+  onToggleTask, onEditTask, onAddTask, onEditList, onDeleteList,
 }) {
   const [collapsed, setCollapsed] = useState(false);
   const [draft, setDraft] = useState('');
   const sorted = sortTasks(tasks);
-  const todoTasks = sorted.filter((task) => task.status !== 'done');
-  const doneTasks = sorted.filter((task) => task.status === 'done');
+  // "Hide scheduled" drops any to-do that has a due date (timed or date-only).
+  const visible = hideScheduled ? sorted.filter((task) => getTaskDay(task) == null) : sorted;
+  const todoTasks = visible.filter((task) => task.status !== 'done');
+  const doneTasks = visible.filter((task) => task.status === 'done');
   const ListIcon = getTaskIcon(list.icon)?.Icon;
 
   const { saveItem } = usePlanItems();
@@ -81,7 +84,7 @@ function ListSection({
           </span>
           <span className="list-section__task-count">
             {todoTasks.length}
-            {list.isSystem ? '' : `/${showCompleted ? sorted.length : todoTasks.length}`}
+            {list.isSystem ? '' : `/${showCompleted ? visible.length : todoTasks.length}`}
           </span>
         </button>
         {!list.isSystem && (

@@ -20,6 +20,7 @@ function ListsPage() {
   const [editingTask, setEditingTask] = useState(null); // task object | 'new' | null
   const [newTaskListId, setNewTaskListId] = useState(null);
   const [showCompleted, setShowCompleted] = useLocalStorageState('lists-show-completed', true);
+  const [hideScheduled, setHideScheduled] = useLocalStorageState('lists-hide-scheduled', false);
 
   const orderedLists = [...lists]
     .sort((a, b) => Number(a.isSystem) - Number(b.isSystem))
@@ -104,6 +105,14 @@ function ListsPage() {
           </button>
           <button
             type="button"
+            className={`filter-toggle${hideScheduled ? ' filter-toggle--active' : ''}`}
+            onClick={() => setHideScheduled((prev) => !prev)}
+            aria-pressed={hideScheduled}
+          >
+            Hide scheduled to-dos
+          </button>
+          <button
+            type="button"
             className="button button--primary"
             onClick={() => setListModal({ mode: 'new' })}
           >
@@ -121,6 +130,7 @@ function ListsPage() {
             tasks={tasksForList(list)}
             allLists={lists}
             showCompleted={showCompleted}
+            hideScheduled={hideScheduled}
             onToggleTask={toggleTaskStatus}
             onEditTask={handleEditTask}
             onAddTask={handleAddTask}
