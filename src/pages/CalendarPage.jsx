@@ -13,7 +13,9 @@ import useLocalStorageState from '../hooks/useLocalStorageState';
 import useLocalStorageDate from '../hooks/useLocalStorageDate';
 import useLocalStorageSet from '../hooks/useLocalStorageSet';
 import useCalendarItems from '../hooks/useCalendarItems';
-import { getGroupColorKey, getListColorKey } from '../utils/tasks';
+import {
+  getGroupColorKey, getListColorKey, getTaskDay, isTaskTimed,
+} from '../utils/tasks';
 import {
   addDays, addMonths, startOfDay, getMonthGrid, getWeekDays,
   formatFullDate, formatMonthYear, formatWeekRange,
@@ -166,6 +168,25 @@ function CalendarPage() {
     refetch();
   }
 
+  // Shifts a single item forward one day, keeping its clock time (if any). Callers must
+  // guard recurring items — a single-occurrence shift would otherwise rewrite the whole series.
+  async function handlePushToTomorrow(item) {
+    if (isTaskTimed(item)) {
+      const nextDay = addDays(item.scheduledStart, 1);
+      await moveItem(item, {
+        day: nextDay,
+        hour: item.scheduledStart.getHours(),
+        minute: item.scheduledStart.getMinutes(),
+        timed: true,
+      });
+    } else {
+      const currentDay = getTaskDay(item) ?? new Date();
+      await saveItem(item, { dueDate: addDays(currentDay, 1) });
+    }
+    setPlanItemModal(null);
+    refetch();
+  }
+
   function openNewTodo() {
     setPlanItemModal({ mode: 'new', defaultOrigin: 'task', seed: { dueDate: focusDate } });
   }
@@ -294,6 +315,7 @@ function CalendarPage() {
           onClose={() => setPlanItemModal(null)}
           onSave={handleItemSubmit}
           onDelete={handleItemDelete}
+          onPushToTomorrow={planItemModal.mode === 'edit' ? handlePushToTomorrow : undefined}
         />
       )}
     </section>

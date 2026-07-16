@@ -64,6 +64,11 @@
     padding: 0;
   }
 
+  // Past events/to-dos fade back — status (done/overdue) styling is separate and unaffected.
+  &--past {
+    opacity: 0.55;
+  }
+
   &--compact &__check {
     width: 0.875rem;
     height: 0.875rem;

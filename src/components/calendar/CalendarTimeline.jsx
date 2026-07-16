@@ -1,5 +1,6 @@
 import {
-  DAY_HOURS, formatHourLabel, getTimeFromTimelinePosition, getTimelinePosition,
+  DAY_HOURS, DAY_START_HOUR, DAY_END_HOUR, isToday,
+  formatHourLabel, getTimeFromTimelinePosition, getTimelinePosition,
 } from '../../utils/date';
 import { getTaskDay, isTaskOnDay, isTaskTimed } from '../../utils/tasks';
 import { computeOverlapLayout } from '../../utils/overlap';
@@ -30,11 +31,15 @@ export function CalendarHourGutter({ showAlldayLabel = false }) {
 // absolute-positioned hour timeline below. Used by CalendarWeekly (7 columns) and
 // CalendarDaily (1 wide column) so both views share click-to-create + drag/drop.
 function CalendarTimeline({
-  day, tasks, onToggleTask, onOpenTask, onCreateTask, onMoveTask,
+  day, tasks, now, onToggleTask, onOpenTask, onCreateTask, onMoveTask,
 }) {
   const timedTasks = tasks.filter((task) => isTaskTimed(task) && isTaskOnDay(task, day));
   const alldayTasks = tasks.filter((task) => !isTaskTimed(task) && getTaskDay(task) && isTaskOnDay(task, day));
   const overlapLayout = computeOverlapLayout(timedTasks);
+
+  const nowHour = now.getHours() + now.getMinutes() / 60;
+  const showNowLine = isToday(day) && nowHour >= DAY_START_HOUR && nowHour < DAY_END_HOUR;
+  const nowPosition = getTimelinePosition(now) * 100;
 
   function handleColumnClick(e) {
     const rect = e.currentTarget.getBoundingClientRect();
@@ -84,7 +89,9 @@ function CalendarTimeline({
         onDragOver={(e) => e.preventDefault()}
         onDrop={handleColumnDrop}
       >
-        {/* Seam for Part 2: a now-line element can be absolutely positioned here via getTimelinePosition(new Date()). */}
+        {showNowLine && (
+          <div className="calendar-timeline__now-line" style={{ top: `${nowPosition}%` }} />
+        )}
         {timedTasks.map((task) => {
           const top = getTimelinePosition(task.scheduledStart) * 100;
           const bottom = getTimelinePosition(task.scheduledEnd) * 100;
@@ -92,6 +99,7 @@ function CalendarTimeline({
           const durationMinutes = (task.scheduledEnd - task.scheduledStart) / 60000;
           const compact = durationMinutes < 30;
           const { left, width } = overlapLayout.get(task.id) ?? { left: 0, width: 1 };
+          const isPast = task.scheduledEnd < now;
 
           return (
             <div
@@ -111,6 +119,7 @@ function CalendarTimeline({
                 compact={compact}
                 hideTime
                 draggable
+                past={isPast}
               />
             </div>
           );

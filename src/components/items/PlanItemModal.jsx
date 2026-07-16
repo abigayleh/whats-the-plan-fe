@@ -13,10 +13,14 @@ import {
 // Scope (list, or group for a bare event) is immutable on edit, same as before the merge.
 function PlanItemModal({
   lists, groups, personalSpace, defaultListId, defaultOrigin = 'task', defaultSchedule,
-  item, onClose, onSave, onDelete,
+  item, onClose, onSave, onDelete, onPushToTomorrow,
 }) {
   const isEdit = Boolean(item);
   const writableLists = lists.filter((l) => !l.isSystem);
+  // A recurring item's `item` may be a raw list-task (recurrenceRule) or a calendar occurrence
+  // (rule/isRecurring, recurrenceRule nulled — see api/adapters.js) — check all three shapes.
+  const isRecurringItem = Boolean(item?.recurrenceRule || item?.rule || item?.isRecurring);
+  const [pushingTomorrow, setPushingTomorrow] = useState(false);
 
   const [listId, setListId] = useState(() => {
     if (isEdit) return item.origin === 'event' ? '' : (item.listId ?? '');
@@ -87,6 +91,17 @@ function PlanItemModal({
     } catch (err) {
       setError(err.message || `Could not save ${isCalendarItem ? 'event' : 'task'}`);
       setSaving(false);
+    }
+  }
+
+  async function handlePushToTomorrow() {
+    setError(null);
+    setPushingTomorrow(true);
+    try {
+      await onPushToTomorrow(item);
+    } catch (err) {
+      setError(err.message || 'Could not push to tomorrow');
+      setPushingTomorrow(false);
     }
   }
 
@@ -389,6 +404,17 @@ function PlanItemModal({
                 }}
               >
                 Delete
+              </button>
+            )}
+            {isEdit && onPushToTomorrow && (
+              <button
+                type="button"
+                className="button button--ghost"
+                onClick={handlePushToTomorrow}
+                disabled={isRecurringItem || pushingTomorrow}
+                title={isRecurringItem ? "Recurring items can't be pushed individually" : 'Move to tomorrow'}
+              >
+                Push to tomorrow
               </button>
             )}
             <div className="modal__footer-spacer" />

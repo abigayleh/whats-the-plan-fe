@@ -214,6 +214,16 @@ $timeline-allday-height: 2.75rem;
     overflow: hidden;
     cursor: grab;
   }
+
+  &__now-line {
+    position: absolute;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: $color-primary;
+    z-index: 1;
+    pointer-events: none;
+  }
 }
 
 // Daily timeline

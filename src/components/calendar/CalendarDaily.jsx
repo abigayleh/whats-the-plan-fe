@@ -1,10 +1,12 @@
 import { isTaskOnDay } from '../../utils/tasks';
+import useNow from '../../hooks/useNow';
 import CalendarTimeline, { CalendarHourGutter } from './CalendarTimeline';
 
 function CalendarDaily({
   focusDate, tasks, onToggleTask, onOpenTask, onCreateTask, onMoveTask,
 }) {
   const hasTasks = tasks.some((task) => isTaskOnDay(task, focusDate));
+  const now = useNow();
 
   return (
     <div className="calendar-day">
@@ -14,6 +16,7 @@ function CalendarDaily({
         <CalendarTimeline
           day={focusDate}
           tasks={tasks}
+          now={now}
           onToggleTask={onToggleTask}
           onOpenTask={onOpenTask}
           onCreateTask={onCreateTask}

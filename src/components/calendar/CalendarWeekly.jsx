@@ -1,10 +1,12 @@
 import { getWeekDays, isToday } from '../../utils/date';
+import useNow from '../../hooks/useNow';
 import CalendarTimeline, { CalendarHourGutter } from './CalendarTimeline';
 
 function CalendarWeekly({
   focusDate, tasks, onSelectDay, onToggleTask, onOpenTask, onCreateTask, onMoveTask,
 }) {
   const days = getWeekDays(focusDate);
+  const now = useNow();
 
   return (
     <div className="calendar-week">
@@ -32,6 +34,7 @@ function CalendarWeekly({
             key={day.toISOString()}
             day={day}
             tasks={tasks}
+            now={now}
             onToggleTask={onToggleTask}
             onOpenTask={onOpenTask}
             onCreateTask={onCreateTask}
