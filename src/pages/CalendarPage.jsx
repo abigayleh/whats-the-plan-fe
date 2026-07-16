@@ -128,9 +128,12 @@ function CalendarPage() {
     return true;
   }), [baseVisibleItems, contentFilter]);
 
-  // Today's to-dos for the day-view panel — events-only filtering happens in CalendarDaily.
+  // Today's to-dos for the day-view panel: date-only (no time) to-dos due today. Timed to-dos
+  // render on the day timeline instead (see CalendarDaily), so they're excluded here.
   const todayTasks = useMemo(
-    () => baseVisibleItems.filter((item) => item.origin === 'task' && isTaskOnDay(item, focusDate)),
+    () => baseVisibleItems.filter(
+      (item) => item.origin === 'task' && isTaskOnDay(item, focusDate) && !isTaskTimed(item),
+    ),
     [baseVisibleItems, focusDate],
   );
 
