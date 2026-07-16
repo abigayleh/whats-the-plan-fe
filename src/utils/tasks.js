@@ -1,4 +1,4 @@
-import { isSameDay, startOfDay } from './date';
+import { isSameDay, startOfDay, startOfWeek } from './date';
 
 const DAY_MS = 86400000;
 
@@ -26,10 +26,17 @@ export function isTaskOnDay(task, day) {
     case 'daily':
       return true;
     case 'weekly': {
-      if (day.getDay() !== taskDay.getDay()) return false;
-      // interval: 2 (bi-weekly) only matches every other week, anchored on the task's own day.
+      // No daysOfWeek (incl. every rule saved before the day picker existed) means "only the
+      // task's own weekday" — the same behavior this switch had before.
+      const daysOfWeek = task.recurrenceRule?.daysOfWeek?.length
+        ? task.recurrenceRule.daysOfWeek
+        : [taskDay.getDay()];
+      if (!daysOfWeek.includes(day.getDay())) return false;
+      // interval: 2 (bi-weekly) only matches every other week. Weeks are counted from a fixed
+      // Sunday-anchored week start (not the task's own day) so every selected weekday in the
+      // same week lands in the same week count.
       const interval = task.recurrenceRule?.interval || 1;
-      const weeksBetween = Math.round((startOfDay(day) - startOfDay(taskDay)) / (7 * DAY_MS));
+      const weeksBetween = Math.round((startOfWeek(day) - startOfWeek(taskDay)) / (7 * DAY_MS));
       return weeksBetween % interval === 0;
     }
     case 'monthly':

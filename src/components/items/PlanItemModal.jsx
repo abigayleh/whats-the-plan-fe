@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
 import { CheckIcon, CloseIcon } from '../layout/icons';
-import { RECURRENCE_OPTIONS, recurrenceRuleFor, recurrenceValueFor } from '../../constants/recurrence';
+import {
+  RECURRENCE_OPTIONS, WEEKDAY_LABELS, recurrenceRuleFor, recurrenceValueFor, recurrenceDaysOfWeekFor,
+} from '../../constants/recurrence';
 import useGroupMembers from '../../hooks/useGroupMembers';
 import AttachmentUploader from '../lists/AttachmentUploader';
 import {
@@ -55,6 +57,11 @@ function PlanItemModal({
   const [groupId, setGroupId] = useState(item?.groupId ?? '');
   const [date, setDate] = useState(toDateInputValue(seed ? getTaskDay(seed) : null));
   const [recurrence, setRecurrence] = useState(recurrenceValueFor(item?.recurrenceRule ?? item?.rule));
+  // Selected weekdays for weekly/bi-weekly repeat (0=Sunday…6=Saturday). Seeded from the saved
+  // rule, or defaults to the item's own start weekday — see recurrenceDaysOfWeekFor.
+  const [daysOfWeek, setDaysOfWeek] = useState(
+    () => recurrenceDaysOfWeekFor(item?.recurrenceRule ?? item?.rule, seed ? getTaskDay(seed) : null),
+  );
   const [timed, setTimed] = useState(seed ? isTaskTimed(seed) : false);
   const [startTime, setStartTime] = useState(seed?.scheduledStart ? toTimeInputValue(seed.scheduledStart) : '09:00');
   const [endTime, setEndTime] = useState(seed?.scheduledEnd ? toTimeInputValue(seed.scheduledEnd) : '10:00');
@@ -112,13 +119,38 @@ function PlanItemModal({
     commitChange({ subtasks: nextSubtasks });
   }
 
+  // Toggles a weekday in the repeat day-picker. At least one day must stay selected, so
+  // deselecting the last remaining one is a no-op rather than clearing the picker.
+  function toggleDay(dow) {
+    const isSelected = daysOfWeek.includes(dow);
+    if (isSelected && daysOfWeek.length === 1) return;
+    const nextDays = isSelected
+      ? daysOfWeek.filter((d) => d !== dow)
+      : [...daysOfWeek, dow].sort((a, b) => a - b);
+    setDaysOfWeek(nextDays);
+    commitChange({ daysOfWeek: nextDays });
+  }
+
+  // The Repeat select only renders once a date is picked (see below), so `date` is always set
+  // by the time this fires — defaults the picker to the start weekday the first time someone
+  // switches into weekly/bi-weekly.
+  function handleRecurrenceChange(value) {
+    setRecurrence(value);
+    let nextDays = daysOfWeek;
+    if ((value === 'weekly' || value === 'biweekly') && daysOfWeek.length === 0 && date) {
+      nextDays = [combineDateAndTime(date, '00:00').getDay()];
+      setDaysOfWeek(nextDays);
+    }
+    commitChange({ recurrence: value, daysOfWeek: nextDays });
+  }
+
   // Builds the save payload from current state (plus any override for a value whose setState
   // hasn't flushed yet). Returns null when there's nothing worth saving yet (no title, or — for
   // a new item — no list/date chosen), or `{ error }` for an actual validation problem, or
   // `{ payload }` when it's ready to send.
   function buildPayload(overrides) {
     const state = {
-      title, description, done, groupId, date, recurrence, timed, startTime, endTime,
+      title, description, done, groupId, date, recurrence, daysOfWeek, timed, startTime, endTime,
       assignedToId, subtasks, attachments, listId, ...overrides,
     };
     const trimmedTitle = state.title.trim();
@@ -139,7 +171,7 @@ function PlanItemModal({
         description: state.description.trim(),
         scheduledStart: startAt,
         scheduledEnd: endAt,
-        recurrenceRule: recurrenceRuleFor(state.recurrence),
+        recurrenceRule: recurrenceRuleFor(state.recurrence, state.daysOfWeek),
         subtasks: state.subtasks,
       };
       if (!savedItemRef.current) payload.groupId = state.groupId || null; // scope fixed at creation
@@ -159,7 +191,7 @@ function PlanItemModal({
       assignedToId: state.assignedToId || null,
       subtasks: state.subtasks,
       attachments: state.attachments,
-      recurrenceRule: state.date ? recurrenceRuleFor(state.recurrence) : null,
+      recurrenceRule: state.date ? recurrenceRuleFor(state.recurrence, state.daysOfWeek) : null,
     };
 
     if (state.timed && state.date) {
@@ -389,13 +421,32 @@ function PlanItemModal({
               <select
                 className="modal__input"
                 value={recurrence}
-                onChange={(e) => { setRecurrence(e.target.value); commitChange({ recurrence: e.target.value }); }}
+                onChange={(e) => handleRecurrenceChange(e.target.value)}
               >
                 {RECURRENCE_OPTIONS.map((option) => (
                   <option key={option.value} value={option.value}>{option.label}</option>
                 ))}
               </select>
             </label>
+          )}
+
+          {date && (recurrence === 'weekly' || recurrence === 'biweekly') && (
+            <div className="modal__field">
+              <span className="modal__label">On</span>
+              <div className="day-picker">
+                {WEEKDAY_LABELS.map((label, dow) => (
+                  <button
+                    key={dow}
+                    type="button"
+                    className={`day-picker__day${daysOfWeek.includes(dow) ? ' day-picker__day--selected' : ''}`}
+                    onClick={() => toggleDay(dow)}
+                    aria-pressed={daysOfWeek.includes(dow)}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+            </div>
           )}
 
           {!isCalendarItem && (
