@@ -61,22 +61,39 @@ function CalendarPage() {
     [groupOptions, hiddenGroupIds],
   );
 
-  // Which lists have at least one item in the currently-fetched range — computed off the raw
-  // `items` (not filteredItems) so a list's own hidden state can't hide it from itself.
-  const scheduledListIds = useMemo(
-    () => new Set(items.filter((item) => item.listId).map((item) => item.listId)),
-    [items],
-  );
+  // Which lists have at least one scheduled item in the currently-fetched range — computed off
+  // the raw `items` (not filteredItems) so a list's own hidden state can't hide it from itself.
+  // A list opted out via `hideScheduledOnCalendar` doesn't count its scheduled items here.
+  const scheduledListIds = useMemo(() => new Set(items
+    .filter((item) => item.listId)
+    .filter((item) => {
+      const list = lists.find((l) => l.id === item.listId);
+      return !(list && list.hideScheduledOnCalendar === true);
+    })
+    .map((item) => item.listId)),
+  [items, lists]);
 
+  // Which lists have at least one unscheduled to-do that's allowed to surface on the calendar
+  // (`showUnscheduledOnCalendar` not explicitly false). Independent of the page-level
+  // "Show unscheduled to-dos" toggle — that toggle only controls tray/panel visibility.
+  const listsWithShownUnscheduled = useMemo(() => new Set(tasks
+    .filter((task) => task.listId && getTaskDay(task) == null)
+    .filter((task) => {
+      const list = lists.find((l) => l.id === task.listId);
+      return !(list && list.showUnscheduledOnCalendar === false);
+    })
+    .map((task) => task.listId)),
+  [tasks, lists]);
+
+  // A list chip appears only if it has something to show in the current view: scheduled items
+  // in range, or shown unscheduled to-dos. Not affected by `showUnscheduledTray`.
   const listOptions = useMemo(() => lists
     .filter((l) => !l.isSystem)
     // Hide a list once its owning group is unselected — no point offering to toggle it alone.
     .filter((l) => !hiddenGroupIds.has(l.groupId ?? null))
-    // Hide empty lists while unscheduled to-dos aren't shown, so the filter doesn't fill up
-    // with lists that have nothing to show; flipping the tray on reveals them again.
-    .filter((l) => showUnscheduledTray || scheduledListIds.has(l.id))
+    .filter((l) => scheduledListIds.has(l.id) || listsWithShownUnscheduled.has(l.id))
     .map((l) => ({ ...l, colorKey: getListColorKey(l, groups, personalSpace) })),
-  [lists, groups, personalSpace, hiddenGroupIds, showUnscheduledTray, scheduledListIds]);
+  [lists, groups, personalSpace, hiddenGroupIds, scheduledListIds, listsWithShownUnscheduled]);
   const activeListIds = useMemo(
     () => new Set(listOptions.filter((l) => !hiddenListIds.has(l.id)).map((l) => l.id)),
     [listOptions, hiddenListIds],
@@ -92,6 +109,11 @@ function CalendarPage() {
       if (item.listId && hiddenListIds.has(item.listId)) return false;
       if (!showCompleted && item.status === 'done') return false;
       if (onlyMine && item.assignedToId && item.assignedToId !== currentUser.id) return false;
+      // A list can hide its scheduled to-dos from the calendar entirely; events are unaffected.
+      if (item.origin === 'task' && item.listId) {
+        const list = lists.find((l) => l.id === item.listId);
+        if (list && list.hideScheduledOnCalendar === true) return false;
+      }
       return true;
     })
     // List color wins when the item's list has one set; otherwise falls back to group color
@@ -264,8 +286,8 @@ function CalendarPage() {
       ? formatWeekRange(getWeekDays(focusDate))
       : formatFullDate(focusDate);
 
-  // Day view always shows the events/to-dos split (#1-3), so its own toggle tray is
-  // redundant there; the tray only remains for week view (never month).
+  // The standalone tray only exists for week view; day view has its own "Unscheduled" section
+  // inside DayTodoPanel (also gated on showUnscheduledTray, see the prop passed below).
   const showUnscheduledTrayPanel = showUnscheduledTray && contentFilter !== 'events' && view === 'week';
 
   const dailyView = (
@@ -333,17 +355,15 @@ function CalendarPage() {
         >
           {showCompleted ? 'Hide completed' : 'Show completed'}
         </button>
-        {view !== 'day' && (
-          <button
-            type="button"
-            className={`filter-toggle${showUnscheduledTray ? ' filter-toggle--active' : ''}`}
-            onClick={() => setShowUnscheduledTray((prev) => !prev)}
-            aria-pressed={showUnscheduledTray}
-            disabled={contentFilter === 'events'}
-          >
-            Show unscheduled to-dos
-          </button>
-        )}
+        <button
+          type="button"
+          className={`filter-toggle${showUnscheduledTray ? ' filter-toggle--active' : ''}`}
+          onClick={() => setShowUnscheduledTray((prev) => !prev)}
+          aria-pressed={showUnscheduledTray}
+          disabled={view !== 'day' && contentFilter === 'events'}
+        >
+          Show unscheduled to-dos
+        </button>
       </div>
 
       <div className="calendar-view">
@@ -390,6 +410,7 @@ function CalendarPage() {
               onToggle={toggleItemStatus}
               onOpenToday={openItem}
               onOpenUnscheduled={(task) => openItem({ origin: 'task', sourceId: task.id })}
+              showUnscheduled={showUnscheduledTray}
             />
           </div>
         )}
