@@ -12,8 +12,8 @@ function ListModal({ list, groups, onClose, onSave }) {
   const [groupId, setGroupId] = useState(list?.groupId ?? null);
   const [icon, setIcon] = useState(list?.icon ?? null);
   const [color, setColor] = useState(list?.color ?? null);
-  const [showOnCalendar, setShowOnCalendar] = useState(
-    list?.showOnCalendar ?? true,
+  const [hideUnscheduled, setHideUnscheduled] = useState(
+    !(list?.showUnscheduledOnCalendar ?? true),
   );
   const [error, setError] = useState(null);
   const [saving, setSaving] = useState(false);
@@ -25,7 +25,7 @@ function ListModal({ list, groups, onClose, onSave }) {
     setSaving(true);
     try {
       await onSave({
-        name: name.trim(), groupId, icon, color, showOnCalendar,
+        name: name.trim(), groupId, icon, color, showUnscheduledOnCalendar: !hideUnscheduled,
       });
     } catch (err) {
       setError(err.message || `Could not ${isEdit ? 'save' : 'create'} list`);
@@ -139,10 +139,10 @@ function ListModal({ list, groups, onClose, onSave }) {
           <label className="modal__toggle">
             <input
               type="checkbox"
-              checked={showOnCalendar}
-              onChange={(e) => setShowOnCalendar(e.target.checked)}
+              checked={hideUnscheduled}
+              onChange={(e) => setHideUnscheduled(e.target.checked)}
             />
-            <span>Show in calendar</span>
+            <span>Hide unscheduled to-dos</span>
           </label>
 
           <div className="modal__footer">
