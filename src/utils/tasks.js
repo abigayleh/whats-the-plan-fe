@@ -1,5 +1,7 @@
 import { isSameDay, startOfDay } from './date';
 
+const DAY_MS = 86400000;
+
 export function isTaskTimed(task) {
   return Boolean(task.scheduledStart && task.scheduledEnd);
 }
@@ -23,8 +25,13 @@ export function isTaskOnDay(task, day) {
   switch (frequency) {
     case 'daily':
       return true;
-    case 'weekly':
-      return day.getDay() === taskDay.getDay();
+    case 'weekly': {
+      if (day.getDay() !== taskDay.getDay()) return false;
+      // interval: 2 (bi-weekly) only matches every other week, anchored on the task's own day.
+      const interval = task.recurrenceRule?.interval || 1;
+      const weeksBetween = Math.round((startOfDay(day) - startOfDay(taskDay)) / (7 * DAY_MS));
+      return weeksBetween % interval === 0;
+    }
     case 'monthly':
       return day.getDate() === taskDay.getDate();
     case 'yearly':
