@@ -159,9 +159,7 @@ function CalendarPage() {
   }
 
   async function handleItemDelete(item) {
-    try {
-      await deleteItem(item);
-    } catch { /* ignore */ }
+    await deleteItem(item);
     setPlanItemModal(null);
     refetch();
   }

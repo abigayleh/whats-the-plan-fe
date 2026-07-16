@@ -177,7 +177,7 @@ function PlanItemModal({
                 onChange={(e) => handleListChange(e.target.value)}
                 required={!isCalendarItem}
               >
-                {!isEdit && <option value="">No list (calendar event)</option>}
+                {!isEdit && !defaultListId && <option value="">No list (calendar event)</option>}
                 {writableLists.map((l) => (
                   <option key={l.id} value={l.id}>{l.name}</option>
                 ))}
