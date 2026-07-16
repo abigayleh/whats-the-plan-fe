@@ -254,20 +254,36 @@ $timeline-allday-height: 2.75rem;
   }
 }
 
-// Day view + "Both" filter: CalendarDaily on the left, UnscheduledPanel on the right (#9).
-// The right column is deliberately roomy (#8) now that the page can use the full width.
+// Day view: CalendarDaily (events only) on the left, DayTodoPanel on the right — always
+// on now, with a draggable divider between them (#1, #5). Width is driven by JS
+// (useResizableSplit) via the --day-panel-width custom property.
 .calendar-day-split {
   display: grid;
-  grid-template-columns: 1fr 24rem;
-  align-items: start;
-  gap: $spacing-lg;
+  grid-template-columns: 1fr auto var(--day-panel-width, 24rem);
+  align-items: stretch;
+  gap: $spacing-sm;
+
+  &__resizer {
+    align-self: stretch;
+    width: 0.3125rem;
+    border: none;
+    padding: 0;
+    margin: 0;
+    background: $color-border;
+    border-radius: $radius-xs;
+    cursor: col-resize;
+    transition: background 0.15s;
+
+    &:hover,
+    &:active {
+      background: $color-primary;
+    }
+  }
 }
 
-// Draggable tray of to-dos with no date — the day-Both split panel and the week/day
-// toggle tray both render this (see UnscheduledPanel.jsx).
-.unscheduled-panel {
-  @include card;
-
+// One labeled block of to-do rows — shared by UnscheduledPanel and DayTodoPanel
+// (see TaskRowGroup.jsx).
+.task-row-group {
   &__title {
     margin: 0 0 $spacing-sm;
     font-size: $font-size-base;
@@ -278,5 +294,39 @@ $timeline-allday-height: 2.75rem;
     margin: 0;
     color: $color-text-muted;
     font-size: $font-size-sm;
+  }
+
+  & + & {
+    margin-top: $spacing-lg;
+  }
+}
+
+// Draggable tray of to-dos with no date — the week-view toggle tray (see UnscheduledPanel.jsx).
+.unscheduled-panel {
+  @include card;
+}
+
+// Day view's right-hand to-do panel: "Today" + "Unscheduled" sections (#3). Rows are made
+// roomier here than the Lists page (#6) — scoped to this panel only.
+.day-todo-panel {
+  @include card;
+  min-width: 0;
+  overflow-y: auto;
+
+  .task-row {
+    padding: $spacing-md 0;
+    gap: $spacing-md;
+  }
+
+  .task-row__title {
+    font-size: $font-size-lg;
+    white-space: normal;
+    overflow: visible;
+    text-overflow: clip;
+  }
+
+  .task-row__check {
+    width: 1.625rem;
+    height: 1.625rem;
   }
 }

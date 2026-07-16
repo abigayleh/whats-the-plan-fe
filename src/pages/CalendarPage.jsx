@@ -7,6 +7,7 @@ import CalendarMonthly from '../components/calendar/CalendarMonthly';
 import CalendarWeekly from '../components/calendar/CalendarWeekly';
 import CalendarDaily from '../components/calendar/CalendarDaily';
 import UnscheduledPanel from '../components/calendar/UnscheduledPanel';
+import DayTodoPanel from '../components/calendar/DayTodoPanel';
 import PlanItemModal from '../components/items/PlanItemModal';
 import useAppData from '../hooks/useAppData';
 import usePlanItems from '../hooks/usePlanItems';
@@ -14,8 +15,9 @@ import useLocalStorageState from '../hooks/useLocalStorageState';
 import useLocalStorageDate from '../hooks/useLocalStorageDate';
 import useLocalStorageSet from '../hooks/useLocalStorageSet';
 import useCalendarItems from '../hooks/useCalendarItems';
+import useResizableSplit from '../hooks/useResizableSplit';
 import {
-  getListColorKey, getTaskColorKey, getTaskIconKey, getTaskDay, isTaskTimed,
+  getListColorKey, getTaskColorKey, getTaskIconKey, getTaskDay, isTaskOnDay, isTaskTimed,
 } from '../utils/tasks';
 import {
   addDays, addMonths, startOfDay, getMonthGrid, getWeekDays,
@@ -39,6 +41,7 @@ function CalendarPage() {
   const [hiddenListIds, setHiddenListIds] = useLocalStorageSet('calendar-hidden-lists');
   // null | { mode:'new', seed, defaultOrigin } | { mode:'edit', item }
   const [planItemModal, setPlanItemModal] = useState(null);
+  const dayPanel = useResizableSplit('calendar-day-panel-width', 384);
 
   const range = useMemo(() => {
     let days;
@@ -79,11 +82,10 @@ function CalendarPage() {
     [listOptions, hiddenListIds],
   );
 
-  const filteredItems = useMemo(() => items
+  // Filters shared by week/month (contentFilter-aware) and day view (which always shows
+  // events + to-dos side by side, ignoring contentFilter since its toggle is hidden there).
+  const baseVisibleItems = useMemo(() => items
     .filter((item) => {
-      // 'Events' = calendar-only items (origin 'event', no list); 'To-Dos' = list-backed items.
-      if (contentFilter === 'events' && item.origin !== 'event') return false;
-      if (contentFilter === 'tasks' && item.origin === 'event') return false;
       // Filter on what's explicitly hidden: items load independently of groups/lists,
       // so anything not yet known must stay visible rather than blink out.
       if (hiddenGroupIds.has(item.groupId ?? null)) return false;
@@ -95,8 +97,20 @@ function CalendarPage() {
     // List color wins when the item's list has one set; otherwise falls back to group color
     // (bare events, with no list, always take this path).
     .map((item) => ({ ...item, colorKey: getTaskColorKey(item, lists, groups, personalSpace) })),
-  [items, lists, groups, personalSpace, hiddenGroupIds, hiddenListIds, contentFilter, onlyMine, showCompleted,
-    currentUser]);
+  [items, lists, groups, personalSpace, hiddenGroupIds, hiddenListIds, onlyMine, showCompleted, currentUser]);
+
+  const filteredItems = useMemo(() => baseVisibleItems.filter((item) => {
+    // 'Events' = calendar-only items (origin 'event', no list); 'To-Dos' = list-backed items.
+    if (contentFilter === 'events' && item.origin !== 'event') return false;
+    if (contentFilter === 'tasks' && item.origin === 'event') return false;
+    return true;
+  }), [baseVisibleItems, contentFilter]);
+
+  // Today's to-dos for the day-view panel — events-only filtering happens in CalendarDaily.
+  const todayTasks = useMemo(
+    () => baseVisibleItems.filter((item) => item.origin === 'task' && isTaskOnDay(item, focusDate)),
+    [baseVisibleItems, focusDate],
+  );
 
   // To-dos with no date at all never appear in `items` (the calendar only fetches within a
   // date range), so they're read straight from useAppData and filtered the same way as above.
@@ -250,17 +264,14 @@ function CalendarPage() {
       ? formatWeekRange(getWeekDays(focusDate))
       : formatFullDate(focusDate);
 
-  // Day + "Both" gets its own split layout (#9); the toggle tray (#11) covers the rest —
-  // week view, and day view when the split isn't already showing the panel. Neither applies
-  // to month view or when to-dos are filtered out entirely.
-  const showUnscheduledSplit = view === 'day' && contentFilter === 'all';
-  const showUnscheduledTrayPanel = showUnscheduledTray && contentFilter !== 'events'
-    && view !== 'month' && !showUnscheduledSplit;
+  // Day view always shows the events/to-dos split (#1-3), so its own toggle tray is
+  // redundant there; the tray only remains for week view (never month).
+  const showUnscheduledTrayPanel = showUnscheduledTray && contentFilter !== 'events' && view === 'week';
 
   const dailyView = (
     <CalendarDaily
       focusDate={focusDate}
-      tasks={filteredItems}
+      tasks={baseVisibleItems}
       onToggleTask={toggleItemStatus}
       onOpenTask={openItem}
       onCreateTask={createEventAt}
@@ -288,7 +299,7 @@ function CalendarPage() {
 
       <ToggleChips items={groupOptions} activeIds={activeGroupIds} onToggle={toggleGroup} />
 
-      {contentFilter !== 'events' && listOptions.length > 0 && (
+      {(view === 'day' || contentFilter !== 'events') && listOptions.length > 0 && (
         <ToggleChips items={listOptions} activeIds={activeListIds} onToggle={toggleList} />
       )}
 
@@ -305,7 +316,7 @@ function CalendarPage() {
 
       <div className="calendar-filters">
         <CalendarViewSwitcher view={view} onChange={setView} />
-        <CalendarContentToggle value={contentFilter} onChange={setContentFilter} />
+        {view !== 'day' && <CalendarContentToggle value={contentFilter} onChange={setContentFilter} />}
         <button
           type="button"
           className={`filter-toggle${onlyMine ? ' filter-toggle--active' : ''}`}
@@ -322,15 +333,17 @@ function CalendarPage() {
         >
           {showCompleted ? 'Hide completed' : 'Show completed'}
         </button>
-        <button
-          type="button"
-          className={`filter-toggle${showUnscheduledTray ? ' filter-toggle--active' : ''}`}
-          onClick={() => setShowUnscheduledTray((prev) => !prev)}
-          aria-pressed={showUnscheduledTray}
-          disabled={contentFilter === 'events'}
-        >
-          Show unscheduled to-dos
-        </button>
+        {view !== 'day' && (
+          <button
+            type="button"
+            className={`filter-toggle${showUnscheduledTray ? ' filter-toggle--active' : ''}`}
+            onClick={() => setShowUnscheduledTray((prev) => !prev)}
+            aria-pressed={showUnscheduledTray}
+            disabled={contentFilter === 'events'}
+          >
+            Show unscheduled to-dos
+          </button>
+        )}
       </div>
 
       <div className="calendar-view">
@@ -357,17 +370,28 @@ function CalendarPage() {
             {showUnscheduledTrayPanel && unscheduledPanel}
           </>
         )}
-        {view === 'day' && showUnscheduledSplit && (
-          <div className="calendar-day-split">
+        {view === 'day' && (
+          <div
+            className="calendar-day-split"
+            ref={dayPanel.containerRef}
+            style={{ '--day-panel-width': `${dayPanel.width}px` }}
+          >
             {dailyView}
-            {unscheduledPanel}
+            <button
+              type="button"
+              className="calendar-day-split__resizer"
+              onMouseDown={dayPanel.startResize}
+              aria-label="Resize to-do panel"
+            />
+            <DayTodoPanel
+              todayTasks={todayTasks}
+              unscheduledTasks={unscheduledTasks}
+              lists={lists}
+              onToggle={toggleItemStatus}
+              onOpenToday={openItem}
+              onOpenUnscheduled={(task) => openItem({ origin: 'task', sourceId: task.id })}
+            />
           </div>
-        )}
-        {view === 'day' && !showUnscheduledSplit && (
-          <>
-            {dailyView}
-            {showUnscheduledTrayPanel && unscheduledPanel}
-          </>
         )}
       </div>
 
