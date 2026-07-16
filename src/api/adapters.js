@@ -21,6 +21,8 @@ export const adaptList = (l) => ({
   groupId: l.groupId,
   ownerId: l.ownerId,
   icon: l.icon,
+  color: l.color ?? null,
+  showUnscheduledOnCalendar: l.showUnscheduledOnCalendar ?? true,
   isSystem: l.isSystem,
   taskCount: l.taskCount,
 });
