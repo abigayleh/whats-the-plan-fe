@@ -179,13 +179,14 @@ function CalendarPage() {
     } catch { /* ignore */ }
   }
 
-  async function handleItemSubmit(payload) {
-    const editing = planItemModal.mode === 'edit' ? planItemModal.item : null;
-    const { attachmentError } = await saveItem(editing, payload);
+  // The modal autosaves per-field and tracks its own created-item state, so it passes back
+  // whichever item it's currently backed by (null until first save) rather than us tracking it.
+  async function handleItemSubmit(payload, currentItem) {
+    const result = await saveItem(currentItem, payload);
     // eslint-disable-next-line no-alert
-    if (attachmentError) window.alert(`To-do created, but its files didn't upload: ${attachmentError}`);
-    setPlanItemModal(null);
+    if (result.attachmentError) window.alert(`To-do created, but its files didn't upload: ${result.attachmentError}`);
     refetch();
+    return result;
   }
 
   async function handleItemDelete(item) {

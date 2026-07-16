@@ -71,13 +71,14 @@ function ListsPage() {
     setEditingTask(task);
   }
 
+  // The modal autosaves per-field and tracks its own created-item state, so it passes back
+  // whichever item it's currently backed by (null until first save) rather than us tracking it.
   // Errors propagate so the modal can show them and stay open.
-  async function handleSaveTask(payload) {
-    const editing = editingTask && editingTask !== 'new' ? editingTask : null;
-    const { attachmentError } = await saveItem(editing, payload);
+  async function handleSaveTask(payload, currentItem) {
+    const result = await saveItem(currentItem, payload);
     // eslint-disable-next-line no-alert
-    if (attachmentError) window.alert(`Task created, but its files didn't upload: ${attachmentError}`);
-    setEditingTask(null);
+    if (result.attachmentError) window.alert(`Task created, but its files didn't upload: ${result.attachmentError}`);
+    return result;
   }
 
   async function handleDeleteTask(item) {
