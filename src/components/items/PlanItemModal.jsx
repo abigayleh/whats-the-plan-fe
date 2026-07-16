@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { CheckIcon, CloseIcon } from '../layout/icons';
-import { RECURRENCE_OPTIONS } from '../../constants/recurrence';
+import { RECURRENCE_OPTIONS, recurrenceRuleFor, recurrenceValueFor } from '../../constants/recurrence';
 import useGroupMembers from '../../hooks/useGroupMembers';
 import AttachmentUploader from '../lists/AttachmentUploader';
 import {
@@ -10,7 +10,13 @@ import {
 // Create/edit a PlanItem: a to-do (scoped by its list) or a bare calendar event (scoped by
 // a group picked directly). Which one this is is decided by whether a list is selected —
 // `defaultOrigin: 'event'` seeds a new item with no list, so it starts as an event.
-// Scope (list, or group for a bare event) is immutable on edit, same as before the merge.
+//
+// Every field autosaves (checkboxes instantly, everything else on blur/change) via
+// `commitChange` below — there's no separate Save step. A brand-new item is created the
+// moment it first has a title; `hasSavedItem` flips true then, and `savedItemRef` (not state,
+// so it's always current — see commitChange's race note) tracks what to route later saves to.
+// `originLocked` extends "scope immutable on edit" to also cover an item just created in this
+// session, so the origin (task vs. event) can't be silently flipped out from under a save.
 function PlanItemModal({
   lists, groups, personalSpace, defaultListId, defaultOrigin = 'task', defaultSchedule,
   item, onClose, onSave, onDelete, onPushToTomorrow,
@@ -48,7 +54,7 @@ function PlanItemModal({
   const [done, setDone] = useState(item?.status === 'done');
   const [groupId, setGroupId] = useState(item?.groupId ?? '');
   const [date, setDate] = useState(toDateInputValue(seed ? getTaskDay(seed) : null));
-  const [recurrence, setRecurrence] = useState((item?.recurrenceRule ?? item?.rule)?.frequency ?? '');
+  const [recurrence, setRecurrence] = useState(recurrenceValueFor(item?.recurrenceRule ?? item?.rule));
   const [timed, setTimed] = useState(seed ? isTaskTimed(seed) : false);
   const [startTime, setStartTime] = useState(seed?.scheduledStart ? toTimeInputValue(seed.scheduledStart) : '09:00');
   const [endTime, setEndTime] = useState(seed?.scheduledEnd ? toTimeInputValue(seed.scheduledEnd) : '10:00');
@@ -58,6 +64,20 @@ function PlanItemModal({
   const [attachments, setAttachments] = useState(item?.attachments ?? []);
   const [error, setError] = useState(null);
   const [saving, setSaving] = useState(false);
+  const [hasSavedItem, setHasSavedItem] = useState(isEdit);
+
+  // `item` for an existing item, or the item this session just created — either way, the id
+  // saves should target next. A ref (not state) so it's read synchronously inside commitChange,
+  // even mid-flight while a previous autosave is still in the air.
+  const savedItemRef = useRef(item ?? null);
+  // Serializes autosaves: a change committed while an earlier one is still saving waits for it
+  // first, so it reads savedItemRef *after* a create resolved — otherwise two near-simultaneous
+  // edits on a brand-new item could both see "no item yet" and each create a duplicate.
+  const commitQueueRef = useRef(Promise.resolve(true));
+
+  // scope (list/group) is locked once an item exists, whether from a prior edit or a save
+  // earlier in this session — same "immutable" rule as before, just no longer keyed on isEdit.
+  const originLocked = isEdit || hasSavedItem;
 
   // A calendar item always occupies a time slot — there's no "add a specific time" toggle for it.
   const effectiveTimed = isCalendarItem || timed;
@@ -66,33 +86,131 @@ function PlanItemModal({
   function handleListChange(newListId) {
     setListId(newListId);
     const newGroupId = newListId ? (writableLists.find((l) => l.id === newListId)?.groupId ?? null) : null;
-    if (newGroupId !== (list?.groupId ?? null)) setAssignedToId('');
+    const clearAssignee = newGroupId !== (list?.groupId ?? null);
+    if (clearAssignee) setAssignedToId('');
+    commitChange({ listId: newListId, assignedToId: clearAssignee ? '' : assignedToId });
   }
 
   function handleAddSubtask() {
     const value = newSubtask.trim();
     if (!value) return;
-    setSubtasks((prev) => [...prev, { id: crypto.randomUUID(), title: value, done: false }]);
+    const nextSubtasks = [...subtasks, { id: crypto.randomUUID(), title: value, done: false }];
+    setSubtasks(nextSubtasks);
     setNewSubtask('');
+    commitChange({ subtasks: nextSubtasks });
   }
 
   function toggleSubtask(subtaskId) {
-    setSubtasks((prev) => prev.map((s) => (s.id === subtaskId ? { ...s, done: !s.done } : s)));
+    const nextSubtasks = subtasks.map((s) => (s.id === subtaskId ? { ...s, done: !s.done } : s));
+    setSubtasks(nextSubtasks);
+    commitChange({ subtasks: nextSubtasks });
   }
 
   function removeSubtask(subtaskId) {
-    setSubtasks((prev) => prev.filter((s) => s.id !== subtaskId));
+    const nextSubtasks = subtasks.filter((s) => s.id !== subtaskId);
+    setSubtasks(nextSubtasks);
+    commitChange({ subtasks: nextSubtasks });
   }
 
-  async function submit(payload) {
+  // Builds the save payload from current state (plus any override for a value whose setState
+  // hasn't flushed yet). Returns null when there's nothing worth saving yet (no title, or — for
+  // a new item — no list/date chosen), or `{ error }` for an actual validation problem, or
+  // `{ payload }` when it's ready to send.
+  function buildPayload(overrides) {
+    const state = {
+      title, description, done, groupId, date, recurrence, timed, startTime, endTime,
+      assignedToId, subtasks, attachments, listId, ...overrides,
+    };
+    const trimmedTitle = state.title.trim();
+    if (!trimmedTitle) return null; // never autosave an untitled new item
+
+    // Mirrors `isCalendarItem`, but off the (possibly overridden) list choice rather than the
+    // render's `listId` — an override applied via commitChange hasn't re-rendered yet.
+    const calendarItem = isEdit ? isCalendarItem : !state.listId;
+
+    if (calendarItem) {
+      if (!state.date) return null;
+      const startAt = combineDateAndTime(state.date, state.startTime);
+      const endAt = combineDateAndTime(state.date, state.endTime);
+      if (endAt < startAt) return { error: 'End time must be after start time' };
+      const payload = {
+        origin: 'event',
+        title: trimmedTitle,
+        description: state.description.trim(),
+        scheduledStart: startAt,
+        scheduledEnd: endAt,
+        recurrenceRule: recurrenceRuleFor(state.recurrence),
+        subtasks: state.subtasks,
+      };
+      if (!savedItemRef.current) payload.groupId = state.groupId || null; // scope fixed at creation
+      return { payload };
+    }
+
+    if (!state.listId) return null;
+    if (state.timed && !state.date) return { error: 'Pick a date before setting a time' };
+
+    const payload = {
+      origin: 'task',
+      listId: state.listId,
+      title: trimmedTitle,
+      description: state.description.trim(),
+      // The checkbox only models done/not-done, so an in-progress task keeps that status.
+      status: state.done ? 'done' : (item?.status === 'in-progress' ? 'in-progress' : 'todo'),
+      assignedToId: state.assignedToId || null,
+      subtasks: state.subtasks,
+      attachments: state.attachments,
+      recurrenceRule: state.date ? recurrenceRuleFor(state.recurrence) : null,
+    };
+
+    if (state.timed && state.date) {
+      payload.scheduledStart = combineDateAndTime(state.date, state.startTime);
+      payload.scheduledEnd = combineDateAndTime(state.date, state.endTime);
+      payload.dueDate = null;
+      if (payload.scheduledEnd < payload.scheduledStart) return { error: 'End time must be after start time' };
+    } else {
+      payload.scheduledStart = null;
+      payload.scheduledEnd = null;
+      payload.dueDate = state.date ? combineDateAndTime(state.date, '00:00') : null;
+    }
+
+    return { payload };
+  }
+
+  async function runSave(payload) {
     setError(null);
     setSaving(true);
     try {
-      await onSave(payload);
+      const response = await onSave(payload, savedItemRef.current);
+      if (response?.item) {
+        savedItemRef.current = response.item;
+        setHasSavedItem(true);
+      }
+      if (response?.attachmentError) setError(`Saved, but files didn't upload: ${response.attachmentError}`);
+      return true;
     } catch (err) {
       setError(err.message || `Could not save ${isCalendarItem ? 'event' : 'task'}`);
+      return false;
+    } finally {
       setSaving(false);
     }
+  }
+
+  // Queues an autosave; returns a promise resolving to whether the *last* queued save
+  // succeeded, so callers (e.g. Done) can decide whether it's safe to close.
+  function commitChange(overrides = {}) {
+    const result = buildPayload(overrides);
+    if (!result) return commitQueueRef.current;
+    if (result.error) {
+      setError(result.error);
+      return commitQueueRef.current;
+    }
+    commitQueueRef.current = commitQueueRef.current.then(() => runSave(result.payload));
+    return commitQueueRef.current;
+  }
+
+  async function handleDone() {
+    const ok = await commitChange();
+    if (ok) onClose();
   }
 
   async function handlePushToTomorrow() {
@@ -104,68 +222,6 @@ function PlanItemModal({
       setError(err.message || 'Could not push to tomorrow');
       setPushingTomorrow(false);
     }
-  }
-
-  function handleSubmit(e) {
-    e.preventDefault();
-    if (!title.trim()) return;
-
-    if (isCalendarItem) {
-      if (!date) return;
-      const startAt = combineDateAndTime(date, startTime);
-      const endAt = combineDateAndTime(date, endTime);
-      if (endAt < startAt) {
-        setError('End time must be after start time');
-        return;
-      }
-      const payload = {
-        origin: 'event',
-        title: title.trim(),
-        description: description.trim(),
-        scheduledStart: startAt,
-        scheduledEnd: endAt,
-        recurrenceRule: recurrence ? { frequency: recurrence, interval: 1 } : null,
-        subtasks,
-      };
-      if (!isEdit) payload.groupId = groupId || null; // scope immutable on edit
-      submit(payload);
-      return;
-    }
-
-    if (!listId) return;
-    if (timed && !date) {
-      setError('Pick a date before setting a time');
-      return;
-    }
-
-    const payload = {
-      origin: 'task',
-      listId,
-      title: title.trim(),
-      description: description.trim(),
-      // The checkbox only models done/not-done, so an in-progress task keeps that status.
-      status: done ? 'done' : (item?.status === 'in-progress' ? 'in-progress' : 'todo'),
-      assignedToId: assignedToId || null,
-      subtasks,
-      attachments,
-      recurrenceRule: date && recurrence ? { frequency: recurrence, interval: 1 } : null,
-    };
-
-    if (timed && date) {
-      payload.scheduledStart = combineDateAndTime(date, startTime);
-      payload.scheduledEnd = combineDateAndTime(date, endTime);
-      payload.dueDate = null;
-      if (payload.scheduledEnd < payload.scheduledStart) {
-        setError('End time must be after start time');
-        return;
-      }
-    } else {
-      payload.scheduledStart = null;
-      payload.scheduledEnd = null;
-      payload.dueDate = date ? combineDateAndTime(date, '00:00') : null;
-    }
-
-    submit(payload);
   }
 
   const modalTitle = isCalendarItem
@@ -182,10 +238,10 @@ function PlanItemModal({
           </button>
         </div>
 
-        <form className="modal__form" onSubmit={handleSubmit}>
+        <form className="modal__form" onSubmit={(e) => { e.preventDefault(); handleDone(); }}>
           {error && <p className="auth-card__error">{error}</p>}
 
-          {(!isEdit || !isCalendarItem) && (
+          {(!originLocked || !isCalendarItem) && (
             <label className="modal__field">
               <span className="modal__label">List</span>
               <select
@@ -194,7 +250,7 @@ function PlanItemModal({
                 onChange={(e) => handleListChange(e.target.value)}
                 required={!isCalendarItem}
               >
-                {!isEdit && !defaultListId && <option value="">No list (calendar event)</option>}
+                {!originLocked && !defaultListId && <option value="">No list (calendar event)</option>}
                 {writableLists.map((l) => (
                   <option key={l.id} value={l.id}>{l.name}</option>
                 ))}
@@ -208,8 +264,8 @@ function PlanItemModal({
               <select
                 className="modal__input"
                 value={groupId}
-                onChange={(e) => setGroupId(e.target.value)}
-                disabled={isEdit}
+                onChange={(e) => { setGroupId(e.target.value); commitChange({ groupId: e.target.value }); }}
+                disabled={originLocked}
               >
                 <option value="">{personalSpace.name}</option>
                 {groups.map((g) => (
@@ -226,6 +282,7 @@ function PlanItemModal({
               className="modal__input"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
+              onBlur={() => commitChange()}
               autoFocus
               required
             />
@@ -237,6 +294,7 @@ function PlanItemModal({
               className="modal__input modal__input--textarea"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
+              onBlur={() => commitChange()}
               rows={2}
             />
           </label>
@@ -246,7 +304,7 @@ function PlanItemModal({
               <input
                 type="checkbox"
                 checked={done}
-                onChange={(e) => setDone(e.target.checked)}
+                onChange={(e) => { const checked = e.target.checked; setDone(checked); commitChange({ done: checked }); }}
               />
               <span>Mark as complete</span>
             </label>
@@ -303,8 +361,11 @@ function PlanItemModal({
           {!isCalendarItem && (
             <div className="modal__field">
               <span className="modal__label">Attachments</span>
-              <AttachmentUploader attachments={attachments} onChange={setAttachments} />
-              {!isEdit && attachments.length > 0 && (
+              <AttachmentUploader
+                attachments={attachments}
+                onChange={(next) => { setAttachments(next); commitChange({ attachments: next }); }}
+              />
+              {!hasSavedItem && attachments.length > 0 && (
                 <p className="modal__hint">Files upload once the task is created.</p>
               )}
             </div>
@@ -317,6 +378,7 @@ function PlanItemModal({
               className="modal__input"
               value={date}
               onChange={(e) => setDate(e.target.value)}
+              onBlur={() => commitChange()}
               required={isCalendarItem}
             />
           </label>
@@ -327,7 +389,7 @@ function PlanItemModal({
               <select
                 className="modal__input"
                 value={recurrence}
-                onChange={(e) => setRecurrence(e.target.value)}
+                onChange={(e) => { setRecurrence(e.target.value); commitChange({ recurrence: e.target.value }); }}
               >
                 {RECURRENCE_OPTIONS.map((option) => (
                   <option key={option.value} value={option.value}>{option.label}</option>
@@ -341,7 +403,7 @@ function PlanItemModal({
               <input
                 type="checkbox"
                 checked={timed}
-                onChange={(e) => setTimed(e.target.checked)}
+                onChange={(e) => { const checked = e.target.checked; setTimed(checked); commitChange({ timed: checked }); }}
               />
               <span>Add a specific time</span>
             </label>
@@ -356,6 +418,7 @@ function PlanItemModal({
                   className="modal__input"
                   value={startTime}
                   onChange={(e) => setStartTime(e.target.value)}
+                  onBlur={() => commitChange()}
                   required={effectiveTimed}
                 />
               </label>
@@ -366,6 +429,7 @@ function PlanItemModal({
                   className="modal__input"
                   value={endTime}
                   onChange={(e) => setEndTime(e.target.value)}
+                  onBlur={() => commitChange()}
                   required={effectiveTimed}
                 />
               </label>
@@ -378,7 +442,7 @@ function PlanItemModal({
               <select
                 className="modal__input"
                 value={assignedToId}
-                onChange={(e) => setAssignedToId(e.target.value)}
+                onChange={(e) => { setAssignedToId(e.target.value); commitChange({ assignedToId: e.target.value }); }}
               >
                 <option value="">Unassigned</option>
                 {members.map((member) => (
@@ -423,8 +487,8 @@ function PlanItemModal({
             <button type="button" className="button button--ghost" onClick={onClose}>
               Cancel
             </button>
-            <button type="submit" className="button button--primary" disabled={saving || (!isCalendarItem && !listId)}>
-              {saving ? 'Saving…' : 'Save'}
+            <button type="submit" className="button button--primary" disabled={saving}>
+              {saving ? 'Saving…' : 'Done'}
             </button>
           </div>
         </form>

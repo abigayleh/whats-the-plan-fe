@@ -1,6 +1,6 @@
 import useAppData from './useAppData';
 import * as eventsApi from '../api/events';
-import { toBeItem } from '../api/adapters';
+import { toBeItem, adaptItem } from '../api/adapters';
 import { isTaskTimed } from '../utils/tasks';
 import { startOfDay } from '../utils/date';
 
@@ -13,13 +13,18 @@ export default function usePlanItems() {
     tasks, addTask, updateTask, deleteTask, toggleTaskStatus,
   } = useAppData();
 
+  // On create, returns `{ item }` — the adapted, newly-persisted item — so callers (namely the
+  // autosaving PlanItemModal) can start routing subsequent saves as updates. Updates return `{}`.
   async function saveItem(item, payload) {
     const origin = item?.origin ?? payload.origin;
     if (origin === 'event') {
       const body = toBeItem(payload, 'event');
-      if (item) await eventsApi.update(item.sourceId, body);
-      else await eventsApi.create(body);
-      return {};
+      if (item) {
+        await eventsApi.update(item.sourceId, body);
+        return {};
+      }
+      const created = await eventsApi.create(body);
+      return { item: adaptItem(created, 'event') };
     }
     const taskPayload = { ...payload };
     delete taskPayload.origin;
@@ -27,7 +32,8 @@ export default function usePlanItems() {
       await updateTask(item.sourceId, taskPayload);
       return {};
     }
-    return addTask(taskPayload);
+    const { task, attachmentError } = await addTask(taskPayload);
+    return { item: task, attachmentError };
   }
 
   async function deleteItem(item) {
