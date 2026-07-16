@@ -124,7 +124,7 @@ $timeline-allday-height: 2.75rem;
   }
 
   &__weekday {
-    font-size: 0.6875rem;
+    font-size: $font-size-xs;
     color: $color-text-muted;
   }
 
@@ -153,12 +153,12 @@ $timeline-allday-height: 2.75rem;
     height: $timeline-allday-height;
     display: flex;
     align-items: center;
-    font-size: 0.6875rem;
+    font-size: $font-size-xs;
     color: $color-text-muted;
   }
 
   &__label {
-    font-size: 0.625rem;
+    font-size: $font-size-xs;
     color: $color-text-muted;
     transform: translateY(-0.5em);
   }
@@ -194,12 +194,12 @@ $timeline-allday-height: 2.75rem;
     }
 
     .task-chip__title {
-      font-size: 0.6875rem;
+      font-size: $font-size-sm;
     }
   }
 
   &__more {
-    font-size: 0.625rem;
+    font-size: $font-size-xs;
     color: $color-text-muted;
   }
 
@@ -319,7 +319,7 @@ $timeline-allday-height: 2.75rem;
   }
 
   .task-row__title {
-    font-size: $font-size-lg;
+    font-size: $font-size-base;
     white-space: normal;
     overflow: visible;
     text-overflow: clip;

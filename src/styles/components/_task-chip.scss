@@ -101,12 +101,12 @@
   }
 
   &--timed &__title {
-    font-size: 0.6875rem;
+    font-size: $font-size-sm;
     font-weight: 600;
   }
 
   &--timed &__time {
-    font-size: 0.625rem;
+    font-size: $font-size-xs;
     margin-top: 0;
   }
 
