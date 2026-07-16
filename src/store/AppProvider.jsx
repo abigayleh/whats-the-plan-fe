@@ -161,7 +161,7 @@ function AppProvider({ children }) {
     lists: [...lists, ...SYSTEM_LISTS],
     tasks,
     async addList({
-      name, groupId, icon, color, showUnscheduledOnCalendar,
+      name, groupId, icon, color, showUnscheduledOnCalendar, hideScheduledOnCalendar,
     }) {
       const created = await listsApi.create({
         name,
@@ -169,16 +169,17 @@ function AppProvider({ children }) {
         icon: icon || null,
         color: color || null,
         showUnscheduledOnCalendar: showUnscheduledOnCalendar ?? true,
+        hideScheduledOnCalendar: hideScheduledOnCalendar ?? false,
       });
       await refreshLists();
       return adaptList(created);
     },
     // Scope is immutable, so only name/icon/color/calendar visibility are sent.
     async updateList(listId, {
-      name, icon, color, showUnscheduledOnCalendar,
+      name, icon, color, showUnscheduledOnCalendar, hideScheduledOnCalendar,
     }) {
       await listsApi.update(listId, {
-        name, icon: icon || null, color: color || null, showUnscheduledOnCalendar,
+        name, icon: icon || null, color: color || null, showUnscheduledOnCalendar, hideScheduledOnCalendar,
       });
       await refreshLists();
     },
