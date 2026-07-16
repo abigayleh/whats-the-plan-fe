@@ -63,24 +63,20 @@ function CalendarPage() {
 
   // Which lists have at least one scheduled item in the currently-fetched range — computed off
   // the raw `items` (not filteredItems) so a list's own hidden state can't hide it from itself.
-  // A list opted out via `showOnCalendar: false` doesn't count its scheduled items here.
+  // Scheduled items always show on the calendar, so no per-list opt-out applies here.
   const scheduledListIds = useMemo(() => new Set(items
     .filter((item) => item.listId)
-    .filter((item) => {
-      const list = lists.find((l) => l.id === item.listId);
-      return !(list && list.showOnCalendar === false);
-    })
     .map((item) => item.listId)),
-  [items, lists]);
+  [items]);
 
   // Which lists have at least one unscheduled to-do that's allowed to surface on the calendar
-  // (`showOnCalendar` not explicitly false). Independent of the page-level
-  // "Show unscheduled to-dos" toggle — that toggle only controls tray/panel visibility.
+  // (the list hasn't opted out via `showUnscheduledOnCalendar: false`). Independent of the
+  // page-level "Show unscheduled to-dos" toggle — that only controls tray/panel visibility.
   const listsWithShownUnscheduled = useMemo(() => new Set(tasks
     .filter((task) => task.listId && getTaskDay(task) == null)
     .filter((task) => {
       const list = lists.find((l) => l.id === task.listId);
-      return !(list && list.showOnCalendar === false);
+      return !(list && list.showUnscheduledOnCalendar === false);
     })
     .map((task) => task.listId)),
   [tasks, lists]);
@@ -109,11 +105,6 @@ function CalendarPage() {
       if (item.listId && hiddenListIds.has(item.listId)) return false;
       if (!showCompleted && item.status === 'done') return false;
       if (onlyMine && item.assignedToId && item.assignedToId !== currentUser.id) return false;
-      // A list can opt out of the calendar entirely; events (no list) are unaffected.
-      if (item.origin === 'task' && item.listId) {
-        const list = lists.find((l) => l.id === item.listId);
-        if (list && list.showOnCalendar === false) return false;
-      }
       return true;
     })
     // List color wins when the item's list has one set; otherwise falls back to group color
@@ -145,9 +136,9 @@ function CalendarPage() {
       if (hiddenGroupIds.has(task.groupId ?? null)) return false;
       if (task.listId && hiddenListIds.has(task.listId)) return false;
       if (onlyMine && task.assignedToId && task.assignedToId !== currentUser.id) return false;
-      // A list can opt out of the calendar surfaces entirely.
+      // A list can hide its unscheduled to-dos from the calendar.
       const list = task.listId ? lists.find((l) => l.id === task.listId) : null;
-      if (list && list.showOnCalendar === false) return false;
+      if (list && list.showUnscheduledOnCalendar === false) return false;
       return true;
     })
     .map((task) => ({
