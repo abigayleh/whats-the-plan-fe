@@ -176,9 +176,11 @@ function GroupSettingsPage() {
         </div>
       </div>
 
-      <button type="button" className="button button--danger" onClick={handleLeaveClick}>
-        Leave Group
-      </button>
+      <div className="page__card group-settings__danger-zone">
+        <button type="button" className="button button--danger-solid" onClick={handleLeaveClick}>
+          Leave Group
+        </button>
+      </div>
 
       {showLeaveWarning && (
         <div className="modal-overlay" onClick={() => setShowLeaveWarning(false)}>

@@ -29,4 +29,14 @@
     background: transparent;
     color: $color-danger;
   }
+
+  &--danger-solid {
+    background: $color-danger;
+    color: $color-surface;
+    box-shadow: $shadow-sm;
+
+    &:hover {
+      background: $color-danger-hover;
+    }
+  }
 }

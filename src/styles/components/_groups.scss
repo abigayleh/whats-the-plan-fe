@@ -114,6 +114,11 @@
   &__warning-text {
     color: $color-text-muted;
   }
+
+  &__danger-zone {
+    display: flex;
+    justify-content: flex-end;
+  }
 }
 
 .member-list {
