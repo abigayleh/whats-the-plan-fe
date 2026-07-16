@@ -129,8 +129,8 @@
     position: absolute;
     top: 0.125rem;
     right: 0.125rem;
-    gap: 0.0625rem;
-    padding: 0.0625rem;
+    gap: $spacing-xs;
+    padding: 0.125rem;
     border-radius: $radius-pill;
     background: $color-surface;
     border: 1px solid $color-border;
