@@ -119,20 +119,28 @@
   gap: $spacing-sm;
 
   &__swatch {
+    @include flex-center;
     width: 1.75rem;
     height: 1.75rem;
     border-radius: 50%;
     border: 2px solid transparent;
     cursor: pointer;
 
-    &--active {
-      border-color: $color-text;
+    &--none {
+      border-style: dashed;
+      border-color: $color-border;
+      background: $color-surface;
+      color: $color-text-muted;
     }
 
     @each $key, $pair in $accent-map {
       &--#{$key} {
         background: list.nth($pair, 1);
       }
+    }
+
+    &--active {
+      border-color: $color-text;
     }
   }
 }

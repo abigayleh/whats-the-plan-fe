@@ -242,11 +242,12 @@ $timeline-allday-height: 2.75rem;
 }
 
 // Day view + "Both" filter: CalendarDaily on the left, UnscheduledPanel on the right (#9).
+// The right column is deliberately roomy (#8) now that the page can use the full width.
 .calendar-day-split {
   display: grid;
-  grid-template-columns: 1fr 18rem;
+  grid-template-columns: 1fr 24rem;
   align-items: start;
-  gap: $spacing-md;
+  gap: $spacing-lg;
 }
 
 // Draggable tray of to-dos with no date — the day-Both split panel and the week/day

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { CloseIcon } from '../layout/icons';
 import { TASK_ICONS } from '../../constants/taskIcons';
+import { ACCENT_KEYS } from '../../constants/colors';
 import useAppData from '../../hooks/useAppData';
 
 // Create a list, or edit an existing one. Scope is fixed once a list exists.
@@ -10,6 +11,10 @@ function ListModal({ list, groups, onClose, onSave }) {
   const [name, setName] = useState(list?.name ?? '');
   const [groupId, setGroupId] = useState(list?.groupId ?? null);
   const [icon, setIcon] = useState(list?.icon ?? null);
+  const [color, setColor] = useState(list?.color ?? null);
+  const [showUnscheduledOnCalendar, setShowUnscheduledOnCalendar] = useState(
+    list?.showUnscheduledOnCalendar ?? true,
+  );
   const [error, setError] = useState(null);
   const [saving, setSaving] = useState(false);
 
@@ -19,7 +24,9 @@ function ListModal({ list, groups, onClose, onSave }) {
     setError(null);
     setSaving(true);
     try {
-      await onSave({ name: name.trim(), groupId, icon });
+      await onSave({
+        name: name.trim(), groupId, icon, color, showUnscheduledOnCalendar,
+      });
     } catch (err) {
       setError(err.message || `Could not ${isEdit ? 'save' : 'create'} list`);
       setSaving(false);
@@ -103,6 +110,40 @@ function ListModal({ list, groups, onClose, onSave }) {
               ))}
             </div>
           </div>
+
+          <div className="modal__field">
+            <span className="modal__label">Color</span>
+            <div className="color-picker">
+              <button
+                type="button"
+                className={`color-picker__swatch color-picker__swatch--none${color === null ? ' color-picker__swatch--active' : ''}`}
+                onClick={() => setColor(null)}
+                aria-label="No color"
+                aria-pressed={color === null}
+              >
+                <CloseIcon width={14} height={14} />
+              </button>
+              {ACCENT_KEYS.map((key) => (
+                <button
+                  key={key}
+                  type="button"
+                  className={`color-picker__swatch color-picker__swatch--${key}${color === key ? ' color-picker__swatch--active' : ''}`}
+                  onClick={() => setColor(key)}
+                  aria-label={key}
+                  aria-pressed={color === key}
+                />
+              ))}
+            </div>
+          </div>
+
+          <label className="modal__toggle">
+            <input
+              type="checkbox"
+              checked={showUnscheduledOnCalendar}
+              onChange={(e) => setShowUnscheduledOnCalendar(e.target.checked)}
+            />
+            <span>Show unscheduled items in calendar</span>
+          </label>
 
           <div className="modal__footer">
             <div className="modal__footer-spacer" />

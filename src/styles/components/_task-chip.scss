@@ -121,4 +121,43 @@
       background: list.nth($pair, 1);
     }
   }
+
+  // Complete/push-to-tomorrow controls, revealed on hover so they stay out of the way
+  // of the title/time on an already-small chip.
+  &__actions {
+    display: none;
+    position: absolute;
+    top: 0.125rem;
+    right: 0.125rem;
+    gap: 0.0625rem;
+    padding: 0.0625rem;
+    border-radius: $radius-pill;
+    background: $color-surface;
+    border: 1px solid $color-border;
+  }
+
+  &:hover &__actions {
+    display: flex;
+  }
+
+  &__action-button {
+    @include flex-center;
+    width: 1.125rem;
+    height: 1.125rem;
+    border-radius: 50%;
+    border: none;
+    padding: 0;
+    background: transparent;
+    color: $color-text-muted;
+    cursor: pointer;
+
+    &:hover {
+      background: $color-bg;
+    }
+
+    &:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+  }
 }
