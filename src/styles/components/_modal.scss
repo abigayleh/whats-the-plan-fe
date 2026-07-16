@@ -196,3 +196,27 @@
     }
   }
 }
+
+.day-picker {
+  display: flex;
+  gap: $spacing-xs;
+
+  &__day {
+    @include flex-center;
+    width: 2rem;
+    height: 2rem;
+    border-radius: 50%;
+    border: 1px solid $color-border;
+    background: $color-surface;
+    color: $color-text-muted;
+    font-size: $font-size-sm;
+    font-weight: 600;
+    cursor: pointer;
+
+    &--selected {
+      background: $color-primary-soft;
+      border-color: transparent;
+      color: $color-primary;
+    }
+  }
+}
