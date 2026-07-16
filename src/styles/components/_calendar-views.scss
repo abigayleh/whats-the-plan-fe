@@ -207,10 +207,10 @@ $timeline-allday-height: 2.75rem;
     }
   }
 
+  // left/width come from the overlap layout pass (CalendarTimeline) — always set inline,
+  // even for a lone item (left: 0.125rem margin, full width), so side-by-side items just work.
   &__block {
     position: absolute;
-    left: 0.125rem;
-    right: 0.125rem;
     overflow: hidden;
     cursor: grab;
   }

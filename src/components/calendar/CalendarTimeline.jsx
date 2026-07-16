@@ -2,6 +2,7 @@ import {
   DAY_HOURS, formatHourLabel, getTimeFromTimelinePosition, getTimelinePosition,
 } from '../../utils/date';
 import { getTaskDay, isTaskOnDay, isTaskTimed } from '../../utils/tasks';
+import { computeOverlapLayout } from '../../utils/overlap';
 import TaskChip from './TaskChip';
 
 const MAX_ALLDAY_VISIBLE = 3;
@@ -33,6 +34,7 @@ function CalendarTimeline({
 }) {
   const timedTasks = tasks.filter((task) => isTaskTimed(task) && isTaskOnDay(task, day));
   const alldayTasks = tasks.filter((task) => !isTaskTimed(task) && getTaskDay(task) && isTaskOnDay(task, day));
+  const overlapLayout = computeOverlapLayout(timedTasks);
 
   function handleColumnClick(e) {
     const rect = e.currentTarget.getBoundingClientRect();
@@ -89,13 +91,18 @@ function CalendarTimeline({
           const height = Math.max(bottom - top, 3);
           const durationMinutes = (task.scheduledEnd - task.scheduledStart) / 60000;
           const compact = durationMinutes < 30;
+          const { left, width } = overlapLayout.get(task.id) ?? { left: 0, width: 1 };
 
           return (
-            // Seam for Part 2: an overlap-layout pass can add `left`/`width` here for side-by-side blocks.
             <div
               key={task.id}
               className="calendar-timeline__block"
-              style={{ top: `${top}%`, height: `${height}%` }}
+              style={{
+                top: `${top}%`,
+                height: `${height}%`,
+                left: `calc(${left * 100}% + 0.125rem)`,
+                width: `calc(${width * 100}% - 0.25rem)`,
+              }}
             >
               <TaskChip
                 task={task}
