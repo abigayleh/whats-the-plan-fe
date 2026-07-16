@@ -35,8 +35,11 @@ function ListSection({
   const draftRef = useRef(draft);
   draftRef.current = draft;
   const mountedRef = useRef(true);
-  useEffect(() => () => {
-    mountedRef.current = false;
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
   }, []);
 
   function commitDraft() {
