@@ -68,12 +68,24 @@ function AppProvider({ children }) {
   // refreshes twice (its own await + the socket echo), so results are ticketed to stop a
   // slower earlier refresh from overwriting a newer one.
   const latestRefresh = useRef(0);
+  // Safety net so every user always has at least one personal list: if none exists after
+  // load, create one client-side. Guarded so a failed create can't retry-loop within the
+  // session, and the recursive refresh only ever recurses one level deep (the created
+  // list satisfies the check next pass). The backend will also create this on register.
+  const defaultListCreated = useRef(false);
   const refreshLists = useCallback(async () => {
     const ticket = latestRefresh.current + 1;
     latestRefresh.current = ticket;
     try {
       const adapted = (await listsApi.list()).map(adaptList);
       if (ticket !== latestRefresh.current) return;
+      const hasPersonalList = adapted.some((l) => l.groupId === null && !l.isSystem);
+      if (!hasPersonalList && !defaultListCreated.current) {
+        defaultListCreated.current = true;
+        await listsApi.create({ name: 'My to dos', groupId: null });
+        await refreshLists();
+        return;
+      }
       setLists(adapted);
       const perList = await Promise.all(adapted.map((l) => listsApi.tasks(l.id).catch(() => [])));
       if (ticket !== latestRefresh.current) return;
