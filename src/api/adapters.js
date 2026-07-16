@@ -22,8 +22,7 @@ export const adaptList = (l) => ({
   ownerId: l.ownerId,
   icon: l.icon,
   color: l.color ?? null,
-  showUnscheduledOnCalendar: l.showUnscheduledOnCalendar ?? true,
-  hideScheduledOnCalendar: l.hideScheduledOnCalendar ?? false,
+  showOnCalendar: l.showOnCalendar ?? true,
   isSystem: l.isSystem,
   taskCount: l.taskCount,
 });
