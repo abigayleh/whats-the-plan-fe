@@ -1,17 +1,28 @@
 import { useState } from 'react';
+import { MenuIcon } from './icons';
 import useAppData from '../../hooks/useAppData';
 import { getGreeting } from '../../utils/date';
 import ProfileMenu from './ProfileMenu';
 
-function Header() {
+function Header({ onOpenNav }) {
   const { currentUser } = useAppData();
   const [menuOpen, setMenuOpen] = useState(false);
 
   return (
     <header className="header">
-      <div>
-        <p className="header__eyebrow">{getGreeting()}</p>
-        <p className="header__title">{currentUser.name}</p>
+      <div className="header__left">
+        <button
+          type="button"
+          className="header__nav-toggle"
+          onClick={onOpenNav}
+          aria-label="Open menu"
+        >
+          <MenuIcon />
+        </button>
+        <div>
+          <p className="header__eyebrow">{getGreeting()}</p>
+          <p className="header__title">{currentUser.name}</p>
+        </div>
       </div>
       <div className="header__profile">
         <button

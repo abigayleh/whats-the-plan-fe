@@ -13,6 +13,23 @@
   gap: $spacing-lg;
   transition: width 0.15s ease;
 
+  // Mobile: a slide-in drawer over the content, toggled from the header hamburger.
+  @include respond-below(tablet) {
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 100vh;
+    width: min(19rem, 82vw);
+    z-index: 40;
+    transform: translateX(-100%);
+    transition: transform 0.2s ease;
+    box-shadow: $shadow-md;
+
+    &.side-nav--mobile-open {
+      transform: translateX(0);
+    }
+  }
+
   &--collapsed {
     width: $sidenav-collapsed-width;
 

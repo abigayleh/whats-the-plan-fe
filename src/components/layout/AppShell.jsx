@@ -1,17 +1,32 @@
+import { useEffect, useState } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
 import Header from './Header';
 import SideNav from './SideNav';
 
 function AppShell() {
+  const { pathname } = useLocation();
   // The calendar (index route) benefits from the full content width — everything else
   // stays capped at the usual reading width.
-  const isFullWidth = useLocation().pathname === '/';
+  const isFullWidth = pathname === '/';
+  // Mobile-only: the side nav becomes a slide-in drawer toggled from the header.
+  const [navOpen, setNavOpen] = useState(false);
+
+  // Close the drawer whenever the route changes (i.e. a nav item was tapped).
+  useEffect(() => { setNavOpen(false); }, [pathname]);
 
   return (
     <div className="app-shell">
-      <SideNav />
+      <SideNav open={navOpen} />
+      {navOpen && (
+        <button
+          type="button"
+          className="app-shell__nav-backdrop"
+          onClick={() => setNavOpen(false)}
+          aria-label="Close menu"
+        />
+      )}
       <div className="app-shell__main">
-        <Header />
+        <Header onOpenNav={() => setNavOpen(true)} />
         <main className={`app-shell__content${isFullWidth ? ' app-shell__content--full' : ''}`}>
           <Outlet />
         </main>

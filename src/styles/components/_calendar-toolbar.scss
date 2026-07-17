@@ -157,6 +157,11 @@
     color: $color-primary;
     font-size: $font-size-lg;
     cursor: pointer;
+
+    @include respond-below(tablet) {
+      width: 2.75rem;
+      height: 2.75rem;
+    }
   }
 
   &__label-group {
