@@ -333,9 +333,14 @@ $timeline-allday-height: 2.75rem;
 
 // --- Mobile ---
 @include respond-below(tablet) {
-  // Day view: stack the to-do panel under the timeline; the drag-resizer is meaningless stacked.
+  // Day view: stack the panels; the drag-resizer is meaningless stacked. To-dos go on top
+  // (order:-1) so they're the first thing seen, with the timeline below.
   .calendar-day-split {
     grid-template-columns: 1fr;
+
+    .day-todo-panel {
+      order: -1;
+    }
   }
 
   .calendar-day-split__resizer {
