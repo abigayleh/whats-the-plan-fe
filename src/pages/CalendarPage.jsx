@@ -17,7 +17,7 @@ import useLocalStorageSet from '../hooks/useLocalStorageSet';
 import useCalendarItems from '../hooks/useCalendarItems';
 import useResizableSplit from '../hooks/useResizableSplit';
 import {
-  getListColorKey, getTaskColorKey, getTaskIconKey, getTaskDay, isTaskOnDay, isTaskTimed,
+  getListColorKey, getTaskColorKey, getTaskIconKey, getTaskDay, isTaskOnDay, isTaskTimed, isTaskOverdue,
 } from '../utils/tasks';
 import {
   addDays, addMonths, startOfDay, getMonthGrid, getWeekDays,
@@ -147,6 +147,24 @@ function CalendarPage() {
       // A list can hide its unscheduled to-dos from the calendar.
       const list = task.listId ? lists.find((l) => l.id === task.listId) : null;
       if (list && list.showUnscheduledOnCalendar === false) return false;
+      return true;
+    })
+    .map((task) => ({
+      ...task,
+      colorKey: getTaskColorKey(task, lists, groups, personalSpace),
+      icon: getTaskIconKey(task, lists),
+    })),
+  [tasks, lists, groups, personalSpace, hiddenGroupIds, hiddenListIds, onlyMine, currentUser, groupIdOf]);
+
+  // Past-due, incomplete to-dos surfaced above Today in the day panel. Read from all tasks
+  // (they may be due before the fetched range) and filtered like unscheduled — but a list's
+  // "hide unscheduled" doesn't apply, since overdue items are dated, not unscheduled.
+  const overdueTasks = useMemo(() => tasks
+    .filter((task) => isTaskOverdue(task))
+    .filter((task) => {
+      if (hiddenGroupIds.has(groupIdOf(task))) return false;
+      if (task.listId && hiddenListIds.has(task.listId)) return false;
+      if (onlyMine && task.assignedToId && task.assignedToId !== currentUser.id) return false;
       return true;
     })
     .map((task) => ({
@@ -406,10 +424,12 @@ function CalendarPage() {
               aria-label="Resize to-do panel"
             />
             <DayTodoPanel
+              overdueTasks={overdueTasks}
               todayTasks={todayTasks}
               unscheduledTasks={unscheduledTasks}
               lists={lists}
               onToggle={toggleItemStatus}
+              onOpenOverdue={(task) => openItem({ origin: 'task', sourceId: task.id })}
               onOpenToday={openItem}
               onOpenUnscheduled={(task) => openItem({ origin: 'task', sourceId: task.id })}
               showUnscheduled={showUnscheduledTray}

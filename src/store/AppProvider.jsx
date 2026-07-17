@@ -16,6 +16,9 @@ import { DEFAULT_PERSONAL_SPACE } from '../mocks/groups';
 // rather than fetched — no second source of truth to keep in sync.
 const SYSTEM_LISTS = [
   {
+    id: 'l-overdue', name: 'Overdue', groupId: null, icon: null, isSystem: true,
+  },
+  {
     id: 'l-assigned', name: 'Assigned to Me', groupId: null, icon: null, isSystem: true,
   },
   {
