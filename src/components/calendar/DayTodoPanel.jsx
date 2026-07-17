@@ -4,10 +4,21 @@ import TaskRowGroup from './TaskRowGroup';
 // day) above "Unscheduled" (no date at all) — both stay draggable onto CalendarTimeline.
 // The "Unscheduled" section honors the page's "Show unscheduled to-dos" toggle.
 function DayTodoPanel({
-  todayTasks, unscheduledTasks, lists, onToggle, onOpenToday, onOpenUnscheduled, showUnscheduled,
+  overdueTasks, todayTasks, unscheduledTasks, lists,
+  onToggle, onOpenOverdue, onOpenToday, onOpenUnscheduled, showUnscheduled,
 }) {
   return (
     <div className="day-todo-panel">
+      {overdueTasks.length > 0 && (
+        <TaskRowGroup
+          title="Overdue"
+          tasks={overdueTasks}
+          lists={lists}
+          onToggle={onToggle}
+          onOpen={onOpenOverdue}
+          emptyLabel="Nothing overdue."
+        />
+      )}
       <TaskRowGroup
         title="Today"
         tasks={todayTasks}

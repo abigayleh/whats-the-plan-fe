@@ -13,27 +13,48 @@ export default function usePlanItems() {
     tasks, addTask, updateTask, deleteTask, toggleTaskStatus,
   } = useAppData();
 
-  // On create, returns `{ item }` — the adapted, newly-persisted item — so callers (namely the
-  // autosaving PlanItemModal) can start routing subsequent saves as updates. Updates return `{}`.
-  async function saveItem(item, payload) {
-    const origin = item?.origin ?? payload.origin;
-    if (origin === 'event') {
-      const body = toBeItem(payload, 'event');
-      if (item) {
-        await eventsApi.update(item.sourceId, body);
-        return {};
-      }
-      const created = await eventsApi.create(body);
+  // Creates a fresh event or to-do from a payload; returns `{ item, attachmentError? }` — the
+  // adapted, newly-persisted item — so callers can start routing subsequent saves as updates.
+  async function createByOrigin(target, payload) {
+    if (target === 'event') {
+      const created = await eventsApi.create(toBeItem(payload, 'event'));
       return { item: adaptItem(created, 'event') };
     }
     const taskPayload = { ...payload };
     delete taskPayload.origin;
-    if (item) {
+    const { task, attachmentError } = await addTask(taskPayload);
+    return { item: task, attachmentError };
+  }
+
+  // Saves the PlanItem: in-place update when the kind is unchanged; create-then-delete when
+  // converting between an event and a to-do (they're separate DB entities). On create/convert
+  // returns `{ item }` so the modal re-routes later saves; a plain update returns `{}`.
+  async function saveItem(item, payload) {
+    // Partial updates (e.g. push-to-tomorrow) send no origin — fall back to the item's own kind,
+    // so they route to an in-place update rather than being mistaken for a conversion.
+    const target = payload.origin ?? item?.origin;
+    if (item && item.origin === target) {
+      if (target === 'event') {
+        await eventsApi.update(item.sourceId, toBeItem(payload, 'event'));
+        return {};
+      }
+      const taskPayload = { ...payload };
+      delete taskPayload.origin;
       await updateTask(item.sourceId, taskPayload);
       return {};
     }
-    const { task, attachmentError } = await addTask(taskPayload);
-    return { item: task, attachmentError };
+    // New item, or converting kind (event ↔ to-do): create the new entity, then drop the old.
+    const created = await createByOrigin(target, payload);
+    if (item) {
+      try {
+        await deleteItem(item);
+      } catch {
+        // The new entity is already saved; re-point to it (returning `created` so the modal
+        // re-routes) rather than losing the reference, but warn that the original is orphaned.
+        return { ...created, warning: "Converted, but couldn't remove the original — delete it manually." };
+      }
+    }
+    return created;
   }
 
   async function deleteItem(item) {

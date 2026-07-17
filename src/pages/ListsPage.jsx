@@ -7,7 +7,7 @@ import useAppData from '../hooks/useAppData';
 import usePlanItems from '../hooks/usePlanItems';
 import useLocalStorageState from '../hooks/useLocalStorageState';
 import {
-  getListColorKey, getTaskColorKey, getTaskIconKey, isTaskOnDay,
+  getListColorKey, getTaskColorKey, getTaskIconKey, isTaskOnDay, isTaskOverdue,
 } from '../utils/tasks';
 
 function ListsPage() {
@@ -22,8 +22,10 @@ function ListsPage() {
   const [showCompleted, setShowCompleted] = useLocalStorageState('lists-show-completed', true);
   const [hideScheduled, setHideScheduled] = useLocalStorageState('lists-hide-scheduled', false);
 
+  // Overdue pinned to the very top, then user lists, then the other system lists.
+  const listRank = (list) => (list.id === 'l-overdue' ? 0 : (list.isSystem ? 2 : 1));
   const orderedLists = [...lists]
-    .sort((a, b) => Number(a.isSystem) - Number(b.isSystem))
+    .sort((a, b) => listRank(a) - listRank(b))
     .map((list) => ({ ...list, colorKey: getListColorKey(list, groups, personalSpace) }));
 
   // Only the list's owner or an admin of its group may remove it (mirrors the API).
@@ -35,7 +37,9 @@ function ListsPage() {
 
   function tasksForList(list) {
     let matching;
-    if (list.id === 'l-due-today') {
+    if (list.id === 'l-overdue') {
+      matching = tasks.filter(isTaskOverdue);
+    } else if (list.id === 'l-due-today') {
       matching = tasks.filter((task) => isTaskOnDay(task, new Date()));
     } else if (list.isSystem) {
       matching = tasks.filter((task) => task.assignedToId === currentUser.id);
@@ -123,21 +127,26 @@ function ListsPage() {
       </div>
 
       <div className="list-sections">
-        {orderedLists.map((list) => (
-          <ListSection
-            key={list.id}
-            list={list}
-            tasks={tasksForList(list)}
-            allLists={lists}
-            showCompleted={showCompleted}
-            hideScheduled={hideScheduled}
-            onToggleTask={toggleTaskStatus}
-            onEditTask={handleEditTask}
-            onAddTask={handleAddTask}
-            onEditList={canManageList(list) ? (l) => setListModal({ mode: 'edit', list: l }) : null}
-            onDeleteList={canManageList(list) ? handleDeleteList : null}
-          />
-        ))}
+        {orderedLists.map((list) => {
+          const listTasks = tasksForList(list);
+          // Overdue only appears when there's something in it — no empty banner every day.
+          if (list.id === 'l-overdue' && listTasks.length === 0) return null;
+          return (
+            <ListSection
+              key={list.id}
+              list={list}
+              tasks={listTasks}
+              allLists={lists}
+              showCompleted={showCompleted}
+              hideScheduled={list.id === 'l-overdue' ? false : hideScheduled}
+              onToggleTask={toggleTaskStatus}
+              onEditTask={handleEditTask}
+              onAddTask={handleAddTask}
+              onEditList={canManageList(list) ? (l) => setListModal({ mode: 'edit', list: l }) : null}
+              onDeleteList={canManageList(list) ? handleDeleteList : null}
+            />
+          );
+        })}
       </div>
 
       {listModal && (

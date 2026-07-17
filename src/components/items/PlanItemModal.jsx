@@ -35,7 +35,11 @@ function PlanItemModal({
   // A bare calendar item has no list — to-do-only fields (status, attachments, assignee) are
   // hidden for it, and scope comes from the group select instead. Subtasks ARE shared with
   // events (below), unlike the rest of this list.
-  const isCalendarItem = isEdit ? item.origin === 'event' : !listId;
+  // Origin follows the list choice live, so assigning a list to an event converts it to a to-do.
+  const isCalendarItem = !listId;
+  // Only a new item or one that began as an event may be a bare calendar event; a to-do can be
+  // moved between lists but not turned back into an event.
+  const canBeCalendarEvent = !isEdit || item.origin === 'event';
   const list = writableLists.find((l) => l.id === listId);
   const members = useGroupMembers(list?.groupId);
 
@@ -172,7 +176,7 @@ function PlanItemModal({
 
     // Mirrors `isCalendarItem`, but off the (possibly overridden) list choice rather than the
     // render's `listId` — an override applied via commitChange hasn't re-rendered yet.
-    const calendarItem = isEdit ? isCalendarItem : !state.listId;
+    const calendarItem = !state.listId;
 
     if (calendarItem) {
       if (!state.date) return null;
@@ -232,6 +236,7 @@ function PlanItemModal({
         setHasSavedItem(true);
       }
       if (response?.attachmentError) setError(`Saved, but files didn't upload: ${response.attachmentError}`);
+      else if (response?.warning) setError(response.warning);
       return true;
     } catch (err) {
       setError(err.message || `Could not save ${isCalendarItem ? 'event' : 'task'}`);
@@ -278,22 +283,20 @@ function PlanItemModal({
         <form className="modal__form" onSubmit={(e) => { e.preventDefault(); handleDone(); }}>
           {error && <p className="auth-card__error">{error}</p>}
 
-          {(!originLocked || !isCalendarItem) && (
-            <label className="modal__field">
-              <span className="modal__label">List</span>
-              <select
-                className="modal__input"
-                value={listId}
-                onChange={(e) => handleListChange(e.target.value)}
-                required={!isCalendarItem}
-              >
-                {!originLocked && !defaultListId && <option value="">No list (calendar event)</option>}
-                {writableLists.map((l) => (
-                  <option key={l.id} value={l.id}>{l.name}</option>
-                ))}
-              </select>
-            </label>
-          )}
+          <label className="modal__field">
+            <span className="modal__label">List</span>
+            <select
+              className="modal__input"
+              value={listId}
+              onChange={(e) => handleListChange(e.target.value)}
+              required={!isCalendarItem}
+            >
+              {canBeCalendarEvent && !defaultListId && <option value="">No list (calendar event)</option>}
+              {writableLists.map((l) => (
+                <option key={l.id} value={l.id}>{l.name}</option>
+              ))}
+            </select>
+          </label>
 
           {isCalendarItem && (
             <label className="modal__field">
@@ -533,7 +536,8 @@ function PlanItemModal({
                 className="button button--danger"
                 onClick={async () => {
                   try {
-                    await onDelete(item);
+                    // savedItemRef tracks the live entity — after a convert it's the new to-do/event.
+                    await onDelete(savedItemRef.current ?? item);
                   } catch (err) {
                     setError(err.message || `Could not delete ${isCalendarItem ? 'event' : 'task'}`);
                   }
@@ -546,7 +550,14 @@ function PlanItemModal({
             <button type="button" className="button button--ghost" onClick={onClose}>
               Cancel
             </button>
-            <button type="submit" className="button button--primary" disabled={saving}>
+            <button
+              type="submit"
+              className="button button--primary"
+              // Don't steal focus from the active field: that fires its blur-save and flips
+              // `saving` mid-click, which used to swallow the first click. Not disabled while
+              // saving for the same reason — handleDone's own commit is queued safely.
+              onMouseDown={(e) => e.preventDefault()}
+            >
               {saving ? 'Saving…' : 'Done'}
             </button>
           </div>
