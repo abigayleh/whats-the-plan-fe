@@ -330,3 +330,31 @@ $timeline-allday-height: 2.75rem;
     height: 1.625rem;
   }
 }
+
+// --- Mobile ---
+@include respond-below(tablet) {
+  // Day view: stack the to-do panel under the timeline; the drag-resizer is meaningless stacked.
+  .calendar-day-split {
+    grid-template-columns: 1fr;
+  }
+
+  .calendar-day-split__resizer {
+    display: none;
+  }
+
+  // Week view has too many columns to fit a phone — scroll the whole grid sideways as one unit.
+  .calendar-week {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .calendar-week__header,
+  .calendar-week__timeline {
+    min-width: 44rem;
+  }
+
+  // Sticky doesn't play well inside a horizontal scroller — let the header scroll with the grid.
+  .calendar-week__header {
+    position: static;
+  }
+}

@@ -100,6 +100,11 @@
     font-size: $font-size-base;
     color: $color-text;
 
+    // 16px keeps iOS Safari from zooming in when the field is focused.
+    @include respond-below(tablet) {
+      font-size: 1rem;
+    }
+
     &::placeholder {
       color: $color-text-muted;
     }

@@ -37,6 +37,11 @@
       border: 1px solid $color-border;
       border-radius: $radius-sm;
 
+      // 16px keeps iOS Safari from zooming in when a field is focused.
+      @include respond-below(tablet) {
+        font-size: 1rem;
+      }
+
       &:focus {
         outline: 2px solid $color-primary;
         outline-offset: 1px;
