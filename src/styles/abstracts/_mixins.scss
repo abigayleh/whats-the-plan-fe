@@ -10,6 +10,17 @@
   }
 }
 
+// Max-width counterpart for phone/tablet overrides (desktop-first layer).
+@mixin respond-below($breakpoint) {
+  @if $breakpoint == mobile {
+    @media (max-width: ($breakpoint-mobile - 0.02px)) { @content; }
+  } @else if $breakpoint == tablet {
+    @media (max-width: ($breakpoint-tablet - 0.02px)) { @content; }
+  } @else if $breakpoint == desktop {
+    @media (max-width: ($breakpoint-desktop - 0.02px)) { @content; }
+  }
+}
+
 @mixin flex-center {
   display: flex;
   align-items: center;

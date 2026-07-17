@@ -4,6 +4,7 @@ import {
 } from './icons';
 import useAppData from '../../hooks/useAppData';
 import useLocalStorageState from '../../hooks/useLocalStorageState';
+import useMediaQuery from '../../hooks/useMediaQuery';
 
 const NAV_ITEMS = [
   { to: '/', label: 'Calendar', end: true, Icon: CalendarIcon },
@@ -13,24 +14,29 @@ const NAV_ITEMS = [
   { to: '/groups', label: 'Groups', Icon: GroupsIcon },
 ];
 
-function SideNav() {
+function SideNav({ open = false }) {
   const { currentUser, personalSpace, groups } = useAppData();
-  const [collapsed, setCollapsed] = useLocalStorageState('sidenav-collapsed', false);
+  const [collapsedPref, setCollapsed] = useLocalStorageState('sidenav-collapsed', false);
+  const isMobile = useMediaQuery('(max-width: 767.98px)');
+  // The mobile drawer always shows the full nav; collapse is a desktop-only convenience.
+  const collapsed = collapsedPref && !isMobile;
   const spaces = [personalSpace, ...groups];
 
   return (
-    <nav className={`side-nav${collapsed ? ' side-nav--collapsed' : ''}`}>
+    <nav className={`side-nav${collapsed ? ' side-nav--collapsed' : ''}${open ? ' side-nav--mobile-open' : ''}`}>
       <div className="side-nav__header">
         {!collapsed && <p className="side-nav__brand">What&apos;s the Plan?</p>}
-        <button
-          type="button"
-          className="side-nav__collapse-toggle"
-          onClick={() => setCollapsed((prev) => !prev)}
-          aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-          data-tooltip={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-        >
-          <ChevronIcon className={`side-nav__collapse-icon${collapsed ? ' side-nav__collapse-icon--collapsed' : ''}`} />
-        </button>
+        {!isMobile && (
+          <button
+            type="button"
+            className="side-nav__collapse-toggle"
+            onClick={() => setCollapsed((prev) => !prev)}
+            aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+            data-tooltip={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+          >
+            <ChevronIcon className={`side-nav__collapse-icon${collapsed ? ' side-nav__collapse-icon--collapsed' : ''}`} />
+          </button>
+        )}
       </div>
       <div className="side-nav__items">
         {NAV_ITEMS.map(({

@@ -10,6 +10,34 @@
   background: $color-surface;
   border-bottom: 1px solid $color-border;
 
+  @include respond-below(tablet) {
+    padding: 0 $spacing-md;
+  }
+
+  &__left {
+    display: flex;
+    align-items: center;
+    gap: $spacing-sm;
+    min-width: 0;
+  }
+
+  // Hamburger — only shown on mobile, where the side nav is a drawer.
+  &__nav-toggle {
+    display: none;
+
+    @include respond-below(tablet) {
+      @include flex-center;
+      flex-shrink: 0;
+      width: 2.5rem;
+      height: 2.5rem;
+      border: none;
+      border-radius: $radius-sm;
+      background: transparent;
+      color: $color-text;
+      cursor: pointer;
+    }
+  }
+
   &__eyebrow {
     margin: 0;
     font-size: $font-size-sm;

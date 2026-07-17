@@ -1,4 +1,5 @@
 @use '../abstracts/variables' as *;
+@use '../abstracts/mixins' as *;
 
 .app-shell {
   min-height: 100vh;
@@ -13,6 +14,20 @@
     min-height: 100vh;
   }
 
+  // Dims the content while the mobile nav drawer is open; tap to close.
+  &__nav-backdrop {
+    display: none;
+
+    @include respond-below(tablet) {
+      display: block;
+      position: fixed;
+      inset: 0;
+      z-index: 39;
+      border: none;
+      background: rgba(36, 31, 51, 0.4);
+    }
+  }
+
   &__content {
     flex: 1;
     width: 100%;
@@ -22,6 +37,10 @@
 
     &--full {
       max-width: none;
+    }
+
+    @include respond-below(tablet) {
+      padding: 0 $spacing-md $spacing-lg;
     }
   }
 }
