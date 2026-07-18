@@ -13,6 +13,9 @@ function TaskActionButtons({ task, lists }) {
   const [openPopover, setOpenPopover] = useState(null); // null | 'reschedule' | 'move'
   const timed = isTaskTimed(task);
   const writableLists = lists.filter((list) => !list.isSystem);
+  // On the calendar these rows are occurrences whose `id` is synthetic — always act on the
+  // real DB id so update/delete resolve (on list rows sourceId equals id anyway).
+  const taskId = task.sourceId ?? task.id;
 
   const [date, setDate] = useState(toDateInputValue(getTaskDay(task)));
   const [startTime, setStartTime] = useState(toTimeInputValue(task.scheduledStart) || '09:00');
@@ -26,12 +29,12 @@ function TaskActionButtons({ task, lists }) {
     e.preventDefault();
     if (!date) return;
     if (timed) {
-      updateTask(task.id, {
+      updateTask(taskId, {
         scheduledStart: combineDateAndTime(date, startTime),
         scheduledEnd: combineDateAndTime(date, endTime),
       });
     } else {
-      updateTask(task.id, { dueDate: combineDateAndTime(date, '00:00') });
+      updateTask(taskId, { dueDate: combineDateAndTime(date, '00:00') });
     }
     setOpenPopover(null);
   }
@@ -40,18 +43,18 @@ function TaskActionButtons({ task, lists }) {
     const tomorrow = addDays(new Date(), 1);
     const tomorrowStr = toDateInputValue(tomorrow);
     if (timed) {
-      updateTask(task.id, {
+      updateTask(taskId, {
         scheduledStart: combineDateAndTime(tomorrowStr, toTimeInputValue(task.scheduledStart)),
         scheduledEnd: combineDateAndTime(tomorrowStr, toTimeInputValue(task.scheduledEnd)),
       });
     } else {
-      updateTask(task.id, { dueDate: combineDateAndTime(tomorrowStr, '00:00') });
+      updateTask(taskId, { dueDate: combineDateAndTime(tomorrowStr, '00:00') });
     }
   }
 
   // The API re-scopes the task and drops an assignee who isn't in the target group.
   function handleMove(newListId) {
-    if (newListId && newListId !== task.listId) updateTask(task.id, { listId: newListId });
+    if (newListId && newListId !== task.listId) updateTask(taskId, { listId: newListId });
     setOpenPopover(null);
   }
 
@@ -87,7 +90,7 @@ function TaskActionButtons({ task, lists }) {
       <button
         type="button"
         className="task-actions__button task-actions__button--danger"
-        onClick={() => deleteTask(task.id)}
+        onClick={() => deleteTask(taskId)}
         aria-label="Delete"
         data-tooltip="Delete"
       >
