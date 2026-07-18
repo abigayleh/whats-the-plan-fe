@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import { CheckIcon, RepeatIcon, SkipForwardIcon } from '../layout/icons';
 import { formatTime } from '../../utils/date';
 import { isItemRecurring, isTaskTimed } from '../../utils/tasks';
@@ -7,7 +8,14 @@ function TaskChip({
   task, lists, onToggle, onOpen, onPushToTomorrow, compact = false, showActions = false, hideTime = false,
   draggable = false, past = false,
 }) {
-  const done = task.status === 'done';
+  // Optimistic check — see TaskRow: show the tick immediately, defer to server status on refetch.
+  const [pendingDone, setPendingDone] = useState(null);
+  useEffect(() => { setPendingDone(null); }, [task.status]);
+  const done = pendingDone ?? (task.status === 'done');
+  function handleToggle() {
+    setPendingDone(!done);
+    onToggle(task.id);
+  }
   const timed = isTaskTimed(task);
   const isEvent = task.origin === 'event';
   const recurring = isItemRecurring(task);
@@ -40,7 +48,7 @@ function TaskChip({
           className="task-chip__check"
           onClick={(e) => {
             e.stopPropagation();
-            onToggle(task.id);
+            handleToggle();
           }}
           aria-label={done ? 'Mark as not done' : 'Mark as done'}
           aria-pressed={done}
@@ -67,7 +75,7 @@ function TaskChip({
             <button
               type="button"
               className="task-chip__action-button"
-              onClick={() => onToggle(task.id)}
+              onClick={() => handleToggle()}
               aria-label={done ? 'Mark as not done' : 'Mark as done'}
               aria-pressed={done}
               data-tooltip={done ? 'Mark as not done' : 'Mark as done'}

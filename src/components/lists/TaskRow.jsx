@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import { CheckIcon, RepeatIcon } from '../layout/icons';
 import { formatDateShort, formatTime } from '../../utils/date';
 import { getTaskDay, isTaskOverdue, isTaskTimed } from '../../utils/tasks';
@@ -7,7 +8,16 @@ import TaskActionButtons from '../tasks/TaskActionButtons';
 function TaskRow({
   task, lists, onToggle, onClick, draggable = false,
 }) {
-  const done = task.status === 'done';
+  // Optimistic check: show the tick the instant it's clicked, then let the server-confirmed
+  // status take over (and the row re-sort/disappear) once the refetch lands.
+  const [pendingDone, setPendingDone] = useState(null);
+  useEffect(() => { setPendingDone(null); }, [task.status]);
+  const done = pendingDone ?? (task.status === 'done');
+
+  function handleToggle() {
+    setPendingDone(!done);
+    onToggle(task.id);
+  }
   const overdue = isTaskOverdue(task);
   const day = getTaskDay(task);
   const timed = isTaskTimed(task);
@@ -38,13 +48,13 @@ function TaskRow({
         tabIndex={0}
         onClick={(e) => {
           e.stopPropagation();
-          onToggle(task.id);
+          handleToggle();
         }}
         onKeyDown={(e) => {
           if (e.key === 'Enter' || e.key === ' ') {
             e.preventDefault();
             e.stopPropagation();
-            onToggle(task.id);
+            handleToggle();
           }
         }}
       >
