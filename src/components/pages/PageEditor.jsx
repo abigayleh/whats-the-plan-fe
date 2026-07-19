@@ -1,9 +1,16 @@
-import { useEffect, useMemo, useState } from 'react';
-import { useParams, useNavigate, useOutletContext } from 'react-router-dom';
+import {
+  useEffect, useMemo, useRef, useState,
+} from 'react';
+import {
+  useParams, useNavigate, useOutletContext, Link,
+} from 'react-router-dom';
 import * as pagesApi from '../../api/pages';
 import { TrashIcon } from '../layout/icons';
+import { socket } from '../../socket/socketClient';
 import useDebouncedCallback from '../../hooks/useDebouncedCallback';
+import { ancestorsOf } from '../../utils/pageTree';
 import PageDocument from './PageDocument';
+import MovePageMenu from './MovePageMenu';
 
 const SAVE_LABEL = { saving: 'Saving…', saved: 'Saved', idle: '' };
 
@@ -19,10 +26,14 @@ function PageEditor() {
   const [title, setTitle] = useState('');
   const [status, setStatus] = useState('loading'); // loading | ready | missing
   const [saveState, setSaveState] = useState('idle'); // idle | saving | saved
+  const [staleRemote, setStaleRemote] = useState(false);
+  const [reloadKey, setReloadKey] = useState(0);
+  const lastSave = useRef(0); // timestamp of our last write, to ignore our own socket echo
 
   useEffect(() => {
     let active = true;
     setStatus('loading');
+    setStaleRemote(false);
     pagesApi.get(pageId)
       .then((p) => {
         if (!active) return;
@@ -32,6 +43,17 @@ function PageEditor() {
       })
       .catch(() => { if (active) setStatus('missing'); });
     return () => { active = false; };
+  }, [pageId, reloadKey]);
+
+  // Nudge (don't clobber) when this page is edited elsewhere; skip our own save echo.
+  useEffect(() => {
+    const onUpdated = (payload) => {
+      if (payload?.id !== pageId) return;
+      if (Date.now() - lastSave.current < 2500) return;
+      setStaleRemote(true);
+    };
+    socket.on('page:updated', onUpdated);
+    return () => socket.off('page:updated', onUpdated);
   }, [pageId]);
 
   const editable = page ? canManagePage(page) : false;
@@ -41,8 +63,10 @@ function PageEditor() {
     () => pages.filter((p) => p.id !== pageId && (p.groupId || null) === ((page?.groupId) || null)),
     [pages, pageId, page],
   );
+  const trail = useMemo(() => ancestorsOf(pageId, pages), [pageId, pages]);
 
   const [saveTitle, flushTitle] = useDebouncedCallback((id, value) => {
+    lastSave.current = Date.now();
     updatePage(id, { title: value.trim() || 'Untitled' });
   }, 800);
 
@@ -50,6 +74,7 @@ function PageEditor() {
     setSaveState('saving');
     try {
       await saveContent(id, content);
+      lastSave.current = Date.now();
       setSaveState('saved');
     } catch {
       setSaveState('idle');
@@ -62,6 +87,12 @@ function PageEditor() {
   function handleTitle(e) {
     setTitle(e.target.value);
     saveTitle(pageId, e.target.value);
+  }
+
+  async function handleMove(parentId) {
+    lastSave.current = Date.now();
+    await updatePage(pageId, { parentId });
+    setPage((prev) => (prev ? { ...prev, parentId } : prev));
   }
 
   async function handleDelete() {
@@ -77,19 +108,40 @@ function PageEditor() {
   return (
     <div className="page-editor">
       <div className="page-editor__bar">
-        <span className="page-editor__save">{SAVE_LABEL[saveState]}</span>
-        {editable && (
-          <button
-            type="button"
-            className="task-actions__button task-actions__button--danger"
-            onClick={handleDelete}
-            aria-label="Delete page"
-            data-tooltip="Delete page"
-          >
-            <TrashIcon width={15} height={15} />
-          </button>
+        {trail.length > 0 && (
+          <nav className="page-editor__trail">
+            {trail.map((p) => (
+              <Link key={p.id} to={`/pages/${p.id}`} className="page-editor__crumb">
+                {p.title || 'Untitled'}
+              </Link>
+            ))}
+          </nav>
         )}
+        <div className="page-editor__actions">
+          <span className="page-editor__save">{SAVE_LABEL[saveState]}</span>
+          {editable && <MovePageMenu page={page} pages={pages} onMove={handleMove} />}
+          {editable && (
+            <button
+              type="button"
+              className="task-actions__button task-actions__button--danger"
+              onClick={handleDelete}
+              aria-label="Delete page"
+              data-tooltip="Delete page"
+            >
+              <TrashIcon width={15} height={15} />
+            </button>
+          )}
+        </div>
       </div>
+
+      {staleRemote && (
+        <div className="page-editor__stale">
+          This page changed elsewhere.
+          <button type="button" className="button button--ghost button--sm" onClick={() => setReloadKey((k) => k + 1)}>
+            Reload
+          </button>
+        </div>
+      )}
 
       <input
         className="page-editor__title"
@@ -101,7 +153,7 @@ function PageEditor() {
       />
 
       <PageDocument
-        key={pageId}
+        key={`${pageId}:${reloadKey}`}
         content={page.content}
         editable={editable}
         onChange={(content) => persist(pageId, content)}

@@ -170,14 +170,85 @@
 .page-editor__bar {
   display: flex;
   align-items: center;
-  justify-content: flex-end;
   gap: $spacing-sm;
-  min-height: 1.5rem;
+  min-height: 1.75rem;
+}
+
+.page-editor__trail {
+  display: flex;
+  align-items: center;
+  gap: $spacing-xs;
+  min-width: 0;
+  overflow: hidden;
+  font-size: $font-size-sm;
+  color: $color-text-muted;
+}
+
+.page-editor__actions {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+  margin-left: auto;
+}
+
+.page-editor__crumb {
+  color: $color-text-muted;
+  white-space: nowrap;
+
+  &:hover {
+    color: $color-text;
+  }
+
+  &::after {
+    content: '/';
+    margin-left: $spacing-xs;
+    color: $color-border;
+  }
+
+  &:last-child::after {
+    content: none;
+  }
 }
 
 .page-editor__save {
   font-size: $font-size-xs;
   color: $color-text-muted;
+}
+
+.page-editor__stale {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: $spacing-sm;
+  margin-top: $spacing-sm;
+  padding: $spacing-xs $spacing-md;
+  border: 1px solid $color-border;
+  border-radius: $radius-sm;
+  background: $color-primary-soft;
+  font-size: $font-size-sm;
+  color: $color-text;
+}
+
+// Move-to reparent menu
+.move-menu {
+  position: relative;
+}
+
+.move-menu__backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  background: transparent;
+  border: none;
+}
+
+.move-menu__list {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  z-index: 41;
+  margin-top: $spacing-xs;
 }
 
 .page-editor__title {

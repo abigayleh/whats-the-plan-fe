@@ -29,6 +29,11 @@
     border-color: $color-border;
   }
 
+  &--sm {
+    padding: $spacing-xs $spacing-sm;
+    font-size: $font-size-sm;
+  }
+
   &--danger {
     background: transparent;
     color: $color-danger;
