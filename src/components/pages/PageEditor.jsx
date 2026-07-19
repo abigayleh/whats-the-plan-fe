@@ -72,17 +72,19 @@ function PageEditor() {
 
   const [persist, flushPersist] = useDebouncedCallback(async (id, content) => {
     setSaveState('saving');
+    // Stamp before the request: the server emits page:updated before it responds,
+    // so a later stamp would let our own echo trip the "changed elsewhere" nudge.
+    lastSave.current = Date.now();
     try {
       await saveContent(id, content);
-      lastSave.current = Date.now();
       setSaveState('saved');
     } catch {
       setSaveState('idle');
     }
   }, 800);
 
-  // Flush a pending content save before switching pages, so nothing is lost mid-edit.
-  useEffect(() => flushPersist, [pageId, flushPersist]);
+  // Flush pending title + content saves before switching pages, so nothing lags mid-edit.
+  useEffect(() => () => { flushPersist(); flushTitle(); }, [pageId, flushPersist, flushTitle]);
 
   function handleTitle(e) {
     setTitle(e.target.value);
