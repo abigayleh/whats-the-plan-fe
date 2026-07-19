@@ -141,6 +141,7 @@ function CalendarPage() {
   const unscheduledTasks = useMemo(() => tasks
     .filter((task) => getTaskDay(task) == null)
     .filter((task) => {
+      if (!showCompleted && task.status === 'done') return false;
       if (hiddenGroupIds.has(groupIdOf(task))) return false;
       if (task.listId && hiddenListIds.has(task.listId)) return false;
       if (onlyMine && task.assignedToId && task.assignedToId !== currentUser.id) return false;
@@ -154,7 +155,7 @@ function CalendarPage() {
       colorKey: getTaskColorKey(task, lists, groups, personalSpace),
       icon: getTaskIconKey(task, lists),
     })),
-  [tasks, lists, groups, personalSpace, hiddenGroupIds, hiddenListIds, onlyMine, currentUser, groupIdOf]);
+  [tasks, lists, groups, personalSpace, hiddenGroupIds, hiddenListIds, onlyMine, showCompleted, currentUser, groupIdOf]);
 
   // Past-due, incomplete to-dos surfaced above Today in the day panel. Read from all tasks
   // (they may be due before the fetched range) and filtered like unscheduled — but a list's
