@@ -5,9 +5,9 @@ import SideNav from './SideNav';
 
 function AppShell() {
   const { pathname } = useLocation();
-  // The calendar (index route) benefits from the full content width — everything else
-  // stays capped at the usual reading width.
-  const isFullWidth = pathname === '/';
+  // The calendar (index route) and Pages (tree + editor) benefit from the full content
+  // width — everything else stays capped at the usual reading width.
+  const isFullWidth = pathname === '/' || pathname.startsWith('/pages');
   // Mobile-only: the side nav becomes a slide-in drawer toggled from the header.
   const [navOpen, setNavOpen] = useState(false);
 

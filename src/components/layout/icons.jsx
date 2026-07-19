@@ -49,6 +49,15 @@ export function GroupsIcon(props) {
   );
 }
 
+export function PagesIcon(props) {
+  return (
+    <svg viewBox="0 0 24 24" width="22" height="22" {...strokeProps} {...props}>
+      <path d="M7 3h7l4 4v14H7a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1Z" />
+      <path d="M14 3v4h4M9.5 12h5M9.5 16h5" />
+    </svg>
+  );
+}
+
 export function CheckIcon(props) {
   return (
     <svg viewBox="0 0 24 24" width="14" height="14" {...strokeProps} {...props}>

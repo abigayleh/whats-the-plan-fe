@@ -1,0 +1,273 @@
+@use '../abstracts/variables' as *;
+@use '../abstracts/mixins' as *;
+
+.pages {
+  display: flex;
+  height: calc(100vh - #{$header-height} - #{$spacing-xl});
+  min-height: 0;
+  border: 1px solid $color-border;
+  border-radius: $radius-md;
+  overflow: hidden;
+  background: $color-surface;
+
+  @include respond-below(tablet) {
+    flex-direction: column;
+    height: auto;
+  }
+}
+
+// --- Left pane: tree ---
+
+.pages__sidebar {
+  width: 16rem;
+  flex-shrink: 0;
+  border-right: 1px solid $color-border;
+  overflow-y: auto;
+  padding: $spacing-sm;
+
+  @include respond-below(tablet) {
+    width: auto;
+    border-right: none;
+    border-bottom: 1px solid $color-border;
+  }
+}
+
+.pages__sidebar-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: $spacing-xs $spacing-sm;
+}
+
+.pages__sidebar-title {
+  font-size: $font-size-sm;
+  font-weight: 600;
+  color: $color-text-muted;
+}
+
+.pages__new {
+  display: flex;
+  padding: $spacing-xs;
+  border-radius: $radius-sm;
+  color: $color-text-muted;
+
+  &:hover {
+    background: $color-border-light;
+    color: $color-text;
+  }
+}
+
+// --- Page tree ---
+
+.page-tree__scope {
+  margin-top: $spacing-sm;
+}
+
+.page-tree__scope-title {
+  padding: $spacing-xs $spacing-sm;
+  font-size: $font-size-xs;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: $color-text-muted;
+}
+
+.page-tree__empty {
+  padding: $spacing-xs $spacing-sm;
+  font-size: $font-size-sm;
+  color: $color-text-muted;
+}
+
+.page-tree__row {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  border-radius: $radius-sm;
+
+  &:hover {
+    background: $color-border-light;
+  }
+
+  &:hover .page-tree__add {
+    opacity: 1;
+  }
+}
+
+.page-tree__toggle,
+.page-tree__toggle-spacer {
+  width: 1.1rem;
+  height: 1.1rem;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: $color-text-muted;
+}
+
+.page-tree__chevron {
+  transform: rotate(-90deg);
+  transition: transform 0.12s ease;
+
+  &--open {
+    transform: rotate(0deg);
+  }
+}
+
+.page-tree__link {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: $spacing-xs;
+  padding: $spacing-xs;
+  font-size: $font-size-sm;
+  color: $color-text;
+  border-radius: $radius-sm;
+
+  &--active {
+    font-weight: 600;
+    color: $color-primary;
+  }
+}
+
+.page-tree__icon {
+  display: flex;
+  flex-shrink: 0;
+  color: $color-text-muted;
+}
+
+.page-tree__title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.page-tree__add {
+  opacity: 0;
+  display: flex;
+  padding: 2px;
+  margin-right: $spacing-xs;
+  color: $color-text-muted;
+  border-radius: $radius-xs;
+
+  &:hover {
+    background: $color-border;
+    color: $color-text;
+  }
+}
+
+// --- Right pane: editor ---
+
+.pages__content {
+  flex: 1;
+  min-width: 0;
+  overflow-y: auto;
+}
+
+.pages__empty {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: $spacing-sm;
+  color: $color-text-muted;
+}
+
+.page-editor {
+  max-width: 46rem;
+  margin: 0 auto;
+  padding: $spacing-lg $spacing-xl $spacing-xl;
+
+  &--state {
+    color: $color-text-muted;
+  }
+}
+
+.page-editor__bar {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: $spacing-sm;
+  min-height: 1.5rem;
+}
+
+.page-editor__save {
+  font-size: $font-size-xs;
+  color: $color-text-muted;
+}
+
+.page-editor__delete {
+  display: flex;
+  padding: $spacing-xs;
+  color: $color-text-muted;
+  border-radius: $radius-sm;
+
+  &:hover {
+    background: $color-primary-soft;
+    color: $color-primary;
+  }
+}
+
+.page-editor__title {
+  width: 100%;
+  border: none;
+  background: none;
+  font-size: 2rem;
+  font-weight: 700;
+  color: $color-text;
+  padding: $spacing-sm 0;
+
+  &::placeholder {
+    color: $color-text-muted;
+  }
+}
+
+// --- TipTap document ---
+
+.page-doc {
+  .ProseMirror {
+    outline: none;
+    font-size: $font-size-base;
+    line-height: 1.6;
+    color: $color-text;
+
+    > * + * {
+      margin-top: $spacing-sm;
+    }
+
+    h1 { font-size: 1.6rem; font-weight: 700; }
+    h2 { font-size: 1.3rem; font-weight: 700; }
+    h3 { font-size: 1.1rem; font-weight: 600; }
+
+    ul,
+    ol {
+      padding-left: 1.4rem;
+    }
+
+    ul { list-style: disc; }
+    ol { list-style: decimal; }
+
+    blockquote {
+      border-left: 3px solid $color-border;
+      padding-left: $spacing-md;
+      color: $color-text-muted;
+    }
+
+    code {
+      background: $color-border-light;
+      border-radius: $radius-xs;
+      padding: 0.1em 0.3em;
+      font-size: 0.9em;
+    }
+
+    // Placeholder for an empty document.
+    p.is-editor-empty:first-child::before {
+      content: 'Start writing…';
+      float: left;
+      height: 0;
+      color: $color-text-muted;
+      pointer-events: none;
+    }
+  }
+}

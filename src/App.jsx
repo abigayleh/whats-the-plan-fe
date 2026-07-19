@@ -12,6 +12,8 @@ const RegisterPage = lazy(() => import('./pages/RegisterPage'));
 const VerifyPage = lazy(() => import('./pages/VerifyPage'));
 const CalendarPage = lazy(() => import('./pages/CalendarPage'));
 const ListsPage = lazy(() => import('./pages/ListsPage'));
+const PagesPage = lazy(() => import('./pages/PagesPage'));
+const PageEditor = lazy(() => import('./components/pages/PageEditor'));
 const PollsPage = lazy(() => import('./pages/PollsPage'));
 const ChatPage = lazy(() => import('./pages/ChatPage'));
 const GroupsPage = lazy(() => import('./pages/GroupsPage'));
@@ -32,6 +34,9 @@ function App() {
                 <Route element={<AppShell />}>
                   <Route index element={<CalendarPage />} />
                   <Route path="lists" element={<ListsPage />} />
+                  <Route path="pages" element={<PagesPage />}>
+                    <Route path=":pageId" element={<PageEditor />} />
+                  </Route>
                   <Route path="polls" element={<PollsPage />} />
                   <Route path="chat" element={<ChatPage />} />
                   <Route path="groups" element={<GroupsPage />} />

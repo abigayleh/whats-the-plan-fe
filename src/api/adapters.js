@@ -106,6 +106,20 @@ export const adaptPoll = (p) => ({
   createdAt: toDate(p.createdAt),
 });
 
+// Page tree metadata (list responses omit `content`; the editor fetches it per-page).
+export const adaptPage = (p) => ({
+  id: p.id,
+  title: p.title,
+  icon: p.icon ?? null,
+  groupId: p.groupId ?? null,
+  ownerId: p.ownerId,
+  createdById: p.createdById,
+  parentId: p.parentId ?? null,
+  hasContent: p.hasContent ?? false,
+  createdAt: toDate(p.createdAt),
+  updatedAt: toDate(p.updatedAt),
+});
+
 // FE PlanItem patch → BE body. Only maps keys that are present, so PATCH stays partial.
 // Attachments are excluded — they're synced through the attachments API, not the item body.
 // An event has no status/assignee/list, and maps its schedule to startAt/endAt rather than
