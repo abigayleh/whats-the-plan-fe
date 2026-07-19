@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useParams, useNavigate, useOutletContext } from 'react-router-dom';
 import * as pagesApi from '../../api/pages';
 import { TrashIcon } from '../layout/icons';
@@ -12,7 +12,7 @@ function PageEditor() {
   const { pageId } = useParams();
   const navigate = useNavigate();
   const {
-    canManagePage, saveContent, updatePage, deletePage,
+    pages, canManagePage, saveContent, updatePage, deletePage,
   } = useOutletContext();
 
   const [page, setPage] = useState(null);
@@ -35,6 +35,12 @@ function PageEditor() {
   }, [pageId]);
 
   const editable = page ? canManagePage(page) : false;
+
+  // Same-scope pages (excluding this one) are the only ones the @-link picker offers.
+  const scopePages = useMemo(
+    () => pages.filter((p) => p.id !== pageId && (p.groupId || null) === ((page?.groupId) || null)),
+    [pages, pageId, page],
+  );
 
   const [saveTitle, flushTitle] = useDebouncedCallback((id, value) => {
     updatePage(id, { title: value.trim() || 'Untitled' });
@@ -73,8 +79,14 @@ function PageEditor() {
       <div className="page-editor__bar">
         <span className="page-editor__save">{SAVE_LABEL[saveState]}</span>
         {editable && (
-          <button type="button" className="page-editor__delete" onClick={handleDelete} aria-label="Delete page">
-            <TrashIcon />
+          <button
+            type="button"
+            className="task-actions__button task-actions__button--danger"
+            onClick={handleDelete}
+            aria-label="Delete page"
+            data-tooltip="Delete page"
+          >
+            <TrashIcon width={15} height={15} />
           </button>
         )}
       </div>
@@ -93,6 +105,8 @@ function PageEditor() {
         content={page.content}
         editable={editable}
         onChange={(content) => persist(pageId, content)}
+        pages={pages}
+        scopePages={scopePages}
       />
     </div>
   );

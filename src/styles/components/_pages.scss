@@ -45,18 +45,6 @@
   color: $color-text-muted;
 }
 
-.pages__new {
-  display: flex;
-  padding: $spacing-xs;
-  border-radius: $radius-sm;
-  color: $color-text-muted;
-
-  &:hover {
-    background: $color-border-light;
-    color: $color-text;
-  }
-}
-
 // --- Page tree ---
 
 .page-tree__scope {
@@ -142,18 +130,13 @@
   white-space: nowrap;
 }
 
+// Sits on task-actions__button; just shrinks it to fit a tree row and hides until hover.
 .page-tree__add {
   opacity: 0;
-  display: flex;
-  padding: 2px;
+  width: 1.4rem;
+  height: 1.4rem;
+  flex-shrink: 0;
   margin-right: $spacing-xs;
-  color: $color-text-muted;
-  border-radius: $radius-xs;
-
-  &:hover {
-    background: $color-border;
-    color: $color-text;
-  }
 }
 
 // --- Right pane: editor ---
@@ -195,18 +178,6 @@
 .page-editor__save {
   font-size: $font-size-xs;
   color: $color-text-muted;
-}
-
-.page-editor__delete {
-  display: flex;
-  padding: $spacing-xs;
-  color: $color-text-muted;
-  border-radius: $radius-sm;
-
-  &:hover {
-    background: $color-primary-soft;
-    color: $color-primary;
-  }
 }
 
 .page-editor__title {
@@ -263,11 +234,146 @@
 
     // Placeholder for an empty document.
     p.is-editor-empty:first-child::before {
-      content: 'Start writing…';
+      content: 'Type "/" for blocks, "@" to link a page…';
       float: left;
       height: 0;
       color: $color-text-muted;
       pointer-events: none;
     }
+
+    // Tables
+    .tableWrapper {
+      overflow-x: auto;
+    }
+
+    table {
+      border-collapse: collapse;
+      width: 100%;
+
+      td,
+      th {
+        border: 1px solid $color-border;
+        padding: $spacing-xs $spacing-sm;
+        vertical-align: top;
+        min-width: 4rem;
+      }
+
+      th {
+        background: $color-border-light;
+        font-weight: 600;
+        text-align: left;
+      }
+
+      .selectedCell {
+        background: $color-primary-soft;
+      }
+    }
+
+    // To-do checkboxes
+    ul[data-type='taskList'] {
+      list-style: none;
+      padding-left: 0;
+
+      li {
+        display: flex;
+        gap: $spacing-sm;
+        align-items: flex-start;
+      }
+
+      input[type='checkbox'] {
+        margin-top: 0.3rem;
+        accent-color: $color-primary;
+      }
+    }
+  }
+}
+
+// --- Page-link chip ---
+
+.page-link {
+  white-space: nowrap;
+}
+
+.page-link__chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  padding: 0.05rem 0.35rem;
+  border-radius: $radius-xs;
+  font-size: 0.95em;
+  color: $color-primary;
+  background: $color-primary-soft;
+  cursor: pointer;
+  vertical-align: baseline;
+
+  &:hover {
+    background: $color-primary;
+    color: $color-surface;
+  }
+
+  &--dead {
+    color: $color-text-muted;
+    background: $color-border-light;
+    cursor: default;
+
+    &:hover {
+      background: $color-border-light;
+      color: $color-text-muted;
+    }
+  }
+}
+
+// --- Slash / mention popup ---
+
+.suggestion-popup {
+  position: fixed;
+  z-index: 60;
+}
+
+.suggestion-menu {
+  width: 15rem;
+  max-height: 18rem;
+  overflow-y: auto;
+  padding: $spacing-xs;
+  background: $color-surface;
+  border: 1px solid $color-border;
+  border-radius: $radius-sm;
+  box-shadow: 0 0.5rem 1.5rem rgba(0, 0, 0, 0.12);
+
+  &__item {
+    display: flex;
+    align-items: center;
+    gap: $spacing-sm;
+    width: 100%;
+    padding: $spacing-xs $spacing-sm;
+    border-radius: $radius-xs;
+    text-align: left;
+    color: $color-text;
+
+    &--active {
+      background: $color-border-light;
+    }
+  }
+
+  &__icon {
+    display: flex;
+    color: $color-text-muted;
+  }
+
+  &__label {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.2;
+  }
+
+  &__subtitle {
+    font-size: $font-size-xs;
+    color: $color-text-muted;
+  }
+
+  &__empty {
+    padding: $spacing-xs $spacing-sm;
+    font-size: $font-size-sm;
+    color: $color-text-muted;
   }
 }

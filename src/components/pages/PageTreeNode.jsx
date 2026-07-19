@@ -36,9 +36,10 @@ function PageTreeNode({
 
         <button
           type="button"
-          className="page-tree__add"
+          className="task-actions__button page-tree__add"
           onClick={() => onNewChild(node)}
           aria-label="Add subpage"
+          data-tooltip="Add subpage"
         >
           <PlusIcon width={14} height={14} />
         </button>

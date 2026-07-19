@@ -45,8 +45,14 @@ function PagesPage() {
       <aside className="pages__sidebar">
         <div className="pages__sidebar-header">
           <h2 className="pages__sidebar-title">Pages</h2>
-          <button type="button" className="pages__new" onClick={() => setShowNew(true)} aria-label="New page">
-            <PlusIcon />
+          <button
+            type="button"
+            className="task-actions__button"
+            onClick={() => setShowNew(true)}
+            aria-label="New page"
+            data-tooltip="New page"
+          >
+            <PlusIcon width={16} height={16} />
           </button>
         </div>
         <PageTree
