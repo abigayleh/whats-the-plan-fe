@@ -1,16 +1,18 @@
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import useAuth from '../hooks/useAuth';
+import { resendVerification } from '../api/auth';
 
 function RegisterPage() {
   const { register } = useAuth();
-  const navigate = useNavigate();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirm, setConfirm] = useState('');
   const [error, setError] = useState(null);
   const [busy, setBusy] = useState(false);
+  const [sentTo, setSentTo] = useState(null);
+  const [resent, setResent] = useState(false);
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -22,12 +24,42 @@ function RegisterPage() {
     setBusy(true);
     try {
       await register(email, password, name);
-      navigate('/');
+      setSentTo(email);
     } catch (err) {
       setError(err.message || 'Registration failed');
     } finally {
       setBusy(false);
     }
+  }
+
+  async function handleResend() {
+    setResent(true);
+    try { await resendVerification(sentTo); } catch { /* generic 200 anyway */ }
+  }
+
+  if (sentTo) {
+    return (
+      <section className="auth-page">
+        <div className="auth-card">
+          <h1 className="auth-card__title">Check your email</h1>
+          <p className="auth-card__message">
+            We sent a verification link to <strong>{sentTo}</strong>. Click it to activate your
+            account, then log in.
+          </p>
+          <button
+            type="button"
+            className="button button--ghost"
+            onClick={handleResend}
+            disabled={resent}
+          >
+            {resent ? 'Verification email resent' : 'Resend email'}
+          </button>
+          <p className="auth-card__footer">
+            <Link to="/login">Back to log in</Link>
+          </p>
+        </div>
+      </section>
+    );
   }
 
   return (

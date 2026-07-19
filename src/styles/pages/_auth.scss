@@ -65,6 +65,33 @@
     color: $color-danger;
     margin: 0;
   }
+
+  &__success {
+    font-size: $font-size-sm;
+    color: $color-success;
+    margin: 0;
+  }
+
+  &__message {
+    font-size: $font-size-sm;
+    color: $color-text-muted;
+    margin: 0;
+    line-height: 1.5;
+  }
+
+  &__notice {
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-sm;
+    padding: $spacing-md;
+    border: 1px solid $color-border;
+    border-radius: $radius-sm;
+    font-size: $font-size-sm;
+
+    p {
+      margin: 0;
+    }
+  }
 }
 
 .auth-loading {

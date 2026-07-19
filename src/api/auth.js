@@ -6,6 +6,12 @@ export const register = (email, password, name) =>
 export const login = (email, password) =>
   apiFetch('/api/auth/login', { method: 'POST', auth: false, body: { email, password } });
 
+export const verifyEmail = (token) =>
+  apiFetch('/api/auth/verify', { method: 'POST', auth: false, body: { token } });
+
+export const resendVerification = (email) =>
+  apiFetch('/api/auth/resend-verification', { method: 'POST', auth: false, body: { email } });
+
 export const me = () => apiFetch('/api/auth/me');
 
 export async function logout() {
