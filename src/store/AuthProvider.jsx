@@ -68,9 +68,11 @@ export default function AuthProvider({ children }) {
     applyAuth(await authApi.login(email, password));
   }, [applyAuth]);
 
-  const register = useCallback(async (email, password, name) => {
-    applyAuth(await authApi.register(email, password, name));
-  }, [applyAuth]);
+  // Registration no longer logs in — the account is unverified until the emailed link is used.
+  const register = useCallback(
+    (email, password, name) => authApi.register(email, password, name),
+    [],
+  );
 
   return (
     <AuthContext.Provider value={{

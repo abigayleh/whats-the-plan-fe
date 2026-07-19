@@ -9,6 +9,7 @@ import AppProvider from './store/AppProvider';
 // no longer downloads the whole authenticated app up front.
 const LoginPage = lazy(() => import('./pages/LoginPage'));
 const RegisterPage = lazy(() => import('./pages/RegisterPage'));
+const VerifyPage = lazy(() => import('./pages/VerifyPage'));
 const CalendarPage = lazy(() => import('./pages/CalendarPage'));
 const ListsPage = lazy(() => import('./pages/ListsPage'));
 const PollsPage = lazy(() => import('./pages/PollsPage'));
@@ -26,6 +27,7 @@ function App() {
             <Routes>
               <Route path="/login" element={<LoginPage />} />
               <Route path="/register" element={<RegisterPage />} />
+              <Route path="/verify" element={<VerifyPage />} />
               <Route element={<RequireAuth />}>
                 <Route element={<AppShell />}>
                   <Route index element={<CalendarPage />} />
