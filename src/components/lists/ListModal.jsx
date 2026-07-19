@@ -15,6 +15,7 @@ function ListModal({ list, groups, onClose, onSave }) {
   const [hideUnscheduled, setHideUnscheduled] = useState(
     !(list?.showUnscheduledOnCalendar ?? true),
   );
+  const [isDefault, setIsDefault] = useState(list?.isDefault ?? false);
   const [error, setError] = useState(null);
   const [saving, setSaving] = useState(false);
 
@@ -25,7 +26,7 @@ function ListModal({ list, groups, onClose, onSave }) {
     setSaving(true);
     try {
       await onSave({
-        name: name.trim(), groupId, icon, color, showUnscheduledOnCalendar: !hideUnscheduled,
+        name: name.trim(), groupId, icon, color, showUnscheduledOnCalendar: !hideUnscheduled, isDefault,
       });
     } catch (err) {
       setError(err.message || `Could not ${isEdit ? 'save' : 'create'} list`);
@@ -143,6 +144,15 @@ function ListModal({ list, groups, onClose, onSave }) {
               onChange={(e) => setHideUnscheduled(e.target.checked)}
             />
             <span>Hide unscheduled to-dos</span>
+          </label>
+
+          <label className="modal__toggle">
+            <input
+              type="checkbox"
+              checked={isDefault}
+              onChange={(e) => setIsDefault(e.target.checked)}
+            />
+            <span>Default list for new to-dos</span>
           </label>
 
           <div className="modal__footer">

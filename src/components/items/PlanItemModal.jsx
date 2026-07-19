@@ -28,9 +28,15 @@ function PlanItemModal({
   const isEdit = Boolean(item);
   const writableLists = lists.filter((l) => !l.isSystem);
 
+  // Where a new to-do lands with no explicit target: the space's chosen default (a personal
+  // default wins, since a fresh to-do starts in the personal space), else the first list.
+  const preferredListId = writableLists.find((l) => l.isDefault && !l.groupId)?.id
+    ?? writableLists.find((l) => l.isDefault)?.id
+    ?? writableLists[0]?.id;
+
   const [listId, setListId] = useState(() => {
     if (isEdit) return item.origin === 'event' ? '' : (item.listId ?? '');
-    return defaultOrigin === 'event' ? '' : (defaultListId ?? writableLists[0]?.id ?? '');
+    return defaultOrigin === 'event' ? '' : (defaultListId ?? preferredListId ?? '');
   });
 
   // A bare calendar item has no list — to-do-only fields (status, attachments, assignee) are
@@ -44,12 +50,11 @@ function PlanItemModal({
   const list = writableLists.find((l) => l.id === listId);
   const members = useGroupMembers(list?.groupId);
 
-  // Lists may still be loading when the modal opens, so adopt the first one once it arrives —
+  // Lists may still be loading when the modal opens, so adopt the preferred one once it arrives —
   // but never override an explicit "no list" (bare calendar) choice.
-  const firstListId = writableLists[0]?.id;
   useEffect(() => {
-    if (!isEdit && defaultOrigin !== 'event' && !listId && firstListId) setListId(firstListId);
-  }, [isEdit, defaultOrigin, listId, firstListId]);
+    if (!isEdit && defaultOrigin !== 'event' && !listId && preferredListId) setListId(preferredListId);
+  }, [isEdit, defaultOrigin, listId, preferredListId]);
 
   const seed = item ?? defaultSchedule ?? null;
 
