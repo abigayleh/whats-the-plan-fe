@@ -240,6 +240,13 @@ function AppProvider({ children }) {
       await listsApi.updateTask(task.listId, taskId, { status: task.status === 'done' ? 'TODO' : 'DONE' });
       await refreshLists();
     },
+    // Marks one day of a recurring series done/undone without touching the series itself.
+    async toggleTaskOccurrence(taskId, date) {
+      const task = tasks.find((t) => t.id === taskId);
+      if (!task || !date) return;
+      await listsApi.updateTask(task.listId, taskId, { occurrenceDate: new Date(date).toISOString() });
+      await refreshLists();
+    },
 
   }), [currentUser, personalSpace, groups, lists, tasks, refreshGroups, refreshLists, listIdOf]);
 
