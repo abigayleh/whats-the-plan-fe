@@ -1,9 +1,13 @@
 import { Extension } from '@tiptap/core';
 import Suggestion from '@tiptap/suggestion';
+import { PluginKey } from '@tiptap/pm/state';
 import {
   ListsIcon, CheckIcon, TableIcon, PagesIcon,
 } from '../../layout/icons';
 import suggestionRender from './suggestionRender';
+
+// Distinct key so this Suggestion plugin doesn't collide with the @-mention one.
+const slashKey = new PluginKey('slashCommand');
 
 // Block commands offered by the "/" menu. Each runs against the deleted "/query" range.
 const COMMANDS = [
@@ -36,6 +40,7 @@ const SlashCommand = Extension.create({
     return [
       Suggestion({
         editor: this.editor,
+        pluginKey: slashKey,
         char: '/',
         startOfLine: false,
         command: ({ editor, range, props }) => {

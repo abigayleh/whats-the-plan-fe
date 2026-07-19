@@ -1,6 +1,10 @@
 import { Extension } from '@tiptap/core';
 import Suggestion from '@tiptap/suggestion';
+import { PluginKey } from '@tiptap/pm/state';
 import suggestionRender from './suggestionRender';
+
+// Distinct key so this Suggestion plugin doesn't collide with the slash-command one.
+const mentionKey = new PluginKey('pageMention');
 
 // The "@" picker: lists pages in the current scope and inserts a pageLink node.
 const PageMention = Extension.create({
@@ -15,6 +19,7 @@ const PageMention = Extension.create({
     return [
       Suggestion({
         editor: this.editor,
+        pluginKey: mentionKey,
         char: '@',
         command: ({ editor, range, props }) => {
           editor.chain().focus().deleteRange(range)
