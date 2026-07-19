@@ -10,18 +10,17 @@ function PageTreeNode({
 
   return (
     <li className="page-tree__node">
-      <div className="page-tree__row" style={{ paddingLeft: `${depth * 0.85}rem` }}>
-        {hasChildren ? (
+      <div className="page-tree__row" style={{ paddingLeft: `${0.9 + depth * 0.9}rem` }}>
+        {hasChildren && (
           <button
             type="button"
             className="page-tree__toggle"
+            style={{ left: `${depth * 0.9}rem` }}
             onClick={() => onToggle(node.id)}
             aria-label={isOpen ? 'Hide subpages' : 'Show subpages'}
           >
             <ChevronIcon width={13} height={13} className={`page-tree__chevron${isOpen ? ' page-tree__chevron--open' : ''}`} />
           </button>
-        ) : (
-          <span className="page-tree__toggle-spacer" />
         )}
 
         <NavLink

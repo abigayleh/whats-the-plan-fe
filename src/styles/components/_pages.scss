@@ -51,8 +51,14 @@
   margin-top: $spacing-sm;
 }
 
+.page-tree__list {
+  list-style: none;
+  margin: 0;
+  padding: 0; // nesting is handled per-row, not by default <ul> indentation
+}
+
 .page-tree__scope-title {
-  padding: $spacing-xs $spacing-sm;
+  padding: $spacing-xs 0.9rem; // 0.9rem aligns the header with the root page icons
   font-size: $font-size-xs;
   font-weight: 600;
   text-transform: uppercase;
@@ -67,6 +73,7 @@
 }
 
 .page-tree__row {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 2px;
@@ -81,25 +88,21 @@
   }
 }
 
-.page-tree__toggle,
-.page-tree__toggle-spacer {
-  width: 1rem;
-  height: 1.25rem;
-  flex-shrink: 0;
+// A disclosure chevron in the left gutter — absolute so it never pushes the page right.
+.page-tree__toggle {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 0.9rem;
   display: flex;
   align-items: center;
   justify-content: center;
-}
-
-.page-tree__toggle {
   background: none;
   border: none;
-  border-radius: $radius-xs;
   cursor: pointer;
   color: $color-text-muted;
 
   &:hover {
-    background: $color-border;
     color: $color-text;
   }
 }
@@ -119,7 +122,7 @@
   display: flex;
   align-items: center;
   gap: $spacing-xs;
-  padding: $spacing-xs;
+  padding: $spacing-xs 0; // no left pad — the row's paddingLeft sets the icon origin
   font-size: $font-size-sm;
   color: $color-text;
   border-radius: $radius-sm;
