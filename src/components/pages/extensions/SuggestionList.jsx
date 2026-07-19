@@ -46,7 +46,7 @@ const SuggestionList = forwardRef(({ items, command, emptyLabel }, ref) => {
           onMouseEnter={() => setIndex(i)}
           onMouseDown={(e) => { e.preventDefault(); select(i); }}
         >
-          {item.Icon && <span className="suggestion-menu__icon"><item.Icon width={16} height={16} /></span>}
+          <span className="suggestion-menu__icon">{item.Icon ? <item.Icon width={16} height={16} /> : null}</span>
           <span className="suggestion-menu__label">
             {item.title}
             {item.subtitle && <span className="suggestion-menu__subtitle">{item.subtitle}</span>}

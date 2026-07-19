@@ -23,7 +23,7 @@
   flex-shrink: 0;
   border-right: 1px solid $color-border;
   overflow-y: auto;
-  padding: $spacing-sm;
+  padding: $spacing-sm $spacing-xs;
 
   @include respond-below(tablet) {
     width: auto;
@@ -83,13 +83,25 @@
 
 .page-tree__toggle,
 .page-tree__toggle-spacer {
-  width: 1.1rem;
-  height: 1.1rem;
+  width: 1rem;
+  height: 1.25rem;
   flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+.page-tree__toggle {
+  background: none;
+  border: none;
+  border-radius: $radius-xs;
+  cursor: pointer;
   color: $color-text-muted;
+
+  &:hover {
+    background: $color-border;
+    color: $color-text;
+  }
 }
 
 .page-tree__chevron {
@@ -417,17 +429,27 @@
     gap: $spacing-sm;
     width: 100%;
     padding: $spacing-xs $spacing-sm;
+    border: none;
     border-radius: $radius-xs;
+    background: none;
     text-align: left;
     color: $color-text;
+    cursor: pointer;
+
+    &:hover {
+      background: $color-border-light;
+    }
 
     &--active {
-      background: $color-border-light;
+      background: $color-primary-soft;
     }
   }
 
   &__icon {
     display: flex;
+    flex-shrink: 0;
+    width: 1.1rem;
+    justify-content: center;
     color: $color-text-muted;
   }
 

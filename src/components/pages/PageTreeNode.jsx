@@ -10,15 +10,15 @@ function PageTreeNode({
 
   return (
     <li className="page-tree__node">
-      <div className="page-tree__row" style={{ paddingLeft: `${depth * 0.85 + 0.4}rem` }}>
+      <div className="page-tree__row" style={{ paddingLeft: `${depth * 0.85}rem` }}>
         {hasChildren ? (
           <button
             type="button"
             className="page-tree__toggle"
             onClick={() => onToggle(node.id)}
-            aria-label={isOpen ? 'Collapse' : 'Expand'}
+            aria-label={isOpen ? 'Hide subpages' : 'Show subpages'}
           >
-            <ChevronIcon className={`page-tree__chevron${isOpen ? ' page-tree__chevron--open' : ''}`} />
+            <ChevronIcon width={13} height={13} className={`page-tree__chevron${isOpen ? ' page-tree__chevron--open' : ''}`} />
           </button>
         ) : (
           <span className="page-tree__toggle-spacer" />
@@ -39,7 +39,6 @@ function PageTreeNode({
           className="task-actions__button page-tree__add"
           onClick={() => onNewChild(node)}
           aria-label="Add subpage"
-          data-tooltip="Add subpage"
         >
           <PlusIcon width={14} height={14} />
         </button>
