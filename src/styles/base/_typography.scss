@@ -5,3 +5,11 @@ body {
   color: $color-text;
   background: $color-bg;
 }
+
+// Auto-linked URLs in task titles and subtasks (see components/common/Linkify).
+.task-row__title a,
+.task-chip__title a,
+.subtask-editor__item-title a {
+  color: $color-primary;
+  text-decoration: underline;
+}

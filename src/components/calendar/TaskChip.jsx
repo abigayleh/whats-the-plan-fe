@@ -3,6 +3,7 @@ import { CheckIcon, RepeatIcon, SkipForwardIcon } from '../layout/icons';
 import { formatTime } from '../../utils/date';
 import { isItemRecurring, isTaskTimed } from '../../utils/tasks';
 import TaskActionButtons from '../tasks/TaskActionButtons';
+import Linkify from '../common/Linkify';
 
 function TaskChip({
   task, lists, onToggle, onOpen, onPushToTomorrow, compact = false, showActions = false, hideTime = false,
@@ -59,7 +60,7 @@ function TaskChip({
       {!compact && (
         <div className="task-chip__body">
           <p className="task-chip__title">
-            {task.title}
+            <Linkify text={task.title} />
             {recurring && <RepeatIcon className="task-chip__repeat-icon" />}
           </p>
           {timed && !hideTime && (

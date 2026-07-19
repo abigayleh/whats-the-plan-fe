@@ -4,6 +4,7 @@ import { formatDateShort, formatTime } from '../../utils/date';
 import { getTaskDay, isTaskOverdue, isTaskTimed } from '../../utils/tasks';
 import { getTaskIcon } from '../../constants/taskIcons';
 import TaskActionButtons from '../tasks/TaskActionButtons';
+import Linkify from '../common/Linkify';
 
 function TaskRow({
   task, lists, onToggle, onClick, draggable = false,
@@ -63,7 +64,7 @@ function TaskRow({
       <span className="task-row__body">
         <span className="task-row__title">
           {CategoryIcon && <CategoryIcon className="task-row__icon" />}
-          {task.title}
+          <Linkify text={task.title} />
           {task.recurrenceRule && <RepeatIcon className="task-row__repeat-icon" />}
         </span>
         {(day || task.assignedTo || subtaskCount > 0) && (

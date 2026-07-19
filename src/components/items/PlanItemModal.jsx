@@ -6,6 +6,7 @@ import {
 import useGroupMembers from '../../hooks/useGroupMembers';
 import useAutoGrowTextarea from '../../hooks/useAutoGrowTextarea';
 import AttachmentUploader from '../lists/AttachmentUploader';
+import Linkify from '../common/Linkify';
 import {
   combineDateAndTime, getTaskDay, isTaskTimed, toDateInputValue, toTimeInputValue,
 } from '../../utils/tasks';
@@ -366,7 +367,7 @@ function PlanItemModal({
                     {subtask.done && <CheckIcon />}
                   </button>
                   <span className={`subtask-editor__item-title${subtask.done ? ' subtask-editor__item-title--done' : ''}`}>
-                    {subtask.title}
+                    <Linkify text={subtask.title} />
                   </span>
                   <button
                     type="button"
