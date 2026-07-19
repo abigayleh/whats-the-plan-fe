@@ -287,6 +287,13 @@
     border: 2px solid $color-border;
     color: $color-surface;
     cursor: pointer;
+
+    // A recurring series can't be completed as a whole — done is per day on the calendar.
+    &--disabled {
+      cursor: default;
+      border-style: dashed;
+      opacity: 0.5;
+    }
   }
 
   &__body {

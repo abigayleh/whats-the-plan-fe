@@ -26,6 +26,9 @@ function TaskRow({
   const subtaskDone = task.subtasks?.filter((s) => s.done).length ?? 0;
   const categoryIcon = getTaskIcon(task.icon);
   const CategoryIcon = categoryIcon?.Icon;
+  // A whole recurring series (list view) has a live recurrenceRule; a single calendar occurrence
+  // does not. The series can't be checked done as a whole — completion is per day on the calendar.
+  const seriesRow = Boolean(task.recurrenceRule);
 
   return (
     <div
@@ -43,15 +46,17 @@ function TaskRow({
       onDragStart={draggable ? (e) => e.dataTransfer.setData('text/plain', task.id) : undefined}
     >
       <span
-        className="task-row__check"
+        className={`task-row__check${seriesRow ? ' task-row__check--disabled' : ''}`}
         role="checkbox"
         aria-checked={done}
-        tabIndex={0}
-        onClick={(e) => {
+        aria-disabled={seriesRow || undefined}
+        tabIndex={seriesRow ? -1 : 0}
+        title={seriesRow ? 'Recurring to-dos are completed per day on the calendar' : undefined}
+        onClick={seriesRow ? undefined : (e) => {
           e.stopPropagation();
           handleToggle();
         }}
-        onKeyDown={(e) => {
+        onKeyDown={seriesRow ? undefined : (e) => {
           if (e.key === 'Enter' || e.key === ' ') {
             e.preventDefault();
             e.stopPropagation();
