@@ -122,9 +122,11 @@ function AppProvider({ children }) {
   // need to diff before/after snapshots once refreshLists() resolves.
   const checkDayComplete = useCallback((task, nextStatus) => {
     if (nextStatus !== 'done' || task.status === 'done') return;
-    if (task.assignedToId !== currentUser.id || !isTaskOnDay(task, new Date())) return;
+    // "Mine" = assigned to me, or any personal (non-group) to-do — those are always mine.
+    const isMine = (t) => t.assignedToId === currentUser.id || t.groupId == null;
+    if (!isMine(task) || !isTaskOnDay(task, new Date())) return;
     const others = tasks.some((t) => (
-      t.id !== task.id && t.assignedToId === currentUser.id && t.status !== 'done' && isTaskOnDay(t, new Date())
+      t.id !== task.id && isMine(t) && t.status !== 'done' && isTaskOnDay(t, new Date())
     ));
     if (!others) setConfettiKey((k) => k + 1);
   }, [tasks, currentUser]);
