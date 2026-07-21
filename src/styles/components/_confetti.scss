@@ -1,0 +1,30 @@
+// Celebration burst when the day's assigned to-dos are all done — see components/common/Confetti.
+.confetti {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.confetti__piece {
+  position: absolute;
+  top: -10px;
+  width: 8px;
+  height: 14px;
+  opacity: 0.9;
+  animation-name: confetti-fall;
+  animation-timing-function: ease-in;
+  animation-fill-mode: forwards;
+}
+
+@keyframes confetti-fall {
+  from {
+    transform: translateY(0) translateX(0) rotate(0deg);
+    opacity: 1;
+  }
+  to {
+    transform: translateY(100vh) translateX(var(--confetti-drift)) rotate(var(--confetti-rotate));
+    opacity: 0;
+  }
+}

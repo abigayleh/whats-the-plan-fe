@@ -2,9 +2,12 @@ import { useEffect, useState } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
 import Header from './Header';
 import SideNav from './SideNav';
+import Confetti from '../common/Confetti';
+import useAppData from '../../hooks/useAppData';
 
 function AppShell() {
   const { pathname } = useLocation();
+  const { confettiKey } = useAppData();
   // The calendar (index route) and Pages (tree + editor) benefit from the full content
   // width — everything else stays capped at the usual reading width.
   const isFullWidth = pathname === '/' || pathname.startsWith('/pages');
@@ -16,6 +19,7 @@ function AppShell() {
 
   return (
     <div className="app-shell">
+      <Confetti trigger={confettiKey} />
       <SideNav open={navOpen} />
       {navOpen && (
         <button

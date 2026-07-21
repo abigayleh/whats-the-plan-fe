@@ -11,6 +11,7 @@ import {
 } from '../api/adapters';
 import { socket } from '../socket/socketClient';
 import { DEFAULT_PERSONAL_SPACE } from '../mocks/groups';
+import { isTaskOnDay } from '../utils/tasks';
 
 // Read-only views over tasks the user can already see, so they're derived here
 // rather than fetched — no second source of truth to keep in sync.
@@ -36,6 +37,9 @@ function AppProvider({ children }) {
   const [groups, setGroups] = useState([]);
   const [lists, setLists] = useState([]);
   const [tasks, setTasks] = useState([]);
+  // Bumped once whenever a completion empties out today's assigned to-dos, so Confetti
+  // (mounted once in AppShell) can react to the change without a dedicated provider.
+  const [confettiKey, setConfettiKey] = useState(0);
 
   useEffect(() => {
     if (authUser) setCurrentUser({ id: authUser.id, name: authUser.name || authUser.email, email: authUser.email });
@@ -113,8 +117,21 @@ function AppProvider({ children }) {
   // A task's list is the only place its scope lives, so mutations look it up here.
   const listIdOf = useCallback((taskId) => tasks.find((t) => t.id === taskId)?.listId, [tasks]);
 
+  // Confetti fires once when a completion is the LAST of today's assigned incomplete to-dos.
+  // Checked against pre-update `tasks` (exactly one task changes per call), so there's no
+  // need to diff before/after snapshots once refreshLists() resolves.
+  const checkDayComplete = useCallback((task, nextStatus) => {
+    if (nextStatus !== 'done' || task.status === 'done') return;
+    if (task.assignedToId !== currentUser.id || !isTaskOnDay(task, new Date())) return;
+    const others = tasks.some((t) => (
+      t.id !== task.id && t.assignedToId === currentUser.id && t.status !== 'done' && isTaskOnDay(t, new Date())
+    ));
+    if (!others) setConfettiKey((k) => k + 1);
+  }, [tasks, currentUser]);
+
   const value = useMemo(() => ({
     currentUser,
+    confettiKey,
 
     personalSpace,
     updatePersonalSpace(patch) {
@@ -222,6 +239,7 @@ function AppProvider({ children }) {
     async updateTask(taskId, { attachments, ...patch }) {
       const task = tasks.find((t) => t.id === taskId);
       if (!task) return;
+      if (patch.status) checkDayComplete(task, patch.status);
       try {
         if (Object.keys(patch).length) await listsApi.updateTask(task.listId, taskId, toBeTask(patch));
         if (attachments) await attachmentsApi.sync(taskId, attachments, task.attachments);
@@ -238,7 +256,9 @@ function AppProvider({ children }) {
     async toggleTaskStatus(taskId) {
       const task = tasks.find((t) => t.id === taskId);
       if (!task) return;
-      await listsApi.updateTask(task.listId, taskId, { status: task.status === 'done' ? 'TODO' : 'DONE' });
+      const nextStatus = task.status === 'done' ? 'todo' : 'done';
+      checkDayComplete(task, nextStatus);
+      await listsApi.updateTask(task.listId, taskId, { status: nextStatus === 'done' ? 'DONE' : 'TODO' });
       await refreshLists();
     },
     // Marks one day of a recurring series done/undone without touching the series itself.
@@ -249,7 +269,10 @@ function AppProvider({ children }) {
       await refreshLists();
     },
 
-  }), [currentUser, personalSpace, groups, lists, tasks, refreshGroups, refreshLists, listIdOf]);
+  }), [
+    currentUser, personalSpace, groups, lists, tasks, confettiKey,
+    refreshGroups, refreshLists, listIdOf, checkDayComplete,
+  ]);
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
 }
