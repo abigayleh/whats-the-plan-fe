@@ -8,7 +8,7 @@ import CalendarWeekly from '../components/calendar/CalendarWeekly';
 import CalendarDaily from '../components/calendar/CalendarDaily';
 import UnscheduledPanel from '../components/calendar/UnscheduledPanel';
 import DayTodoPanel from '../components/calendar/DayTodoPanel';
-import TodosListPanel from '../components/calendar/TodosListPanel';
+import WeekTodosView from '../components/calendar/WeekTodosView';
 import PlanItemModal from '../components/items/PlanItemModal';
 import useAppData from '../hooks/useAppData';
 import usePlanItems from '../hooks/usePlanItems';
@@ -171,15 +171,6 @@ function CalendarPage() {
     .map(decorateTask),
   [tasks, isTaskVisible, decorateTask]);
 
-  // Todos-list mode's "Scheduled" bucket: every dated, non-overdue to-do across the whole
-  // system (not range-limited like the grid's `items`), soonest-first.
-  const scheduledTasks = useMemo(() => tasks
-    .filter((task) => getTaskDay(task) != null && !isTaskOverdue(task))
-    .filter((task) => (showCompleted || task.status !== 'done') && isTaskVisible(task))
-    .sort((a, b) => getTaskDay(a) - getTaskDay(b))
-    .map(decorateTask),
-  [tasks, isTaskVisible, showCompleted, decorateTask]);
-
   // Falls back to a raw (unscheduled) task when dragging it in from UnscheduledPanel, since
   // those rows carry the real task id rather than a calendar occurrence id.
   function itemById(id) {
@@ -340,14 +331,14 @@ function CalendarPage() {
       onOpen={openTaskById}
     />
   );
-  const todosListPanel = (
-    <TodosListPanel
-      overdueTasks={overdueTasks}
-      scheduledTasks={scheduledTasks}
+  const weekTodosView = (
+    <WeekTodosView
+      focusDate={focusDate}
+      tasks={baseVisibleItems}
       unscheduledTasks={unscheduledTasks}
-      lists={lists}
       onToggle={toggleItemStatus}
-      onOpen={openTaskById}
+      onOpen={openItem}
+      onOpenUnscheduled={openTaskById}
     />
   );
 
@@ -379,7 +370,7 @@ function CalendarPage() {
 
       <div className="calendar-filters">
         <CalendarViewSwitcher view={view} onChange={setView} />
-        {view !== 'day' && <CalendarContentToggle value={contentFilter} onChange={setContentFilter} />}
+        {view === 'week' && <CalendarContentToggle value={contentFilter} onChange={setContentFilter} />}
         <button
           type="button"
           className={`filter-toggle${onlyMine ? ' filter-toggle--active' : ''}`}
@@ -414,16 +405,15 @@ function CalendarPage() {
           </button>
         )}
         {view === 'month' && (
-          contentFilter === 'todos' ? todosListPanel : (
-            <CalendarMonthly focusDate={focusDate} tasks={baseVisibleItems} onSelectDay={handleSelectDay} />
-          )
+          <CalendarMonthly focusDate={focusDate} tasks={baseVisibleItems} onSelectDay={handleSelectDay} />
         )}
         {view === 'week' && (
-          contentFilter === 'todos' ? todosListPanel : (
+          contentFilter === 'todos' ? weekTodosView : (
             <>
               <CalendarWeekly
                 focusDate={focusDate}
                 tasks={baseVisibleItems}
+                showAllday={contentFilter === 'all'}
                 onSelectDay={handleSelectDay}
                 onToggleTask={toggleItemStatus}
                 onOpenTask={openItem}

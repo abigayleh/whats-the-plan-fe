@@ -14,7 +14,7 @@ function CalendarDaily({
     <div className="calendar-day">
       {!hasTimelineItems && <p className="calendar-day__empty">Nothing scheduled today.</p>}
       <div className="calendar-day__timeline">
-        <CalendarHourGutter showAlldayLabel />
+        <CalendarHourGutter showAllday />
         <CalendarTimeline
           day={focusDate}
           tasks={timelineItems}

@@ -363,3 +363,58 @@ $timeline-allday-height: 2.75rem;
     position: static;
   }
 }
+
+// Todos mode: week day-columns, each a list of that day's to-dos.
+.week-todos {
+  display: flex;
+  gap: 1px;
+  background: $color-border;
+  border: 1px solid $color-border;
+  border-radius: $radius-md;
+  overflow-x: auto;
+
+  &__col {
+    flex: 1 1 0;
+    min-width: 9rem;
+    display: flex;
+    flex-direction: column;
+    background: $color-surface;
+
+    &--today {
+      background: $color-primary-soft;
+    }
+  }
+
+  &__head {
+    display: flex;
+    align-items: baseline;
+    gap: $spacing-xs;
+    padding: $spacing-xs $spacing-sm;
+    border-bottom: 1px solid $color-border;
+  }
+
+  &__weekday {
+    font-size: $font-size-xs;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    color: $color-text-muted;
+  }
+
+  &__daynum {
+    font-weight: 600;
+  }
+
+  &__list {
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-xs;
+    padding: $spacing-sm;
+  }
+
+  &__empty {
+    padding: $spacing-xs;
+    color: $color-text-muted;
+    text-align: center;
+  }
+}

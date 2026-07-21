@@ -14,10 +14,10 @@ export const TIMELINE_HEIGHT_REM = DAY_HOURS.length * ROW_HEIGHT_REM;
 // hour range/row-height constants it depends on only live in one place. Height is
 // left to natural flow (allday-label + hour rows) so it matches CalendarTimeline's
 // total height, which is driven by the same $timeline-allday-height SCSS variable.
-export function CalendarHourGutter({ showAlldayLabel = false }) {
+export function CalendarHourGutter({ showAllday = false }) {
   return (
     <div className="calendar-hours">
-      <div className="calendar-hours__allday-label">{showAlldayLabel ? 'To-dos' : null}</div>
+      {showAllday && <div className="calendar-hours__allday-label">To-dos</div>}
       {DAY_HOURS.map((hour) => (
         <div key={hour} className="calendar-hours__label" style={{ height: `${ROW_HEIGHT_REM}rem` }}>
           {formatHourLabel(hour)}
@@ -31,7 +31,7 @@ export function CalendarHourGutter({ showAlldayLabel = false }) {
 // absolute-positioned hour timeline below. Used by CalendarWeekly (7 columns) and
 // CalendarDaily (1 wide column) so both views share click-to-create + drag/drop.
 function CalendarTimeline({
-  day, tasks, now, onToggleTask, onOpenTask, onCreateTask, onMoveTask, onPushToTomorrow,
+  day, tasks, now, showAllday = true, onToggleTask, onOpenTask, onCreateTask, onMoveTask, onPushToTomorrow,
 }) {
   const timedTasks = tasks.filter((task) => isTaskTimed(task) && isTaskOnDay(task, day));
   const alldayTasks = tasks.filter((task) => !isTaskTimed(task) && getTaskDay(task) && isTaskOnDay(task, day));
@@ -69,25 +69,27 @@ function CalendarTimeline({
 
   return (
     <div className="calendar-timeline">
-      <div
-        className="calendar-timeline__allday"
-        onDragOver={(e) => e.preventDefault()}
-        onDrop={handleAlldayDrop}
-      >
-        {alldayTasks.slice(0, MAX_ALLDAY_VISIBLE).map((task) => (
-          <TaskChip
-            key={task.id}
-            task={task}
-            onToggle={onToggleTask}
-            onOpen={onOpenTask}
-            onPushToTomorrow={onPushToTomorrow}
-            draggable
-          />
-        ))}
-        {alldayTasks.length > MAX_ALLDAY_VISIBLE && (
-          <span className="calendar-timeline__more">+{alldayTasks.length - MAX_ALLDAY_VISIBLE}</span>
-        )}
-      </div>
+      {showAllday && (
+        <div
+          className="calendar-timeline__allday"
+          onDragOver={(e) => e.preventDefault()}
+          onDrop={handleAlldayDrop}
+        >
+          {alldayTasks.slice(0, MAX_ALLDAY_VISIBLE).map((task) => (
+            <TaskChip
+              key={task.id}
+              task={task}
+              onToggle={onToggleTask}
+              onOpen={onOpenTask}
+              onPushToTomorrow={onPushToTomorrow}
+              draggable
+            />
+          ))}
+          {alldayTasks.length > MAX_ALLDAY_VISIBLE && (
+            <span className="calendar-timeline__more">+{alldayTasks.length - MAX_ALLDAY_VISIBLE}</span>
+          )}
+        </div>
+      )}
 
       <div
         className="calendar-timeline__col"

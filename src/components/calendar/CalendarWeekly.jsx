@@ -3,7 +3,8 @@ import useNow from '../../hooks/useNow';
 import CalendarTimeline, { CalendarHourGutter } from './CalendarTimeline';
 
 function CalendarWeekly({
-  focusDate, tasks, onSelectDay, onToggleTask, onOpenTask, onCreateTask, onMoveTask, onPushToTomorrow,
+  focusDate, tasks, showAllday = true,
+  onSelectDay, onToggleTask, onOpenTask, onCreateTask, onMoveTask, onPushToTomorrow,
 }) {
   const days = getWeekDays(focusDate);
   const now = useNow();
@@ -28,13 +29,14 @@ function CalendarWeekly({
       </div>
 
       <div className="calendar-week__timeline">
-        <CalendarHourGutter showAlldayLabel />
+        <CalendarHourGutter showAllday={showAllday} />
         {days.map((day) => (
           <CalendarTimeline
             key={day.toISOString()}
             day={day}
             tasks={tasks}
             now={now}
+            showAllday={showAllday}
             onToggleTask={onToggleTask}
             onOpenTask={onOpenTask}
             onCreateTask={onCreateTask}
