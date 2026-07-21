@@ -1,5 +1,7 @@
 import { lazy, Suspense } from 'react';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import {
+  BrowserRouter, Routes, Route, Navigate,
+} from 'react-router-dom';
 import AppShell from './components/layout/AppShell';
 import RequireAuth from './components/auth/RequireAuth';
 import AuthProvider from './store/AuthProvider';
@@ -44,6 +46,8 @@ function App() {
                   <Route path="profile" element={<ProfilePage />} />
                 </Route>
               </Route>
+              {/* Any unmatched path (stale link, typo) lands on the app instead of a bare 404. */}
+              <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
           </Suspense>
         </BrowserRouter>

@@ -11,6 +11,7 @@ import useDebouncedCallback from '../../hooks/useDebouncedCallback';
 import { ancestorsOf } from '../../utils/pageTree';
 import PageDocument from './PageDocument';
 import MovePageMenu from './MovePageMenu';
+import PageIconPicker from './PageIconPicker';
 
 const SAVE_LABEL = { saving: 'Saving…', saved: 'Saved', idle: '' };
 
@@ -97,6 +98,12 @@ function PageEditor() {
     setPage((prev) => (prev ? { ...prev, parentId } : prev));
   }
 
+  async function handleIcon(icon) {
+    lastSave.current = Date.now();
+    await updatePage(pageId, { icon });
+    setPage((prev) => (prev ? { ...prev, icon } : prev));
+  }
+
   async function handleDelete() {
     // eslint-disable-next-line no-alert
     if (!window.confirm('Delete this page? Its subpages move up a level.')) return;
@@ -144,6 +151,8 @@ function PageEditor() {
           </button>
         </div>
       )}
+
+      <PageIconPicker icon={page.icon ?? null} onChange={handleIcon} disabled={!editable} />
 
       <input
         className="page-editor__title"

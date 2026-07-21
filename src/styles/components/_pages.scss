@@ -89,6 +89,8 @@
 }
 
 // A disclosure chevron in the left gutter — absolute so it never pushes the page right.
+// The visible box stays put (so root icons keep lining up with the section headers);
+// a ::before pseudo-element pads the actual clickable area a bit past those bounds.
 .page-tree__toggle {
   position: absolute;
   top: 0;
@@ -102,14 +104,28 @@
   cursor: pointer;
   color: $color-text-muted;
 
-  &:hover {
+  &::before {
+    content: '';
+    position: absolute;
+    inset: -0.1rem -0.3rem;
+  }
+
+  &:hover,
+  &:focus-visible {
     color: $color-text;
   }
 }
 
 .page-tree__chevron {
+  padding: 0.15rem;
+  border-radius: $radius-xs;
   transform: rotate(-90deg);
-  transition: transform 0.12s ease;
+  transition: transform 0.12s ease, background 0.12s ease;
+
+  .page-tree__toggle:hover &,
+  .page-tree__toggle:focus-visible & {
+    background: $color-border;
+  }
 
   &--open {
     transform: rotate(0deg);
@@ -266,6 +282,47 @@
   margin-top: $spacing-xs;
 }
 
+// Page icon picker — trigger sits above the title, popup reuses .icon-picker from _modal.
+.page-icon-picker {
+  position: relative;
+  display: inline-flex;
+  margin-top: $spacing-sm;
+}
+
+.page-icon-picker__trigger {
+  @include flex-center;
+  width: 2.75rem;
+  height: 2.75rem;
+  border: none;
+  border-radius: $radius-sm;
+  background: none;
+  color: $color-text-muted;
+  cursor: pointer;
+
+  &:hover:not(:disabled) {
+    background: $color-border-light;
+    color: $color-text;
+  }
+
+  &:disabled {
+    cursor: default;
+  }
+}
+
+.page-icon-picker__menu {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  z-index: 41;
+  width: 14rem;
+  margin-top: $spacing-xs;
+  padding: $spacing-sm;
+  background: $color-surface;
+  border: 1px solid $color-border;
+  border-radius: $radius-sm;
+  box-shadow: 0 0.5rem 1.5rem rgba(0, 0, 0, 0.12);
+}
+
 .page-editor__title {
   width: 100%;
   border: none;
@@ -389,6 +446,7 @@
   font-size: 0.95em;
   color: $color-primary;
   background: $color-primary-soft;
+  text-decoration: none;
   cursor: pointer;
   vertical-align: baseline;
 

@@ -1,5 +1,6 @@
 import { NavLink } from 'react-router-dom';
 import { ChevronIcon, PlusIcon, PagesIcon } from '../layout/icons';
+import { getTaskIcon } from '../../constants/taskIcons';
 
 // One row in the page tree, recursing into its children when expanded.
 function PageTreeNode({
@@ -7,17 +8,20 @@ function PageTreeNode({
 }) {
   const hasChildren = node.children.length > 0;
   const isOpen = expanded[node.id] !== false; // default expanded
+  const NodeIcon = getTaskIcon(node.icon)?.Icon;
 
   return (
     <li className="page-tree__node">
       <div className="page-tree__row" style={{ paddingLeft: `${0.9 + depth * 0.9}rem` }}>
         {hasChildren && (
+          // A sibling of the NavLink below, not nested in it — clicking it can't navigate.
           <button
             type="button"
             className="page-tree__toggle"
             style={{ left: `${depth * 0.9}rem` }}
             onClick={() => onToggle(node.id)}
             aria-label={isOpen ? 'Hide subpages' : 'Show subpages'}
+            aria-expanded={isOpen}
           >
             <ChevronIcon width={13} height={13} className={`page-tree__chevron${isOpen ? ' page-tree__chevron--open' : ''}`} />
           </button>
@@ -28,7 +32,7 @@ function PageTreeNode({
           className={({ isActive }) => `page-tree__link${isActive ? ' page-tree__link--active' : ''}`}
         >
           <span className="page-tree__icon">
-            {node.icon || <PagesIcon width={15} height={15} />}
+            {NodeIcon ? <NodeIcon width={15} height={15} /> : <PagesIcon width={15} height={15} />}
           </span>
           <span className="page-tree__title">{node.title || 'Untitled'}</span>
         </NavLink>

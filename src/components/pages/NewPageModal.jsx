@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { CloseIcon } from '../layout/icons';
+import { TASK_ICONS } from '../../constants/taskIcons';
 
 // Create a top-level page. Scope is chosen here and is fixed once the page exists.
 function NewPageModal({
@@ -7,6 +8,7 @@ function NewPageModal({
 }) {
   const [title, setTitle] = useState('');
   const [groupId, setGroupId] = useState(null);
+  const [icon, setIcon] = useState(null);
   const [error, setError] = useState(null);
   const [saving, setSaving] = useState(false);
 
@@ -15,7 +17,7 @@ function NewPageModal({
     setError(null);
     setSaving(true);
     try {
-      await onCreate({ title: title.trim() || 'Untitled', groupId });
+      await onCreate({ title: title.trim() || 'Untitled', groupId, icon });
     } catch (err) {
       setError(err.message || 'Could not create page');
       setSaving(false);
@@ -65,6 +67,33 @@ function NewPageModal({
                   onClick={() => setGroupId(group.id)}
                 >
                   {group.name}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="modal__field">
+            <span className="modal__label">Icon</span>
+            <div className="icon-picker">
+              <button
+                type="button"
+                className={`icon-picker__option${icon === null ? ' icon-picker__option--active' : ''}`}
+                onClick={() => setIcon(null)}
+                aria-label="No icon"
+                aria-pressed={icon === null}
+              >
+                <CloseIcon width={14} height={14} />
+              </button>
+              {TASK_ICONS.map(({ key, label, Icon }) => (
+                <button
+                  key={key}
+                  type="button"
+                  className={`icon-picker__option${icon === key ? ' icon-picker__option--active' : ''}`}
+                  onClick={() => setIcon(key)}
+                  aria-label={label}
+                  aria-pressed={icon === key}
+                >
+                  <Icon />
                 </button>
               ))}
             </div>

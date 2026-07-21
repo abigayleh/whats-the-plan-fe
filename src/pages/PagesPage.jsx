@@ -25,8 +25,12 @@ function PagesPage() {
       || groups.find((g) => g.id === page.groupId)?.role === 'ADMIN';
   }
 
-  async function createPage({ title = 'Untitled', groupId = null, parentId = null }) {
-    const page = await addPage({ title, groupId, parentId });
+  async function createPage({
+    title = 'Untitled', groupId = null, parentId = null, icon = null,
+  }) {
+    const page = await addPage({
+      title, groupId, parentId, icon,
+    });
     navigate(`/pages/${page.id}`);
     return page;
   }
