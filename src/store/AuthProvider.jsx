@@ -3,9 +3,9 @@ import {
 } from 'react';
 import * as authApi from '../api/auth';
 import {
-  setTokens, clearTokens, getRefreshToken, setOnAuthFailure,
+  setTokens, clearTokens, getRefreshToken, setOnAuthFailure, ensureFreshToken,
 } from '../api/client';
-import { connectSocket, disconnectSocket } from '../socket/socketClient';
+import { socket, connectSocket, disconnectSocket } from '../socket/socketClient';
 
 // eslint-disable-next-line react-refresh/only-export-components
 export const AuthContext = createContext(null);
@@ -63,6 +63,27 @@ export default function AuthProvider({ children }) {
     })();
     return () => { active = false; };
   }, []);
+
+  // Recover the realtime socket after idle. Browsers drop the connection when the tab sleeps,
+  // and socket.io's own reconnect sends the now-expired token, which the server rejects for good
+  // (connect_error with socket.active === false, no further retries). So live updates silently
+  // die until a refresh. Here we mint a fresh token first, then reconnect — on tab focus and on a
+  // rejected reconnect — so rooms re-subscribe without a manual page reload.
+  useEffect(() => {
+    if (status !== 'authed') return undefined;
+    const revive = async () => {
+      if (socket.connected) return;
+      if (await ensureFreshToken()) connectSocket();
+    };
+    const onVisible = () => { if (document.visibilityState === 'visible') revive(); };
+    const onConnectError = () => { if (!socket.active) revive(); };
+    document.addEventListener('visibilitychange', onVisible);
+    socket.on('connect_error', onConnectError);
+    return () => {
+      document.removeEventListener('visibilitychange', onVisible);
+      socket.off('connect_error', onConnectError);
+    };
+  }, [status]);
 
   const login = useCallback(async (email, password) => {
     applyAuth(await authApi.login(email, password));

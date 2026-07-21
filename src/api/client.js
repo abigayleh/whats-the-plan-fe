@@ -1,6 +1,9 @@
 // Thin fetch wrapper: base URL, Bearer auth, and transparent one-shot token refresh on 401.
 const BASE = import.meta.env.VITE_API_URL || 'http://localhost:4000';
 const REFRESH_KEY = 'wtp_refresh';
+// A request that never settles (e.g. a connection gone stale over a long idle) would leave
+// autosave stuck on "Saving…" forever, so every request is bounded by this timeout.
+const REQUEST_TIMEOUT_MS = 20000;
 
 let accessToken = null;
 let onAuthFailure = null;
@@ -28,6 +31,14 @@ export class ApiError extends Error {
   }
 }
 
+// fetch with a hard timeout: aborts (rejects) rather than hanging indefinitely.
+function fetchWithTimeout(url, options = {}) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+  return fetch(url, { ...options, signal: controller.signal })
+    .finally(() => clearTimeout(timer));
+}
+
 function rawFetch(path, { method = 'GET', body, auth = true } = {}) {
   // FormData sets its own multipart Content-Type (with boundary) — don't override it.
   const isForm = body instanceof FormData;
@@ -35,7 +46,7 @@ function rawFetch(path, { method = 'GET', body, auth = true } = {}) {
   if (auth && accessToken) headers.Authorization = `Bearer ${accessToken}`;
   let payload;
   if (body !== undefined) payload = isForm ? body : JSON.stringify(body);
-  return fetch(BASE + path, { method, headers, body: payload });
+  return fetchWithTimeout(BASE + path, { method, headers, body: payload });
 }
 
 // Refresh the access token once; concurrent callers share a single in-flight request.
@@ -43,7 +54,7 @@ function refreshTokens() {
   if (!refreshing) {
     const rt = getRefreshToken();
     refreshing = (rt
-      ? fetch(BASE + '/api/auth/refresh', {
+      ? fetchWithTimeout(BASE + '/api/auth/refresh', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ refreshToken: rt }),
@@ -63,6 +74,17 @@ function refreshTokens() {
       .finally(() => { refreshing = null; });
   }
   return refreshing;
+}
+
+// Proactively mint a fresh access token (e.g. before reconnecting the socket after idle).
+// Resolves true on success, false on failure — never throws, so callers can guard on it.
+export async function ensureFreshToken() {
+  try {
+    await refreshTokens();
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 export async function apiFetch(path, options = {}) {
