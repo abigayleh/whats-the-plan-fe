@@ -356,4 +356,10 @@
       border-color: list.nth($pair, 1);
     }
   }
+
+  // Plain (no category color) — used by the calendar Todos view. Neutral done fill.
+  &--plain.task-row--done &__check {
+    background: $color-text-muted;
+    border-color: $color-text-muted;
+  }
 }

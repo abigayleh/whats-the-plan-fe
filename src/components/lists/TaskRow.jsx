@@ -7,7 +7,7 @@ import TaskActionButtons from '../tasks/TaskActionButtons';
 import Linkify from '../common/Linkify';
 
 function TaskRow({
-  task, lists, onToggle, onClick, draggable = false,
+  task, lists, onToggle, onClick, draggable = false, plain = false,
 }) {
   // Optimistic check: show the tick the instant it's clicked, then let the server-confirmed
   // status take over (and the row re-sort/disappear) once the refetch lands.
@@ -32,7 +32,7 @@ function TaskRow({
 
   return (
     <div
-      className={`task-row task-row--${task.colorKey}${done ? ' task-row--done' : ''}`}
+      className={`task-row ${plain ? 'task-row--plain' : `task-row--${task.colorKey}`}${done ? ' task-row--done' : ''}`}
       onClick={() => onClick(task)}
       onKeyDown={(e) => {
         if (e.key === 'Enter' || e.key === ' ') {
@@ -77,7 +77,7 @@ function TaskRow({
             {day && (
               <span className={`task-row__due${overdue ? ' task-row__due--overdue' : ''}`}>
                 {formatDateShort(day)}
-                {timed && ` · ${formatTime(task.scheduledStart)}`}
+                {timed && !plain && ` · ${formatTime(task.scheduledStart)}`}
               </span>
             )}
             {subtaskCount > 0 && (

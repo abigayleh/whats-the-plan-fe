@@ -336,6 +336,7 @@ function CalendarPage() {
       focusDate={focusDate}
       tasks={baseVisibleItems}
       unscheduledTasks={unscheduledTasks}
+      lists={lists}
       onToggle={toggleItemStatus}
       onOpen={openItem}
       onOpenUnscheduled={openTaskById}

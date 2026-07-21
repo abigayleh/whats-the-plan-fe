@@ -1,6 +1,6 @@
 import { getWeekDays, isToday } from '../../utils/date';
 import { isTaskOnDay, isTaskTimed } from '../../utils/tasks';
-import TaskChip from './TaskChip';
+import TaskRow from '../lists/TaskRow';
 
 // Todos-per-day for the week: same day-of-week columns as the grid, but each day's to-dos
 // are listed (timed first) rather than laid out on an hourly timeline. Events are omitted.
@@ -16,7 +16,9 @@ function todosForDay(tasks, day) {
     });
 }
 
-function TodoColumn({ label, dayNum, today, todos, onToggle, onOpen }) {
+function TodoColumn({
+  label, dayNum, today, todos, lists, onToggle, onOpen,
+}) {
   return (
     <div className={`week-todos__col${today ? ' week-todos__col--today' : ''}`}>
       <div className="week-todos__head">
@@ -26,14 +28,16 @@ function TodoColumn({ label, dayNum, today, todos, onToggle, onOpen }) {
       <div className="week-todos__list">
         {todos.length === 0
           ? <p className="week-todos__empty">—</p>
-          : todos.map((t) => <TaskChip key={t.id} task={t} onToggle={onToggle} onOpen={onOpen} />)}
+          : todos.map((t) => (
+            <TaskRow key={t.id} task={t} lists={lists} onToggle={onToggle} onClick={onOpen} plain />
+          ))}
       </div>
     </div>
   );
 }
 
 function WeekTodosView({
-  focusDate, tasks, unscheduledTasks, onToggle, onOpen, onOpenUnscheduled,
+  focusDate, tasks, unscheduledTasks, lists, onToggle, onOpen, onOpenUnscheduled,
 }) {
   const days = getWeekDays(focusDate);
   return (
@@ -45,6 +49,7 @@ function WeekTodosView({
           dayNum={day.getDate()}
           today={isToday(day)}
           todos={todosForDay(tasks, day)}
+          lists={lists}
           onToggle={onToggle}
           onOpen={onOpen}
         />
@@ -53,6 +58,7 @@ function WeekTodosView({
         <TodoColumn
           label="No date"
           todos={unscheduledTasks}
+          lists={lists}
           onToggle={onToggle}
           onOpen={onOpenUnscheduled}
         />

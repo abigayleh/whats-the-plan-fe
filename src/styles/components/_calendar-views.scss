@@ -408,8 +408,7 @@ $timeline-allday-height: 2.75rem;
   &__list {
     display: flex;
     flex-direction: column;
-    gap: $spacing-xs;
-    padding: $spacing-sm;
+    padding: 0 $spacing-sm $spacing-sm;
   }
 
   &__empty {
