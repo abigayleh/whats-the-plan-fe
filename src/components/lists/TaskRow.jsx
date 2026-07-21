@@ -32,7 +32,7 @@ function TaskRow({
 
   return (
     <div
-      className={`task-row ${plain ? 'task-row--plain' : `task-row--${task.colorKey}`}${done ? ' task-row--done' : ''}`}
+      className={`task-row task-row--${task.colorKey}${done ? ' task-row--done' : ''}`}
       onClick={() => onClick(task)}
       onKeyDown={(e) => {
         if (e.key === 'Enter' || e.key === ' ') {
@@ -72,12 +72,12 @@ function TaskRow({
           <Linkify text={task.title} />
           {task.recurrenceRule && <RepeatIcon className="task-row__repeat-icon" />}
         </span>
-        {(day || task.assignedTo || subtaskCount > 0) && (
+        {!plain && (day || task.assignedTo || subtaskCount > 0) && (
           <span className="task-row__meta">
             {day && (
               <span className={`task-row__due${overdue ? ' task-row__due--overdue' : ''}`}>
                 {formatDateShort(day)}
-                {timed && !plain && ` · ${formatTime(task.scheduledStart)}`}
+                {timed && ` · ${formatTime(task.scheduledStart)}`}
               </span>
             )}
             {subtaskCount > 0 && (
