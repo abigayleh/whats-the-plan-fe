@@ -122,13 +122,22 @@ function PlanItemModal({
     commitChange({ listId: newListId, assignedToId: clearAssignee ? '' : assignedToId });
   }
 
-  function handleAddSubtask() {
+  // Folds an uncommitted "add sub-to-do" draft into the subtask list without saving —
+  // shared by handleAddSubtask (which also autosaves) and handleDone (whose Done button
+  // deliberately skips the input's blur, see its onMouseDown comment below, so a draft
+  // typed but never confirmed would otherwise be silently dropped on save/close).
+  function flushSubtaskDraft() {
     const value = newSubtask.trim();
-    if (!value) return;
+    if (!value) return subtasks;
     const nextSubtasks = [...subtasks, { id: crypto.randomUUID(), title: value, done: false }];
     setSubtasks(nextSubtasks);
     setNewSubtask('');
-    commitChange({ subtasks: nextSubtasks });
+    return nextSubtasks;
+  }
+
+  function handleAddSubtask() {
+    const nextSubtasks = flushSubtaskDraft();
+    if (nextSubtasks !== subtasks) commitChange({ subtasks: nextSubtasks });
   }
 
   function toggleSubtask(subtaskId) {
@@ -268,7 +277,8 @@ function PlanItemModal({
   }
 
   async function handleDone() {
-    const ok = await commitChange();
+    const nextSubtasks = flushSubtaskDraft();
+    const ok = await commitChange(nextSubtasks !== subtasks ? { subtasks: nextSubtasks } : {});
     if (ok) onClose();
   }
 
@@ -397,6 +407,7 @@ function PlanItemModal({
                       handleAddSubtask();
                     }
                   }}
+                  onBlur={handleAddSubtask}
                 />
                 <button type="button" className="button button--ghost" onClick={handleAddSubtask}>
                   Add
