@@ -8,6 +8,7 @@ import CalendarWeekly from '../components/calendar/CalendarWeekly';
 import CalendarDaily from '../components/calendar/CalendarDaily';
 import UnscheduledPanel from '../components/calendar/UnscheduledPanel';
 import DayTodoPanel from '../components/calendar/DayTodoPanel';
+import TodosListPanel from '../components/calendar/TodosListPanel';
 import PlanItemModal from '../components/items/PlanItemModal';
 import useAppData from '../hooks/useAppData';
 import usePlanItems from '../hooks/usePlanItems';
@@ -25,6 +26,9 @@ import {
 } from '../utils/date';
 
 const DAY_MS = 86400000;
+// Pre-redefinition stored values ('events'/'tasks') migrate to their closest new meaning:
+// 'events' hid all to-dos → closest today is 'calendar' (grid-only); 'tasks' → 'todos' (list-only).
+const LEGACY_CONTENT_FILTER = { events: 'calendar', tasks: 'todos' };
 
 function CalendarPage() {
   const {
@@ -32,7 +36,8 @@ function CalendarPage() {
   } = useAppData();
   const { saveItem, deleteItem, moveItem, toggleStatus } = usePlanItems();
   const [view, setView] = useLocalStorageState('calendar-view', 'month');
-  const [contentFilter, setContentFilter] = useLocalStorageState('calendar-content-filter', 'all');
+  const [contentFilterRaw, setContentFilter] = useLocalStorageState('calendar-content-filter', 'all');
+  const contentFilter = LEGACY_CONTENT_FILTER[contentFilterRaw] ?? contentFilterRaw;
   const [onlyMine, setOnlyMine] = useLocalStorageState('calendar-only-mine', false);
   const [showCompleted, setShowCompleted] = useLocalStorageState('calendar-show-completed', true);
   const [showUnscheduledTray, setShowUnscheduledTray] = useLocalStorageState('calendar-show-unscheduled', false);
@@ -62,7 +67,7 @@ function CalendarPage() {
   );
 
   // Which lists have at least one scheduled item in the currently-fetched range — computed off
-  // the raw `items` (not filteredItems) so a list's own hidden state can't hide it from itself.
+  // the raw `items` (not baseVisibleItems) so a list's own hidden state can't hide it from itself.
   // Scheduled items always show on the calendar, so no per-list opt-out applies here.
   const scheduledListIds = useMemo(() => new Set(items
     .filter((item) => item.listId)
@@ -103,8 +108,8 @@ function CalendarPage() {
       : (item.groupId ?? null)
   ), [lists]);
 
-  // Filters shared by week/month (contentFilter-aware) and day view (which always shows
-  // events + to-dos side by side, ignoring contentFilter since its toggle is hidden there).
+  // Grid items shared by month/week/day: events + scheduled to-dos together (the split between
+  // 'Both' and 'Calendar' modes is only about which side panels render, not what's on the grid).
   const baseVisibleItems = useMemo(() => items
     .filter((item) => {
       // Filter on what's explicitly hidden: items load independently of groups/lists,
@@ -120,13 +125,6 @@ function CalendarPage() {
     .map((item) => ({ ...item, colorKey: getTaskColorKey(item, lists, groups, personalSpace) })),
   [items, lists, groups, personalSpace, hiddenGroupIds, hiddenListIds, onlyMine, showCompleted, currentUser, groupIdOf]);
 
-  const filteredItems = useMemo(() => baseVisibleItems.filter((item) => {
-    // 'Events' = calendar-only items (origin 'event', no list); 'To-Dos' = list-backed items.
-    if (contentFilter === 'events' && item.origin !== 'event') return false;
-    if (contentFilter === 'tasks' && item.origin === 'event') return false;
-    return true;
-  }), [baseVisibleItems, contentFilter]);
-
   // Today's to-dos for the day-view panel: date-only (no time) to-dos due today. Timed to-dos
   // render on the day timeline instead (see CalendarDaily), so they're excluded here.
   const todayTasks = useMemo(
@@ -136,44 +134,51 @@ function CalendarPage() {
     [baseVisibleItems, focusDate],
   );
 
+  // Group/list/assignee visibility shared by every range-independent to-do bucket below
+  // (overdue, scheduled, unscheduled) — done-ness and list-level opt-outs differ per bucket.
+  const isTaskVisible = useCallback((task) => {
+    if (hiddenGroupIds.has(groupIdOf(task))) return false;
+    if (task.listId && hiddenListIds.has(task.listId)) return false;
+    if (onlyMine && task.assignedToId && task.assignedToId !== currentUser.id) return false;
+    return true;
+  }, [hiddenGroupIds, hiddenListIds, onlyMine, currentUser, groupIdOf]);
+
+  const decorateTask = useCallback((task) => ({
+    ...task,
+    colorKey: getTaskColorKey(task, lists, groups, personalSpace),
+    icon: getTaskIconKey(task, lists),
+  }), [lists, groups, personalSpace]);
+
   // To-dos with no date at all never appear in `items` (the calendar only fetches within a
   // date range), so they're read straight from useAppData and filtered the same way as above.
   const unscheduledTasks = useMemo(() => tasks
     .filter((task) => getTaskDay(task) == null)
     .filter((task) => {
       if (!showCompleted && task.status === 'done') return false;
-      if (hiddenGroupIds.has(groupIdOf(task))) return false;
-      if (task.listId && hiddenListIds.has(task.listId)) return false;
-      if (onlyMine && task.assignedToId && task.assignedToId !== currentUser.id) return false;
+      if (!isTaskVisible(task)) return false;
       // A list can hide its unscheduled to-dos from the calendar.
       const list = task.listId ? lists.find((l) => l.id === task.listId) : null;
       if (list && list.showUnscheduledOnCalendar === false) return false;
       return true;
     })
-    .map((task) => ({
-      ...task,
-      colorKey: getTaskColorKey(task, lists, groups, personalSpace),
-      icon: getTaskIconKey(task, lists),
-    })),
-  [tasks, lists, groups, personalSpace, hiddenGroupIds, hiddenListIds, onlyMine, showCompleted, currentUser, groupIdOf]);
+    .map(decorateTask),
+  [tasks, lists, isTaskVisible, showCompleted, decorateTask]);
 
-  // Past-due, incomplete to-dos surfaced above Today in the day panel. Read from all tasks
-  // (they may be due before the fetched range) and filtered like unscheduled — but a list's
-  // "hide unscheduled" doesn't apply, since overdue items are dated, not unscheduled.
+  // Past-due, incomplete to-dos surfaced above Today in the day panel (and above Scheduled in
+  // Todos-list mode). Read from all tasks (they may be due before the fetched range).
   const overdueTasks = useMemo(() => tasks
-    .filter((task) => isTaskOverdue(task))
-    .filter((task) => {
-      if (hiddenGroupIds.has(groupIdOf(task))) return false;
-      if (task.listId && hiddenListIds.has(task.listId)) return false;
-      if (onlyMine && task.assignedToId && task.assignedToId !== currentUser.id) return false;
-      return true;
-    })
-    .map((task) => ({
-      ...task,
-      colorKey: getTaskColorKey(task, lists, groups, personalSpace),
-      icon: getTaskIconKey(task, lists),
-    })),
-  [tasks, lists, groups, personalSpace, hiddenGroupIds, hiddenListIds, onlyMine, currentUser, groupIdOf]);
+    .filter((task) => isTaskOverdue(task) && isTaskVisible(task))
+    .map(decorateTask),
+  [tasks, isTaskVisible, decorateTask]);
+
+  // Todos-list mode's "Scheduled" bucket: every dated, non-overdue to-do across the whole
+  // system (not range-limited like the grid's `items`), soonest-first.
+  const scheduledTasks = useMemo(() => tasks
+    .filter((task) => getTaskDay(task) != null && !isTaskOverdue(task))
+    .filter((task) => (showCompleted || task.status !== 'done') && isTaskVisible(task))
+    .sort((a, b) => getTaskDay(a) - getTaskDay(b))
+    .map(decorateTask),
+  [tasks, isTaskVisible, showCompleted, decorateTask]);
 
   // Falls back to a raw (unscheduled) task when dragging it in from UnscheduledPanel, since
   // those rows carry the real task id rather than a calendar occurrence id.
@@ -230,6 +235,10 @@ function CalendarPage() {
     const task = taskOf(item);
     if (task) setPlanItemModal({ mode: 'edit', item: task });
   }
+
+  // Rows sourced straight from `tasks` (overdue/scheduled/unscheduled buckets) carry the real
+  // task id rather than a calendar-occurrence id, so wrap it into the shape openItem expects.
+  const openTaskById = (task) => openItem({ origin: 'task', sourceId: task.id });
 
   function createEventAt(day, hour, minute = 0) {
     const start = new Date(day);
@@ -307,9 +316,10 @@ function CalendarPage() {
       ? formatWeekRange(getWeekDays(focusDate))
       : formatFullDate(focusDate);
 
-  // The standalone tray only exists for week view; day view has its own "Unscheduled" section
-  // inside DayTodoPanel (also gated on showUnscheduledTray, see the prop passed below).
-  const showUnscheduledTrayPanel = showUnscheduledTray && contentFilter !== 'events' && view === 'week';
+  // The standalone tray only exists for week view, and only in 'Both' mode: 'Calendar' mode
+  // shows no list panels at all, 'Todos' mode replaces the grid with its own full list instead.
+  // Day view has its own "Unscheduled" section inside DayTodoPanel (also gated on showUnscheduledTray).
+  const showUnscheduledTrayPanel = showUnscheduledTray && contentFilter === 'all' && view === 'week';
 
   const dailyView = (
     <CalendarDaily
@@ -327,7 +337,17 @@ function CalendarPage() {
       tasks={unscheduledTasks}
       lists={lists}
       onToggle={toggleItemStatus}
-      onOpen={(task) => openItem({ origin: 'task', sourceId: task.id })}
+      onOpen={openTaskById}
+    />
+  );
+  const todosListPanel = (
+    <TodosListPanel
+      overdueTasks={overdueTasks}
+      scheduledTasks={scheduledTasks}
+      unscheduledTasks={unscheduledTasks}
+      lists={lists}
+      onToggle={toggleItemStatus}
+      onOpen={openTaskById}
     />
   );
 
@@ -342,7 +362,7 @@ function CalendarPage() {
 
       <ToggleChips items={groupOptions} activeIds={activeGroupIds} onToggle={toggleGroup} />
 
-      {(view === 'day' || contentFilter !== 'events') && listOptions.length > 0 && (
+      {listOptions.length > 0 && (
         <ToggleChips items={listOptions} activeIds={activeListIds} onToggle={toggleList} />
       )}
 
@@ -381,7 +401,7 @@ function CalendarPage() {
           className={`filter-toggle${showUnscheduledTray ? ' filter-toggle--active' : ''}`}
           onClick={() => setShowUnscheduledTray((prev) => !prev)}
           aria-pressed={showUnscheduledTray}
-          disabled={view !== 'day' && contentFilter === 'events'}
+          disabled={view !== 'day' && contentFilter !== 'all'}
         >
           Show unscheduled to-dos
         </button>
@@ -394,22 +414,26 @@ function CalendarPage() {
           </button>
         )}
         {view === 'month' && (
-          <CalendarMonthly focusDate={focusDate} tasks={filteredItems} onSelectDay={handleSelectDay} />
+          contentFilter === 'todos' ? todosListPanel : (
+            <CalendarMonthly focusDate={focusDate} tasks={baseVisibleItems} onSelectDay={handleSelectDay} />
+          )
         )}
         {view === 'week' && (
-          <>
-            <CalendarWeekly
-              focusDate={focusDate}
-              tasks={filteredItems}
-              onSelectDay={handleSelectDay}
-              onToggleTask={toggleItemStatus}
-              onOpenTask={openItem}
-              onCreateTask={createEventAt}
-              onMoveTask={handleMoveItem}
-              onPushToTomorrow={handleChipPushToTomorrow}
-            />
-            {showUnscheduledTrayPanel && unscheduledPanel}
-          </>
+          contentFilter === 'todos' ? todosListPanel : (
+            <>
+              <CalendarWeekly
+                focusDate={focusDate}
+                tasks={baseVisibleItems}
+                onSelectDay={handleSelectDay}
+                onToggleTask={toggleItemStatus}
+                onOpenTask={openItem}
+                onCreateTask={createEventAt}
+                onMoveTask={handleMoveItem}
+                onPushToTomorrow={handleChipPushToTomorrow}
+              />
+              {showUnscheduledTrayPanel && unscheduledPanel}
+            </>
+          )
         )}
         {view === 'day' && (
           <div
@@ -430,9 +454,9 @@ function CalendarPage() {
               unscheduledTasks={unscheduledTasks}
               lists={lists}
               onToggle={toggleItemStatus}
-              onOpenOverdue={(task) => openItem({ origin: 'task', sourceId: task.id })}
+              onOpenOverdue={openTaskById}
               onOpenToday={openItem}
-              onOpenUnscheduled={(task) => openItem({ origin: 'task', sourceId: task.id })}
+              onOpenUnscheduled={openTaskById}
               showUnscheduled={showUnscheduledTray}
             />
           </div>

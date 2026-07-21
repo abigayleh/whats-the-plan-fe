@@ -40,8 +40,22 @@ write path now, not two:
   real row-level task via `tasks.find(t => t.id === item.sourceId)` before opening the
   edit modal, since calendar-occurrence to-dos are lighter payloads missing
   subtasks/attachments).
-- Calendar content filter ('Events'/'To-Dos'/'Both' in `CalendarContentToggle`) now keys
-  off `item.origin === 'event'` instead of the removed `isEvent` flag.
+- Calendar content filter was redefined (branch `worktree-agent-aa740fbc7e4ca8226`, commit
+  `feat: redefine calendar modes to Both/Calendar/Todos`): `CalendarContentToggle` keys are now
+  `all`/`calendar`/`todos` (labels Both/Calendar/Todos), not the old `all`/`events`/`tasks`. It
+  no longer filters the grid by `item.origin` at all — 'Both' and 'Calendar' show the identical
+  grid (events + scheduled to-dos via `baseVisibleItems`); the only difference is 'Calendar'
+  hides the unscheduled tray/panel and disables the "Show unscheduled to-dos" toggle. 'Todos'
+  replaces the month/week grid entirely with `TodosListPanel` (Overdue/Scheduled/Unscheduled,
+  built from `tasks` directly — not range-limited like `items`). Day view is unaffected by this
+  toggle either way (its own always-on `DayTodoPanel` predates and ignores `contentFilter`).
+  `CalendarPage.jsx` migrates old stored values via `LEGACY_CONTENT_FILTER` (`events→calendar`,
+  `tasks→todos`) so existing localStorage doesn't break.
+  Known gap (flagged, not fixed): the list-filter chips' visibility (`listOptions`) is still
+  gated by `scheduledListIds`, which is computed from the range-limited `items`, not the
+  range-independent `tasks` Todos-mode actually renders — a list whose only visible item is a
+  future/past to-do outside the currently-browsed month/week may show in the Todos list with no
+  corresponding chip to toggle it off.
 
 **Known follow-up (flagged for review, not fixed):** `PlanItemModal`'s List dropdown
 always includes "No list (calendar event)" during creation regardless of which page opened

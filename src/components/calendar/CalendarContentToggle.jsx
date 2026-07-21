@@ -1,7 +1,7 @@
 const OPTIONS = [
   { key: 'all', label: 'Both' },
-  { key: 'events', label: 'Events' },
-  { key: 'tasks', label: 'To-Dos' },
+  { key: 'calendar', label: 'Calendar' },
+  { key: 'todos', label: 'Todos' },
 ];
 
 function CalendarContentToggle({ value, onChange }) {
