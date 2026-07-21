@@ -87,7 +87,7 @@ function TaskRow({
           </span>
         )}
       </span>
-      <TaskActionButtons task={task} lists={lists} />
+      {!plain && <TaskActionButtons task={task} lists={lists} />}
     </div>
   );
 }

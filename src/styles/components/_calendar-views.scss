@@ -416,4 +416,13 @@ $timeline-allday-height: 2.75rem;
     color: $color-text-muted;
     text-align: center;
   }
+
+  // Narrow columns: let the title wrap instead of truncating to nothing.
+  .task-row {
+    align-items: flex-start;
+  }
+
+  .task-row__title {
+    white-space: normal;
+  }
 }
