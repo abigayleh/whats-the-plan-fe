@@ -1,0 +1,176 @@
+@use '../abstracts/variables' as *;
+@use '../abstracts/mixins' as *;
+
+// The two-pane shell reuses the `.pages` classes; this file styles the itinerary
+// list (left) and the itinerary hub (right).
+
+// --- Left pane: itinerary list ---
+
+.itinerary-list {
+  padding: $spacing-xs 0;
+}
+
+.itinerary-list__section {
+  margin-top: $spacing-sm;
+}
+
+.itinerary-list__section-title {
+  padding: $spacing-xs 0.9rem;
+  font-size: $font-size-xs;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: $color-text-muted;
+}
+
+.itinerary-list__items {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.itinerary-list__empty {
+  padding: $spacing-xs 0.9rem;
+  font-size: $font-size-sm;
+  color: $color-text-muted;
+}
+
+.itinerary-list__row {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  border-radius: $radius-sm;
+
+  &:hover {
+    background: $color-border-light;
+  }
+
+  &:hover .itinerary-list__action {
+    opacity: 1;
+  }
+}
+
+.itinerary-list__link {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: $spacing-xs;
+  padding: $spacing-xs 0.9rem;
+  font-size: $font-size-sm;
+  color: $color-text;
+  border-radius: $radius-sm;
+
+  &--active {
+    font-weight: 600;
+    color: $color-primary;
+  }
+}
+
+.itinerary-list__icon {
+  display: flex;
+  flex-shrink: 0;
+  color: $color-text-muted;
+}
+
+.itinerary-list__title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.itinerary-list__actions {
+  display: flex;
+  align-items: center;
+  margin-right: $spacing-xs;
+}
+
+.itinerary-list__action {
+  opacity: 0;
+  width: 1.4rem;
+  height: 1.4rem;
+  flex-shrink: 0;
+}
+
+// --- Right pane: itinerary hub ---
+
+.itinerary-detail {
+  max-width: 60rem;
+  margin: 0 auto;
+  padding: $spacing-lg $spacing-xl $spacing-xl;
+
+  &--empty {
+    color: $color-text-muted;
+  }
+}
+
+.itinerary-detail__header {
+  margin-bottom: $spacing-md;
+}
+
+.itinerary-detail__title {
+  width: 100%;
+  border: none;
+  background: none;
+  font-size: 2rem;
+  font-weight: 700;
+  color: $color-text;
+  padding: $spacing-sm 0;
+
+  &::placeholder {
+    color: $color-text-muted;
+  }
+
+  &:disabled {
+    color: $color-text;
+  }
+}
+
+.itinerary-detail__dates {
+  font-size: $font-size-sm;
+  color: $color-text-muted;
+}
+
+.itinerary-detail__tabs {
+  display: flex;
+  gap: $spacing-xs;
+  border-bottom: 1px solid $color-border;
+  margin-bottom: $spacing-lg;
+}
+
+.itinerary-detail__tab {
+  border: none;
+  background: none;
+  padding: $spacing-sm $spacing-md;
+  margin-bottom: -1px;
+  font-size: $font-size-sm;
+  font-weight: 600;
+  color: $color-text-muted;
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+
+  &:hover {
+    color: $color-text;
+  }
+
+  &--active {
+    color: $color-primary;
+    border-bottom-color: $color-primary;
+  }
+}
+
+.itinerary-detail__placeholder {
+  color: $color-text-muted;
+  font-size: $font-size-sm;
+}
+
+// --- New-itinerary modal: side-by-side date fields ---
+
+.modal__field--row {
+  flex-direction: row;
+  gap: $spacing-md;
+
+  .modal__field {
+    flex: 1;
+  }
+}

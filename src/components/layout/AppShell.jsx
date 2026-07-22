@@ -10,7 +10,7 @@ function AppShell() {
   const { confettiKey } = useAppData();
   // The calendar (index route) and Pages (tree + editor) benefit from the full content
   // width — everything else stays capped at the usual reading width.
-  const isFullWidth = pathname === '/' || pathname.startsWith('/pages');
+  const isFullWidth = pathname === '/' || pathname.startsWith('/pages') || pathname.startsWith('/itinerary');
   // Mobile-only: the side nav becomes a slide-in drawer toggled from the header.
   const [navOpen, setNavOpen] = useState(false);
 

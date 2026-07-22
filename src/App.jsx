@@ -16,6 +16,8 @@ const CalendarPage = lazy(() => import('./pages/CalendarPage'));
 const ListsPage = lazy(() => import('./pages/ListsPage'));
 const PagesPage = lazy(() => import('./pages/PagesPage'));
 const PageEditor = lazy(() => import('./components/pages/PageEditor'));
+const ItineraryPage = lazy(() => import('./pages/ItineraryPage'));
+const ItineraryDetail = lazy(() => import('./components/itineraries/ItineraryDetail'));
 const PollsPage = lazy(() => import('./pages/PollsPage'));
 const ChatPage = lazy(() => import('./pages/ChatPage'));
 const GroupsPage = lazy(() => import('./pages/GroupsPage'));
@@ -38,6 +40,9 @@ function App() {
                   <Route path="lists" element={<ListsPage />} />
                   <Route path="pages" element={<PagesPage />}>
                     <Route path=":pageId" element={<PageEditor />} />
+                  </Route>
+                  <Route path="itinerary" element={<ItineraryPage />}>
+                    <Route path=":itineraryId" element={<ItineraryDetail />} />
                   </Route>
                   <Route path="polls" element={<PollsPage />} />
                   <Route path="chat" element={<ChatPage />} />

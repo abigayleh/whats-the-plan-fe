@@ -108,6 +108,22 @@ export const adaptPoll = (p) => ({
   createdAt: toDate(p.createdAt),
 });
 
+// An itinerary owns one auto-created list (listId); completedAt null = active.
+export const adaptItinerary = (it) => ({
+  id: it.id,
+  title: it.title,
+  destination: it.destination ?? null,
+  description: it.description ?? null,
+  groupId: it.groupId ?? null,
+  listId: it.listId ?? null,
+  colorLabel: it.colorLabel ?? null,
+  completedAt: toDate(it.completedAt),
+  createdById: it.createdById,
+  startDate: toDate(it.startDate),
+  endDate: toDate(it.endDate),
+  createdAt: toDate(it.createdAt),
+});
+
 // Page tree metadata (list responses omit `content`; the editor fetches it per-page).
 export const adaptPage = (p) => ({
   id: p.id,
