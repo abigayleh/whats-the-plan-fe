@@ -57,6 +57,22 @@
   flex-shrink: 0;
 }
 
+// These buttons sit at the top edge of .pages (overflow: hidden), so the shared
+// above-the-button [data-tooltip] pill would clip off — flip it to render below.
+.pages__sidebar-header [data-tooltip]::after,
+.pages__expand[data-tooltip]::after {
+  top: calc(100% + 0.375rem);
+  bottom: auto;
+  transform: translate(-50%, -0.25rem);
+}
+
+.pages__sidebar-header [data-tooltip]:hover::after,
+.pages__sidebar-header [data-tooltip]:focus-visible::after,
+.pages__expand[data-tooltip]:hover::after,
+.pages__expand[data-tooltip]:focus-visible::after {
+  transform: translate(-50%, 0);
+}
+
 .pages__sidebar-title {
   font-size: $font-size-sm;
   font-weight: 600;
