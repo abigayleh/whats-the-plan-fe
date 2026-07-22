@@ -57,20 +57,28 @@
   flex-shrink: 0;
 }
 
-// These buttons sit at the top edge of .pages (overflow: hidden), so the shared
-// above-the-button [data-tooltip] pill would clip off — flip it to render below.
+// These buttons sit at the edges of .pages (overflow: hidden) / .pages__sidebar
+// (overflow-x becomes auto), which clip the shared centered-above tooltip. Render
+// it below and left-anchored so it stays inside the container.
 .pages__sidebar-header [data-tooltip]::after,
 .pages__expand[data-tooltip]::after {
   top: calc(100% + 0.375rem);
   bottom: auto;
-  transform: translate(-50%, -0.25rem);
+  left: 0;
+  transform: translateY(-0.25rem);
+}
+
+// The New-page button hugs the right edge, so anchor its tooltip's right side.
+.pages__sidebar-header > [data-tooltip]:last-child::after {
+  left: auto;
+  right: 0;
 }
 
 .pages__sidebar-header [data-tooltip]:hover::after,
 .pages__sidebar-header [data-tooltip]:focus-visible::after,
 .pages__expand[data-tooltip]:hover::after,
 .pages__expand[data-tooltip]:focus-visible::after {
-  transform: translate(-50%, 0);
+  transform: translateY(0);
 }
 
 .pages__sidebar-title {
