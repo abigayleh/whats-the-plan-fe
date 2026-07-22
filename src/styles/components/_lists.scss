@@ -82,6 +82,32 @@
     cursor: pointer;
   }
 
+  &--dragging {
+    opacity: 0.85;
+    box-shadow: 0 0.5rem 1.25rem rgba(0, 0, 0, 0.14);
+    z-index: 2;
+  }
+
+  &__drag-handle {
+    @include flex-center;
+    width: 1.75rem;
+    height: 1.75rem;
+    border-radius: 50%;
+    border: none;
+    background: transparent;
+    color: $color-text-muted;
+    cursor: grab;
+    touch-action: none; // let the pointer sensor own the gesture on touch
+
+    &:hover {
+      background: $color-bg;
+    }
+
+    &:active {
+      cursor: grabbing;
+    }
+  }
+
   &__task-list {
     margin-top: $spacing-sm;
   }

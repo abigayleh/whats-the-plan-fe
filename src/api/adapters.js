@@ -26,6 +26,8 @@ export const adaptList = (l) => ({
   isSystem: l.isSystem,
   isDefault: l.isDefault ?? false,
   taskCount: l.taskCount,
+  // Per-user arrangement order; null until the user has dragged this list.
+  position: l.position ?? null,
 });
 
 // Already-uploaded attachments carry an id; previews load lazily (files need auth).

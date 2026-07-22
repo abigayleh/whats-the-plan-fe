@@ -221,6 +221,19 @@ export function EditIcon(props) {
   );
 }
 
+export function GripIcon(props) {
+  return (
+    <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" {...props}>
+      <circle cx="9" cy="6" r="1.6" />
+      <circle cx="15" cy="6" r="1.6" />
+      <circle cx="9" cy="12" r="1.6" />
+      <circle cx="15" cy="12" r="1.6" />
+      <circle cx="9" cy="18" r="1.6" />
+      <circle cx="15" cy="18" r="1.6" />
+    </svg>
+  );
+}
+
 export function UserIcon(props) {
   return (
     <svg viewBox="0 0 24 24" width="18" height="18" {...strokeProps} {...props}>

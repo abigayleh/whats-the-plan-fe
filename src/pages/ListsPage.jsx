@@ -1,6 +1,13 @@
 import { useState } from 'react';
+import {
+  DndContext, closestCenter, PointerSensor, KeyboardSensor, useSensor, useSensors,
+} from '@dnd-kit/core';
+import {
+  SortableContext, verticalListSortingStrategy, arrayMove, sortableKeyboardCoordinates,
+} from '@dnd-kit/sortable';
 import { ListsIcon, PlusIcon } from '../components/layout/icons';
 import ListSection from '../components/lists/ListSection';
+import SortableListSection from '../components/lists/SortableListSection';
 import PlanItemModal from '../components/items/PlanItemModal';
 import ListModal from '../components/lists/ListModal';
 import useAppData from '../hooks/useAppData';
@@ -13,7 +20,7 @@ import {
 function ListsPage() {
   const {
     groups, lists, tasks, currentUser, personalSpace,
-    addList, updateList, deleteList, toggleTaskStatus,
+    addList, updateList, deleteList, arrangeLists, toggleTaskStatus,
   } = useAppData();
   const { saveItem, deleteItem } = usePlanItems();
   const [listModal, setListModal] = useState(null); // null | { mode:'new' } | { mode:'edit', list }
@@ -22,11 +29,29 @@ function ListsPage() {
   const [showCompleted, setShowCompleted] = useLocalStorageState('lists-show-completed', true);
   const [hideScheduled, setHideScheduled] = useLocalStorageState('lists-hide-scheduled', false);
 
-  // Overdue pinned to the very top, then user lists, then the other system lists.
-  const listRank = (list) => (list.id === 'l-overdue' ? 0 : (list.isSystem ? 2 : 1));
-  const orderedLists = [...lists]
-    .sort((a, b) => listRank(a) - listRank(b))
-    .map((list) => ({ ...list, colorKey: getListColorKey(list, groups, personalSpace) }));
+  // Layout: Overdue pinned on top, then the user's reorderable lists, then the other
+  // system lists. Only user lists are draggable; system lists stay put.
+  const withColor = (list) => ({ ...list, colorKey: getListColorKey(list, groups, personalSpace) });
+  // Unplaced lists (never dragged) fall to the end; name breaks ties for a stable order.
+  const byPosition = (a, b) => (
+    (a.position ?? Infinity) - (b.position ?? Infinity) || a.name.localeCompare(b.name)
+  );
+  const overdue = lists.find((l) => l.id === 'l-overdue');
+  const userLists = lists.filter((l) => !l.isSystem).sort(byPosition).map(withColor);
+  const systemLists = lists.filter((l) => l.isSystem && l.id !== 'l-overdue').map(withColor);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+  );
+  function handleDragEnd({ active, over }) {
+    if (!over || active.id === over.id) return;
+    const ids = userLists.map((l) => l.id);
+    const from = ids.indexOf(active.id);
+    const to = ids.indexOf(over.id);
+    if (from === -1 || to === -1) return;
+    arrangeLists(arrayMove(ids, from, to));
+  }
 
   // Only the list's owner or an admin of its group may remove it (mirrors the API).
   function canManageList(list) {
@@ -91,6 +116,20 @@ function ListsPage() {
     setEditingTask(null);
   }
 
+  // Same props for every list card, whether pinned or draggable (key is set at the call site).
+  const sectionProps = (list) => ({
+    list,
+    tasks: tasksForList(list),
+    allLists: lists,
+    showCompleted,
+    hideScheduled: list.id === 'l-overdue' ? false : hideScheduled,
+    onToggleTask: toggleTaskStatus,
+    onEditTask: handleEditTask,
+    onAddTask: handleAddTask,
+    onEditList: canManageList(list) ? (l) => setListModal({ mode: 'edit', list: l }) : null,
+    onDeleteList: canManageList(list) ? handleDeleteList : null,
+  });
+
   return (
     <section className="page">
       <div className="page__header">
@@ -127,26 +166,22 @@ function ListsPage() {
       </div>
 
       <div className="list-sections">
-        {orderedLists.map((list) => {
-          const listTasks = tasksForList(list);
-          // Overdue only appears when there's something in it — no empty banner every day.
-          if (list.id === 'l-overdue' && listTasks.length === 0) return null;
-          return (
-            <ListSection
-              key={list.id}
-              list={list}
-              tasks={listTasks}
-              allLists={lists}
-              showCompleted={showCompleted}
-              hideScheduled={list.id === 'l-overdue' ? false : hideScheduled}
-              onToggleTask={toggleTaskStatus}
-              onEditTask={handleEditTask}
-              onAddTask={handleAddTask}
-              onEditList={canManageList(list) ? (l) => setListModal({ mode: 'edit', list: l }) : null}
-              onDeleteList={canManageList(list) ? handleDeleteList : null}
-            />
-          );
-        })}
+        {/* Overdue only appears when there's something in it — no empty banner every day. */}
+        {overdue && tasksForList(overdue).length > 0 && (
+          <ListSection key={overdue.id} {...sectionProps(withColor(overdue))} />
+        )}
+
+        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+          <SortableContext items={userLists.map((l) => l.id)} strategy={verticalListSortingStrategy}>
+            {userLists.map((list) => (
+              <SortableListSection key={list.id} {...sectionProps(list)} />
+            ))}
+          </SortableContext>
+        </DndContext>
+
+        {systemLists.map((list) => (
+          <ListSection key={list.id} {...sectionProps(list)} />
+        ))}
       </div>
 
       {listModal && (

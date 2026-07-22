@@ -27,7 +27,10 @@ const SYSTEM_LISTS = [
   },
 ];
 
-const LIST_EVENTS = ['list:created', 'list:updated', 'list:deleted', 'task:created', 'task:updated', 'task:deleted'];
+const LIST_EVENTS = [
+  'list:created', 'list:updated', 'list:deleted', 'lists:arranged',
+  'task:created', 'task:updated', 'task:deleted',
+];
 
 // Groups and lists/tasks are shared app-wide; polls live in usePolls, on the one page that needs them.
 function AppProvider({ children }) {
@@ -210,6 +213,18 @@ function AppProvider({ children }) {
     async deleteList(listId) {
       await listsApi.remove(listId);
       await refreshLists();
+    },
+    // Reorder is a per-user overlay. Apply the new positions optimistically so the drop
+    // feels instant, then persist; the socket echo re-syncs, and any error rolls back.
+    async arrangeLists(orderedIds) {
+      const snapshot = lists;
+      const posById = new Map(orderedIds.map((id, i) => [id, i]));
+      setLists((prev) => prev.map((l) => (posById.has(l.id) ? { ...l, position: posById.get(l.id) } : l)));
+      try {
+        await listsApi.arrange(orderedIds.map((id, i) => ({ listId: id, position: i })));
+      } catch {
+        setLists(snapshot);
+      }
     },
     // A temp-id row renders instantly for a snappy quick-add; refreshLists() below fully
     // replaces `tasks` with server data once the real row exists, so the temp row is dropped

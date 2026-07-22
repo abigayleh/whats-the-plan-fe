@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import {
-  ChevronIcon, EditIcon, PlusIcon, TrashIcon,
+  ChevronIcon, EditIcon, GripIcon, PlusIcon, TrashIcon,
 } from '../layout/icons';
 import TaskRow from './TaskRow';
 import usePlanItems from '../../hooks/usePlanItems';
@@ -20,7 +20,7 @@ function sortTasks(tasks) {
 
 function ListSection({
   list, tasks, allLists, showCompleted, hideScheduled,
-  onToggleTask, onEditTask, onAddTask, onEditList, onDeleteList,
+  onToggleTask, onEditTask, onAddTask, onEditList, onDeleteList, sortable,
 }) {
   const [collapsed, setCollapsed] = useState(false);
   const [draft, setDraft] = useState('');
@@ -66,7 +66,11 @@ function ListSection({
   }
 
   return (
-    <div className={`list-section list-section--${list.colorKey}`}>
+    <div
+      ref={sortable?.setNodeRef}
+      style={sortable?.style}
+      className={`list-section list-section--${list.colorKey}${sortable?.isDragging ? ' list-section--dragging' : ''}`}
+    >
       <div className="list-section__header">
         <button
           type="button"
@@ -113,6 +117,18 @@ function ListSection({
             data-tooltip="Delete list"
           >
             <TrashIcon width={15} height={15} />
+          </button>
+        )}
+        {sortable && (
+          <button
+            type="button"
+            className="list-section__drag-handle"
+            aria-label={`Reorder ${list.name}`}
+            data-tooltip="Drag to reorder"
+            {...sortable.attributes}
+            {...sortable.listeners}
+          >
+            <GripIcon />
           </button>
         )}
       </div>
