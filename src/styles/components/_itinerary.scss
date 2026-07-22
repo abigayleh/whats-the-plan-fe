@@ -95,13 +95,20 @@
 // --- Right pane: itinerary hub ---
 
 .itinerary-detail {
-  max-width: 60rem;
+  // Widened so the Plan tab's week grid + day map have room; header text stays left-aligned.
+  max-width: 82rem;
   margin: 0 auto;
   padding: $spacing-lg $spacing-xl $spacing-xl;
 
   &--empty {
     color: $color-text-muted;
   }
+}
+
+.itinerary-plan {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-md;
 }
 
 .itinerary-detail__header {

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useOutletContext, useParams } from 'react-router-dom';
+import ItineraryPlan from './ItineraryPlan';
 
 const TABS = [
   { key: 'plan', label: 'Plan' },
@@ -69,7 +70,7 @@ function ItineraryDetail() {
       </nav>
 
       <div className="itinerary-detail__tab-content">
-        {tab === 'plan' && <p className="itinerary-detail__placeholder">Plan view — week &amp; day with the map — is coming next.</p>}
+        {tab === 'plan' && <ItineraryPlan itinerary={itinerary} />}
         {tab === 'notes' && <p className="itinerary-detail__placeholder">Shared notes are coming soon.</p>}
         {tab === 'polls' && <p className="itinerary-detail__placeholder">Group polls are coming soon.</p>}
       </div>
