@@ -51,15 +51,25 @@ export default function AuthProvider({ children }) {
     });
     (async () => {
       if (!getRefreshToken()) { setStatus('anon'); return; }
-      try {
-        const { user: me } = await authApi.me();
-        if (!active) return;
-        setUser(me);
-        setStatus('authed');
-        connectSocket();
-      } catch {
-        if (active) setStatus('anon');
+      // A backend that's cold after a long idle can make the first request(s) time out. Only a
+      // rejected refresh token (which clears it) really means logged-out — retry through the
+      // transient failures so a slow wake-up doesn't drop an otherwise-valid session.
+      for (let attempt = 0; attempt < 4; attempt += 1) {
+        try {
+          const { user: me } = await authApi.me();
+          if (!active) return;
+          setUser(me);
+          setStatus('authed');
+          connectSocket();
+          return;
+        } catch {
+          if (!active) return;
+          if (!getRefreshToken()) { setStatus('anon'); return; } // token rejected — truly logged out
+          await new Promise((resolve) => { setTimeout(resolve, 2000); });
+        }
       }
+      // Gave up for now, but the refresh token is preserved so the next load can recover.
+      if (active) setStatus('anon');
     })();
     return () => { active = false; };
   }, []);

@@ -50,28 +50,33 @@ function rawFetch(path, { method = 'GET', body, auth = true } = {}) {
 }
 
 // Refresh the access token once; concurrent callers share a single in-flight request.
+// Only a real server rejection (401, or no token to begin with) clears the session — a
+// network error or timeout (e.g. a cold-starting backend after a long idle) is transient, so
+// the refresh token is kept and a retry/reload can still restore the session.
 function refreshTokens() {
   if (!refreshing) {
-    const rt = getRefreshToken();
-    refreshing = (rt
-      ? fetchWithTimeout(BASE + '/api/auth/refresh', {
+    refreshing = (async () => {
+      const rt = getRefreshToken();
+      if (!rt) {
+        clearTokens();
+        if (onAuthFailure) onAuthFailure();
+        throw new Error('No refresh token');
+      }
+      const res = await fetchWithTimeout(BASE + '/api/auth/refresh', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ refreshToken: rt }),
-      })
-      : Promise.resolve({ ok: false }))
-      .then(async (res) => {
-        if (!res.ok) throw new Error('refresh failed');
-        const data = await res.json();
-        setTokens(data);
-        return data.accessToken;
-      })
-      .catch((err) => {
+      });
+      if (res.status === 401) {
         clearTokens();
         if (onAuthFailure) onAuthFailure();
-        throw err;
-      })
-      .finally(() => { refreshing = null; });
+        throw new Error('Refresh token rejected');
+      }
+      if (!res.ok) throw new Error('Refresh failed'); // 5xx etc. — transient, keep the token
+      const data = await res.json();
+      setTokens(data);
+      return data.accessToken;
+    })().finally(() => { refreshing = null; });
   }
   return refreshing;
 }
