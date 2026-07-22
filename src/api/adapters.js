@@ -26,16 +26,8 @@ export const adaptList = (l) => ({
   isSystem: l.isSystem,
   isDefault: l.isDefault ?? false,
   taskCount: l.taskCount,
-  // Per-user arrangement; position is null until the user drags this list, folderId
-  // is null when the list sits at the top level (not inside a folder).
+  // Per-user arrangement order; null until the user has dragged this list.
   position: l.position ?? null,
-  folderId: l.folderId ?? null,
-});
-
-export const adaptFolder = (f) => ({
-  id: f.id,
-  name: f.name,
-  position: f.position ?? 0,
 });
 
 // Already-uploaded attachments carry an id; previews load lazily (files need auth).

@@ -5,10 +5,9 @@ import ListSection from './ListSection';
 // Wraps ListSection with dnd-kit sortable wiring; the grip handle inside the header
 // carries the drag listeners, so the rest of the card stays interactive.
 function SortableListSection(props) {
-  // `list:`-prefixed so drag ids never collide with folder ids across containers.
   const {
     attributes, listeners, setNodeRef, transform, transition, isDragging,
-  } = useSortable({ id: `list:${props.list.id}` });
+  } = useSortable({ id: props.list.id });
   const style = { transform: CSS.Transform.toString(transform), transition };
   return (
     <ListSection
