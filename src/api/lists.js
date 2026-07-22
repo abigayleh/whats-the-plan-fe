@@ -5,8 +5,8 @@ export const create = (body) => apiFetch('/api/lists', { method: 'POST', body })
 export const update = (id, body) => apiFetch(`/api/lists/${id}`, { method: 'PATCH', body });
 export const remove = (id) => apiFetch(`/api/lists/${id}`, { method: 'DELETE' });
 
-// Persist this user's list order. `lists` is [{ listId, position }].
-export const arrange = (lists) => apiFetch('/api/lists/arrangement', { method: 'PUT', body: { lists } });
+// Persist this user's arrangement. body: { lists: [{ listId, folderId, position }], folders: [{ id, position }] }.
+export const arrange = (body) => apiFetch('/api/lists/arrangement', { method: 'PUT', body });
 
 export const tasks = (listId) => apiFetch(`/api/lists/${listId}/tasks`);
 export const createTask = (listId, body) => apiFetch(`/api/lists/${listId}/tasks`, { method: 'POST', body });

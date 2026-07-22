@@ -1,15 +1,18 @@
 import { useState } from 'react';
 import {
-  DndContext, closestCenter, PointerSensor, KeyboardSensor, useSensor, useSensors,
+  DndContext, closestCorners, PointerSensor, KeyboardSensor, useSensor, useSensors, useDroppable,
 } from '@dnd-kit/core';
 import {
-  SortableContext, verticalListSortingStrategy, arrayMove, sortableKeyboardCoordinates,
+  SortableContext, verticalListSortingStrategy, sortableKeyboardCoordinates,
 } from '@dnd-kit/sortable';
-import { ListsIcon, PlusIcon } from '../components/layout/icons';
+import { ListsIcon, PlusIcon, FolderIcon } from '../components/layout/icons';
 import ListSection from '../components/lists/ListSection';
 import SortableListSection from '../components/lists/SortableListSection';
+import ListFolder from '../components/lists/ListFolder';
+import { computeArrangement } from '../components/lists/arrangeDrop';
 import PlanItemModal from '../components/items/PlanItemModal';
 import ListModal from '../components/lists/ListModal';
+import FolderModal from '../components/lists/FolderModal';
 import useAppData from '../hooks/useAppData';
 import usePlanItems from '../hooks/usePlanItems';
 import useLocalStorageState from '../hooks/useLocalStorageState';
@@ -19,38 +22,50 @@ import {
 
 function ListsPage() {
   const {
-    groups, lists, tasks, currentUser, personalSpace,
-    addList, updateList, deleteList, arrangeLists, toggleTaskStatus,
+    groups, lists, folders, tasks, currentUser, personalSpace,
+    addList, updateList, deleteList, arrangeItems,
+    addFolder, updateFolder, deleteFolder, toggleTaskStatus,
   } = useAppData();
   const { saveItem, deleteItem } = usePlanItems();
   const [listModal, setListModal] = useState(null); // null | { mode:'new' } | { mode:'edit', list }
+  const [folderModal, setFolderModal] = useState(null); // null | { mode:'new' } | { mode:'edit', folder }
   const [editingTask, setEditingTask] = useState(null); // task object | 'new' | null
   const [newTaskListId, setNewTaskListId] = useState(null);
   const [showCompleted, setShowCompleted] = useLocalStorageState('lists-show-completed', true);
   const [hideScheduled, setHideScheduled] = useLocalStorageState('lists-hide-scheduled', false);
 
-  // Layout: Overdue pinned on top, then the user's reorderable lists, then the other
-  // system lists. Only user lists are draggable; system lists stay put.
+  // Layout: Overdue pinned on top; then the user's reorderable loose lists and folders;
+  // then the other system lists. Only user lists/folders are draggable.
   const withColor = (list) => ({ ...list, colorKey: getListColorKey(list, groups, personalSpace) });
   // Unplaced lists (never dragged) fall to the end; name breaks ties for a stable order.
   const byPosition = (a, b) => (
     (a.position ?? Infinity) - (b.position ?? Infinity) || a.name.localeCompare(b.name)
   );
   const overdue = lists.find((l) => l.id === 'l-overdue');
-  const userLists = lists.filter((l) => !l.isSystem).sort(byPosition).map(withColor);
   const systemLists = lists.filter((l) => l.isSystem && l.id !== 'l-overdue').map(withColor);
+  const userLists = lists.filter((l) => !l.isSystem).map(withColor);
+  const orderedFolders = [...folders].sort((a, b) => a.position - b.position);
+  const folderIds = new Set(orderedFolders.map((f) => f.id));
+  // A list is loose unless it sits in a folder that still exists.
+  const looseLists = userLists.filter((l) => !l.folderId || !folderIds.has(l.folderId)).sort(byPosition);
+  const childrenByFolder = new Map(orderedFolders.map((f) => [
+    f.id, userLists.filter((l) => l.folderId === f.id).sort(byPosition),
+  ]));
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
   );
+  const { setNodeRef: looseRef, isOver: looseOver } = useDroppable({ id: 'loose' });
   function handleDragEnd({ active, over }) {
-    if (!over || active.id === over.id) return;
-    const ids = userLists.map((l) => l.id);
-    const from = ids.indexOf(active.id);
-    const to = ids.indexOf(over.id);
-    if (from === -1 || to === -1) return;
-    arrangeLists(arrayMove(ids, from, to));
+    const payload = computeArrangement({
+      activeId: String(active.id),
+      overId: over ? String(over.id) : null,
+      looseLists,
+      folders: orderedFolders,
+      childrenByFolder,
+    });
+    if (payload) arrangeItems(payload);
   }
 
   // Only the list's owner or an admin of its group may remove it (mirrors the API).
@@ -89,6 +104,19 @@ function ListsPage() {
     const warning = count ? ` and its ${count} task${count === 1 ? '' : 's'}` : '';
     // eslint-disable-next-line no-alert
     if (window.confirm(`Delete "${list.name}"${warning}? This can't be undone.`)) deleteList(list.id);
+  }
+
+  async function handleSaveFolder(name) {
+    if (folderModal.mode === 'edit') await updateFolder(folderModal.folder.id, { name });
+    else await addFolder(name);
+    setFolderModal(null);
+  }
+
+  function handleDeleteFolder(folder) {
+    const count = lists.filter((l) => l.folderId === folder.id).length;
+    const note = count ? ` Its ${count} list${count === 1 ? '' : 's'} will move back to the top level.` : '';
+    // eslint-disable-next-line no-alert
+    if (window.confirm(`Delete folder "${folder.name}"?${note}`)) deleteFolder(folder.id);
   }
 
   function handleAddTask(listId) {
@@ -156,6 +184,14 @@ function ListsPage() {
           </button>
           <button
             type="button"
+            className="button button--ghost"
+            onClick={() => setFolderModal({ mode: 'new' })}
+          >
+            <FolderIcon width={16} height={16} />
+            New Folder
+          </button>
+          <button
+            type="button"
             className="button button--primary"
             onClick={() => setListModal({ mode: 'new' })}
           >
@@ -171,10 +207,28 @@ function ListsPage() {
           <ListSection key={overdue.id} {...sectionProps(withColor(overdue))} />
         )}
 
-        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-          <SortableContext items={userLists.map((l) => l.id)} strategy={verticalListSortingStrategy}>
-            {userLists.map((list) => (
-              <SortableListSection key={list.id} {...sectionProps(list)} />
+        <DndContext sensors={sensors} collisionDetection={closestCorners} onDragEnd={handleDragEnd}>
+          <div ref={looseRef} className={`lists-loose${looseOver ? ' lists-loose--over' : ''}`}>
+            <SortableContext items={looseLists.map((l) => `list:${l.id}`)} strategy={verticalListSortingStrategy}>
+              {looseLists.map((list) => (
+                <SortableListSection key={list.id} {...sectionProps(list)} />
+              ))}
+            </SortableContext>
+            {looseLists.length === 0 && orderedFolders.length > 0 && (
+              <p className="lists-loose__empty">Drag a list here to move it out of a folder</p>
+            )}
+          </div>
+
+          <SortableContext items={orderedFolders.map((f) => `folder:${f.id}`)} strategy={verticalListSortingStrategy}>
+            {orderedFolders.map((folder) => (
+              <ListFolder
+                key={folder.id}
+                folder={folder}
+                childLists={childrenByFolder.get(folder.id) || []}
+                renderChild={(l) => <SortableListSection key={l.id} {...sectionProps(l)} />}
+                onRename={(f) => setFolderModal({ mode: 'edit', folder: f })}
+                onDelete={handleDeleteFolder}
+              />
             ))}
           </SortableContext>
         </DndContext>
@@ -190,6 +244,14 @@ function ListsPage() {
           groups={groups}
           onClose={() => setListModal(null)}
           onSave={handleSaveList}
+        />
+      )}
+
+      {folderModal && (
+        <FolderModal
+          folder={folderModal.mode === 'edit' ? folderModal.folder : null}
+          onClose={() => setFolderModal(null)}
+          onSave={handleSaveFolder}
         />
       )}
 

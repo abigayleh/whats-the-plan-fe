@@ -5,9 +5,10 @@ import AppContext from './AppContext';
 import useAuth from '../hooks/useAuth';
 import * as groupsApi from '../api/groups';
 import * as listsApi from '../api/lists';
+import * as foldersApi from '../api/folders';
 import * as attachmentsApi from '../api/attachments';
 import {
-  adaptGroup, adaptList, adaptTask, toBeTask,
+  adaptGroup, adaptList, adaptFolder, adaptTask, toBeTask,
 } from '../api/adapters';
 import { socket } from '../socket/socketClient';
 import { DEFAULT_PERSONAL_SPACE } from '../mocks/groups';
@@ -32,6 +33,9 @@ const LIST_EVENTS = [
   'task:created', 'task:updated', 'task:deleted',
 ];
 
+// 'lists:arranged' also carries folder positions, so it refreshes folders too.
+const FOLDER_EVENTS = ['folder:created', 'folder:updated', 'folder:deleted', 'lists:arranged'];
+
 // Groups and lists/tasks are shared app-wide; polls live in usePolls, on the one page that needs them.
 function AppProvider({ children }) {
   const { user: authUser } = useAuth();
@@ -39,6 +43,7 @@ function AppProvider({ children }) {
   const [personalSpace, setPersonalSpace] = useState(DEFAULT_PERSONAL_SPACE);
   const [groups, setGroups] = useState([]);
   const [lists, setLists] = useState([]);
+  const [folders, setFolders] = useState([]);
   const [tasks, setTasks] = useState([]);
   // Bumped once whenever a completion empties out today's assigned to-dos, so Confetti
   // (mounted once in AppShell) can react to the change without a dedicated provider.
@@ -116,6 +121,25 @@ function AppProvider({ children }) {
     LIST_EVENTS.forEach((e) => socket.on(e, onChange));
     return () => LIST_EVENTS.forEach((e) => socket.off(e, onChange));
   }, [authUser, refreshLists]);
+
+  const refreshFolders = useCallback(async () => {
+    try {
+      setFolders((await foldersApi.list()).map(adaptFolder));
+    } catch {
+      // ignore — a failed refresh leaves the last known folders in place
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!authUser) {
+      setFolders([]);
+      return undefined;
+    }
+    refreshFolders();
+    const onChange = () => refreshFolders();
+    FOLDER_EVENTS.forEach((e) => socket.on(e, onChange));
+    return () => FOLDER_EVENTS.forEach((e) => socket.off(e, onChange));
+  }, [authUser, refreshFolders]);
 
   // A task's list is the only place its scope lives, so mutations look it up here.
   const listIdOf = useCallback((taskId) => tasks.find((t) => t.id === taskId)?.listId, [tasks]);
@@ -214,17 +238,42 @@ function AppProvider({ children }) {
       await listsApi.remove(listId);
       await refreshLists();
     },
-    // Reorder is a per-user overlay. Apply the new positions optimistically so the drop
-    // feels instant, then persist; the socket echo re-syncs, and any error rolls back.
-    async arrangeLists(orderedIds) {
-      const snapshot = lists;
-      const posById = new Map(orderedIds.map((id, i) => [id, i]));
-      setLists((prev) => prev.map((l) => (posById.has(l.id) ? { ...l, position: posById.get(l.id) } : l)));
+    // Reorder/foldering is a per-user overlay. Apply optimistically so the drop feels
+    // instant, then persist; the socket echo re-syncs, and any error rolls back.
+    // payload = { lists: [{ listId, folderId, position }], folders: [{ id, position }] }.
+    async arrangeItems(payload) {
+      const listsSnapshot = lists;
+      const foldersSnapshot = folders;
+      const listById = new Map(payload.lists.map((i) => [i.listId, i]));
+      const folderPosById = new Map(payload.folders.map((f) => [f.id, f.position]));
+      setLists((prev) => prev.map((l) => (listById.has(l.id)
+        ? { ...l, folderId: listById.get(l.id).folderId, position: listById.get(l.id).position }
+        : l)));
+      setFolders((prev) => prev.map((f) => (folderPosById.has(f.id)
+        ? { ...f, position: folderPosById.get(f.id) }
+        : f)));
       try {
-        await listsApi.arrange(orderedIds.map((id, i) => ({ listId: id, position: i })));
+        await listsApi.arrange(payload);
       } catch {
-        setLists(snapshot);
+        setLists(listsSnapshot);
+        setFolders(foldersSnapshot);
       }
+    },
+
+    folders,
+    async addFolder(name) {
+      const created = await foldersApi.create({ name });
+      await refreshFolders();
+      return adaptFolder(created);
+    },
+    async updateFolder(id, patch) {
+      await foldersApi.update(id, patch);
+      await refreshFolders();
+    },
+    async deleteFolder(id) {
+      await foldersApi.remove(id);
+      // Lists inside move back to top level (folderId cleared server-side) — refresh both.
+      await Promise.all([refreshFolders(), refreshLists()]);
     },
     // A temp-id row renders instantly for a snappy quick-add; refreshLists() below fully
     // replaces `tasks` with server data once the real row exists, so the temp row is dropped
@@ -287,8 +336,8 @@ function AppProvider({ children }) {
     },
 
   }), [
-    currentUser, personalSpace, groups, lists, tasks, confettiKey,
-    refreshGroups, refreshLists, listIdOf, checkDayComplete,
+    currentUser, personalSpace, groups, lists, folders, tasks, confettiKey,
+    refreshGroups, refreshLists, refreshFolders, listIdOf, checkDayComplete,
   ]);
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
