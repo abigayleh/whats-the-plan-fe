@@ -4,6 +4,7 @@ import {
 } from '../layout/icons';
 import TaskRow from './TaskRow';
 import usePlanItems from '../../hooks/usePlanItems';
+import useLocalStorageState from '../../hooks/useLocalStorageState';
 import { getTaskDay } from '../../utils/tasks';
 import { getTaskIcon } from '../../constants/taskIcons';
 
@@ -22,7 +23,8 @@ function ListSection({
   list, tasks, allLists, showCompleted, hideScheduled,
   onToggleTask, onEditTask, onAddTask, onEditList, onDeleteList, sortable,
 }) {
-  const [collapsed, setCollapsed] = useState(false);
+  // Collapsed state is remembered per list (localStorage), so it survives reloads.
+  const [collapsed, setCollapsed] = useLocalStorageState(`list-collapsed-${list.id}`, false);
   const [draft, setDraft] = useState('');
   const sorted = sortTasks(tasks);
   // "Hide scheduled" drops any to-do that has a due date (timed or date-only).
