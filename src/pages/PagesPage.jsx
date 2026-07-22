@@ -1,10 +1,13 @@
 import { useState } from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
-import { PagesIcon, PlusIcon } from '../components/layout/icons';
+import {
+  PagesIcon, PlusIcon, ChevronIcon, MenuIcon,
+} from '../components/layout/icons';
 import PageTree from '../components/pages/PageTree';
 import NewPageModal from '../components/pages/NewPageModal';
 import useAppData from '../hooks/useAppData';
 import usePages from '../hooks/usePages';
+import useLocalStorageState from '../hooks/useLocalStorageState';
 
 // Two-pane Notion-style layout: a scoped page tree on the left, the selected page on
 // the right (rendered through the nested :pageId route via Outlet context).
@@ -14,6 +17,7 @@ function PagesPage() {
     pages, loading, addPage, updatePage, deletePage, saveContent,
   } = usePages();
   const [showNew, setShowNew] = useState(false);
+  const [collapsed, setCollapsed] = useLocalStorageState('pages-sidebar-collapsed', false);
   const navigate = useNavigate();
   const { pathname } = useLocation();
   const atRoot = pathname === '/pages' || pathname === '/pages/';
@@ -46,27 +50,50 @@ function PagesPage() {
 
   return (
     <div className="pages">
-      <aside className="pages__sidebar">
-        <div className="pages__sidebar-header">
-          <h2 className="pages__sidebar-title">Pages</h2>
-          <button
-            type="button"
-            className="task-actions__button"
-            onClick={() => setShowNew(true)}
-            aria-label="New page"
-            data-tooltip="New page"
-          >
-            <PlusIcon width={16} height={16} />
-          </button>
-        </div>
-        <PageTree
-          pages={pages}
-          loading={loading}
-          personalSpace={personalSpace}
-          groups={groups}
-          onNewChild={(parent) => createPage({ groupId: parent.groupId, parentId: parent.id })}
-        />
-      </aside>
+      {collapsed ? (
+        <button
+          type="button"
+          className="task-actions__button pages__expand"
+          onClick={() => setCollapsed(false)}
+          aria-label="Show pages"
+          data-tooltip="Show pages"
+        >
+          <MenuIcon width={18} height={18} />
+        </button>
+      ) : (
+        <aside className="pages__sidebar">
+          <div className="pages__sidebar-header">
+            <div className="pages__sidebar-heading">
+              <button
+                type="button"
+                className="task-actions__button"
+                onClick={() => setCollapsed(true)}
+                aria-label="Hide pages"
+                data-tooltip="Hide pages"
+              >
+                <ChevronIcon width={16} height={16} className="pages__collapse-icon" />
+              </button>
+              <h2 className="pages__sidebar-title">Pages</h2>
+            </div>
+            <button
+              type="button"
+              className="task-actions__button"
+              onClick={() => setShowNew(true)}
+              aria-label="New page"
+              data-tooltip="New page"
+            >
+              <PlusIcon width={16} height={16} />
+            </button>
+          </div>
+          <PageTree
+            pages={pages}
+            loading={loading}
+            personalSpace={personalSpace}
+            groups={groups}
+            onNewChild={(parent) => createPage({ groupId: parent.groupId, parentId: parent.id })}
+          />
+        </aside>
+      )}
 
       <section className="pages__content">
         {atRoot ? (

@@ -39,6 +39,24 @@
   padding: $spacing-xs $spacing-sm;
 }
 
+.pages__sidebar-heading {
+  display: flex;
+  align-items: center;
+  gap: $spacing-xs;
+}
+
+// Chevron points down by default; rotate it to point left ("collapse this way").
+.pages__collapse-icon {
+  transform: rotate(90deg);
+}
+
+// Slim re-open button shown in place of the sidebar when collapsed.
+.pages__expand {
+  align-self: flex-start;
+  margin: $spacing-sm $spacing-xs;
+  flex-shrink: 0;
+}
+
 .pages__sidebar-title {
   font-size: $font-size-sm;
   font-weight: 600;
