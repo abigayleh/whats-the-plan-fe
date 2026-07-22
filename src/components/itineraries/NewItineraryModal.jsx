@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { CloseIcon } from '../layout/icons';
+import { TASK_ICONS } from '../../constants/taskIcons';
 
 const todayInput = () => {
   const d = new Date();
@@ -12,6 +13,7 @@ function NewItineraryModal({
 }) {
   const [title, setTitle] = useState('');
   const [groupId, setGroupId] = useState(null);
+  const [icon, setIcon] = useState(null);
   const [startDate, setStartDate] = useState(todayInput());
   const [endDate, setEndDate] = useState(todayInput());
   const [error, setError] = useState(null);
@@ -27,7 +29,7 @@ function NewItineraryModal({
     setSaving(true);
     try {
       await onCreate({
-        title: title.trim() || 'Untitled trip', groupId, startDate, endDate,
+        title: title.trim() || 'Untitled trip', groupId, icon, startDate, endDate,
       });
     } catch (err) {
       setError(err.message || 'Could not create itinerary');
@@ -78,6 +80,33 @@ function NewItineraryModal({
                   onClick={() => setGroupId(group.id)}
                 >
                   {group.name}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="modal__field">
+            <span className="modal__label">Icon</span>
+            <div className="icon-picker">
+              <button
+                type="button"
+                className={`icon-picker__option${icon === null ? ' icon-picker__option--active' : ''}`}
+                onClick={() => setIcon(null)}
+                aria-label="No icon"
+                aria-pressed={icon === null}
+              >
+                <CloseIcon width={14} height={14} />
+              </button>
+              {TASK_ICONS.map(({ key, label, Icon }) => (
+                <button
+                  key={key}
+                  type="button"
+                  className={`icon-picker__option${icon === key ? ' icon-picker__option--active' : ''}`}
+                  onClick={() => setIcon(key)}
+                  aria-label={label}
+                  aria-pressed={icon === key}
+                >
+                  <Icon />
                 </button>
               ))}
             </div>

@@ -1,6 +1,6 @@
 import { NavLink, Link } from 'react-router-dom';
 import {
-  CalendarIcon, ListsIcon, PagesIcon, PollsIcon, ChatIcon, GroupsIcon, ChevronIcon, TravelIcon,
+  CalendarIcon, ListsIcon, PagesIcon, PollsIcon, ChatIcon, GroupsIcon, ChevronIcon, MapIcon,
 } from './icons';
 import useAppData from '../../hooks/useAppData';
 import useLocalStorageState from '../../hooks/useLocalStorageState';
@@ -10,7 +10,7 @@ const NAV_ITEMS = [
   { to: '/', label: 'Calendar', end: true, Icon: CalendarIcon },
   { to: '/lists', label: 'Lists', Icon: ListsIcon },
   { to: '/pages', label: 'Pages', Icon: PagesIcon },
-  { to: '/itinerary', label: 'Itinerary', Icon: TravelIcon },
+  { to: '/itinerary', label: 'Itinerary', Icon: MapIcon },
   { to: '/polls', label: 'Polls', Icon: PollsIcon },
   { to: '/chat', label: 'Chat', Icon: ChatIcon, soon: true },
   { to: '/groups', label: 'Groups', Icon: GroupsIcon },

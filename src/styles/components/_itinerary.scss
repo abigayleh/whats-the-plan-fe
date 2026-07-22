@@ -171,6 +171,13 @@
   font-size: $font-size-sm;
 }
 
+// Icon picker + title share one row in the detail header.
+.itinerary-detail__title-row {
+  display: flex;
+  align-items: center;
+  gap: $spacing-xs;
+}
+
 // --- New-itinerary modal: side-by-side date fields ---
 
 .modal__field--row {
@@ -179,5 +186,82 @@
 
   .modal__field {
     flex: 1;
+  }
+}
+
+// --- Location search (a PlanItemModal to-do field) ---
+
+.location-search {
+  position: relative;
+}
+
+.location-search__results {
+  position: absolute;
+  top: calc(100% + 2px);
+  left: 0;
+  right: 0;
+  z-index: 50;
+  list-style: none;
+  margin: 0;
+  padding: $spacing-xs;
+  max-height: 12rem;
+  overflow-y: auto;
+  background: $color-surface;
+  border: 1px solid $color-border;
+  border-radius: $radius-sm;
+  box-shadow: 0 0.5rem 1.5rem rgba(0, 0, 0, 0.12);
+}
+
+.location-search__result {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: $spacing-xs $spacing-sm;
+  border: none;
+  background: none;
+  border-radius: $radius-xs;
+  color: $color-text;
+  font-size: $font-size-sm;
+  cursor: pointer;
+
+  &:hover {
+    background: $color-border-light;
+  }
+}
+
+.location-search__empty {
+  padding: $spacing-xs $spacing-sm;
+  font-size: $font-size-sm;
+  color: $color-text-muted;
+}
+
+.location-search__chip {
+  display: flex;
+  align-items: center;
+  gap: $spacing-xs;
+  padding: $spacing-xs $spacing-sm;
+  background: $color-primary-soft;
+  border-radius: $radius-sm;
+  font-size: $font-size-sm;
+}
+
+.location-search__chip-label {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.location-search__clear {
+  display: flex;
+  flex-shrink: 0;
+  border: none;
+  background: none;
+  color: $color-text-muted;
+  cursor: pointer;
+
+  &:hover {
+    color: $color-text;
   }
 }

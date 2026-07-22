@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useOutletContext, useParams } from 'react-router-dom';
 import ItineraryPlan from './ItineraryPlan';
+import IconPicker from '../common/IconPicker';
+import { MapIcon } from '../layout/icons';
 
 const TABS = [
   { key: 'plan', label: 'Plan' },
@@ -40,15 +42,24 @@ function ItineraryDetail() {
   return (
     <div className="itinerary-detail">
       <header className="itinerary-detail__header">
-        <input
-          className="itinerary-detail__title"
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          onBlur={commitTitle}
-          onKeyDown={(e) => e.key === 'Enter' && e.currentTarget.blur()}
-          placeholder="Untitled trip"
-          disabled={!editable}
-        />
+        <div className="itinerary-detail__title-row">
+          <IconPicker
+            icon={itinerary.icon ?? null}
+            onChange={(icon) => updateItinerary(itinerary.id, { icon })}
+            disabled={!editable}
+            FallbackIcon={MapIcon}
+            ariaLabel="Change trip icon"
+          />
+          <input
+            className="itinerary-detail__title"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            onBlur={commitTitle}
+            onKeyDown={(e) => e.key === 'Enter' && e.currentTarget.blur()}
+            placeholder="Untitled trip"
+            disabled={!editable}
+          />
+        </div>
         <p className="itinerary-detail__dates">
           {fmt(itinerary.startDate)}
           {' – '}

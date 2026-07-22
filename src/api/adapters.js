@@ -66,6 +66,7 @@ export function adaptItem(raw, origin) {
     assignedToId: isEvent ? null : (raw.assignedToId ?? null),
     assignedTo: isEvent ? null : (raw.assignee?.name || null),
     attachments: isEvent ? [] : (raw.attachments || []).map(adaptAttachment),
+    location: isEvent ? null : (raw.location ?? null),
     itineraryId: raw.itineraryId ?? null,
   };
 }
@@ -117,6 +118,7 @@ export const adaptItinerary = (it) => ({
   groupId: it.groupId ?? null,
   listId: it.listId ?? null,
   colorLabel: it.colorLabel ?? null,
+  icon: it.icon ?? null,
   completedAt: toDate(it.completedAt),
   createdById: it.createdById,
   startDate: toDate(it.startDate),
@@ -156,7 +158,7 @@ export function toBeItem(patch, origin) {
     }
     return body;
   }
-  const copy = ['title', 'description', 'recurrenceRule', 'subtasks', 'assignedToId', 'listId'];
+  const copy = ['title', 'description', 'recurrenceRule', 'subtasks', 'assignedToId', 'listId', 'location'];
   copy.forEach((key) => {
     if (patch[key] !== undefined) body[key] = patch[key];
   });

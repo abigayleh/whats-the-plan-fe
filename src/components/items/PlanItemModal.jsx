@@ -6,6 +6,7 @@ import {
 import useGroupMembers from '../../hooks/useGroupMembers';
 import useAutoGrowTextarea from '../../hooks/useAutoGrowTextarea';
 import AttachmentUploader from '../lists/AttachmentUploader';
+import LocationSearch from './LocationSearch';
 import Linkify from '../common/Linkify';
 import {
   combineDateAndTime, getTaskDay, isTaskTimed, toDateInputValue, toTimeInputValue,
@@ -77,6 +78,7 @@ function PlanItemModal({
   const [subtasks, setSubtasks] = useState(item?.subtasks ?? []);
   const [newSubtask, setNewSubtask] = useState('');
   const [attachments, setAttachments] = useState(item?.attachments ?? []);
+  const [location, setLocation] = useState(item?.location ?? null);
   const [error, setError] = useState(null);
   const [saving, setSaving] = useState(false);
   const [hasSavedItem, setHasSavedItem] = useState(isEdit);
@@ -184,7 +186,7 @@ function PlanItemModal({
   function buildPayload(overrides) {
     const state = {
       title, description, done, groupId, date, recurrence, daysOfWeek, timed, startTime, endTime,
-      assignedToId, subtasks, attachments, listId, ...overrides,
+      assignedToId, subtasks, attachments, listId, location, ...overrides,
     };
     const trimmedTitle = state.title.trim();
     if (!trimmedTitle) return null; // never autosave an untitled new item
@@ -224,6 +226,7 @@ function PlanItemModal({
       assignedToId: state.assignedToId || null,
       subtasks: state.subtasks,
       attachments: state.attachments,
+      location: state.location ?? null,
       recurrenceRule: state.date ? recurrenceRuleFor(state.recurrence, state.daysOfWeek) : null,
     };
 
@@ -355,6 +358,16 @@ function PlanItemModal({
               rows={2}
             />
           </label>
+
+          {!isCalendarItem && (
+            <div className="modal__field">
+              <span className="modal__label">Location</span>
+              <LocationSearch
+                value={location}
+                onChange={(loc) => { setLocation(loc); commitChange({ location: loc }); }}
+              />
+            </div>
+          )}
 
           {!isCalendarItem && (
             <label className="modal__toggle">

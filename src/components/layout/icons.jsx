@@ -32,6 +32,15 @@ export function PollsIcon(props) {
   );
 }
 
+export function MapIcon(props) {
+  return (
+    <svg viewBox="0 0 24 24" width="22" height="22" {...strokeProps} {...props}>
+      <path d="M9 4 3 6v14l6-2 6 2 6-2V4l-6 2-6-2z" />
+      <path d="M9 4v14M15 6v14" />
+    </svg>
+  );
+}
+
 export function ChatIcon(props) {
   return (
     <svg viewBox="0 0 24 24" width="22" height="22" {...strokeProps} {...props}>
