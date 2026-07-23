@@ -3,10 +3,10 @@ import CalendarWeekly from '../calendar/CalendarWeekly';
 import CalendarDaily from '../calendar/CalendarDaily';
 import DayTodoPanel from '../calendar/DayTodoPanel';
 import PlanItemModal from '../items/PlanItemModal';
+import ItineraryDayMap from './ItineraryDayMap';
 import useAppData from '../../hooks/useAppData';
 import useItineraryItems from '../../hooks/useItineraryItems';
 import useItineraryTasks from '../../hooks/useItineraryTasks';
-import useResizableSplit from '../../hooks/useResizableSplit';
 import {
   getTaskDay, isTaskOnDay, isTaskTimed, isTaskOverdue,
 } from '../../utils/tasks';
@@ -24,7 +24,6 @@ function ItineraryPlan({ itinerary }) {
   const [view, setView] = useState('week');
   const [focusDate, setFocusDate] = useState(() => itinerary.startDate || new Date());
   const [planItemModal, setPlanItemModal] = useState(null);
-  const dayPanel = useResizableSplit('itinerary-day-panel-width', 320);
 
   const range = useMemo(() => {
     const days = view === 'week' ? getWeekDays(focusDate) : [focusDate];
@@ -56,6 +55,20 @@ function ItineraryPlan({ itinerary }) {
     () => listTasks.filter((t) => isTaskOverdue(t)).map(decorate),
     [listTasks, decorate],
   );
+
+  // Map pins for the day: located timed to-dos numbered in time order, located untimed
+  // same-day ones as open (un-numbered) pins. To-dos without a location aren't pinned.
+  const mapPins = useMemo(() => {
+    const toPin = (it, order) => ({
+      id: it.id, title: it.title, lat: it.location.lat, lng: it.location.lng, order,
+    });
+    const numbered = baseVisibleItems
+      .filter((it) => it.origin === 'task' && isTaskOnDay(it, focusDate) && isTaskTimed(it) && it.location)
+      .sort((a, b) => a.scheduledStart - b.scheduledStart)
+      .map((it, i) => toPin(it, i + 1));
+    const open = todayTasks.filter((it) => it.location).map((it) => toPin(it, null));
+    return [...numbered, ...open];
+  }, [baseVisibleItems, todayTasks, focusDate]);
 
   // A single-list array so PlanItemModal lands new to-dos in the itinerary's own list.
   const itineraryList = useMemo(() => ({
@@ -183,37 +196,32 @@ function ItineraryPlan({ itinerary }) {
           />
         )}
         {view === 'day' && (
-          <div
-            className="calendar-day-split"
-            ref={dayPanel.containerRef}
-            style={{ '--day-panel-width': `${dayPanel.width}px` }}
-          >
-            <CalendarDaily
-              focusDate={focusDate}
-              tasks={baseVisibleItems}
-              onToggleTask={toggleItemStatus}
-              onOpenTask={openItem}
-              onCreateTask={createTaskAt}
-              onMoveTask={handleMoveItem}
-              onPushToTomorrow={handleChipPushToTomorrow}
-            />
-            <button
-              type="button"
-              className="calendar-day-split__resizer"
-              onMouseDown={dayPanel.startResize}
-              aria-label="Resize to-do panel"
-            />
-            <DayTodoPanel
-              overdueTasks={overdueTasks}
-              todayTasks={todayTasks}
-              unscheduledTasks={unscheduledTasks}
-              lists={[itineraryList]}
-              onToggle={toggleItemStatus}
-              onOpenOverdue={openTaskById}
-              onOpenToday={openItem}
-              onOpenUnscheduled={openTaskById}
-              showUnscheduled
-            />
+          <div className="itinerary-day">
+            <div className="itinerary-day__main">
+              <CalendarDaily
+                focusDate={focusDate}
+                tasks={baseVisibleItems}
+                onToggleTask={toggleItemStatus}
+                onOpenTask={openItem}
+                onCreateTask={createTaskAt}
+                onMoveTask={handleMoveItem}
+                onPushToTomorrow={handleChipPushToTomorrow}
+              />
+              <DayTodoPanel
+                overdueTasks={overdueTasks}
+                todayTasks={todayTasks}
+                unscheduledTasks={unscheduledTasks}
+                lists={[itineraryList]}
+                onToggle={toggleItemStatus}
+                onOpenOverdue={openTaskById}
+                onOpenToday={openItem}
+                onOpenUnscheduled={openTaskById}
+                showUnscheduled
+              />
+            </div>
+            <div className="itinerary-day__map">
+              <ItineraryDayMap pins={mapPins} />
+            </div>
           </div>
         )}
       </div>
