@@ -136,6 +136,37 @@
 .itinerary-detail__dates {
   font-size: $font-size-sm;
   color: $color-text-muted;
+
+  // Editable variant: a bare button that reads as the plain date text until hovered.
+  &--edit {
+    background: none;
+    border: none;
+    padding: 2px $spacing-xs;
+    margin-left: -$spacing-xs;
+    border-radius: $radius-sm;
+    color: $color-text-muted;
+    cursor: pointer;
+
+    &:hover {
+      background: $color-border-light;
+      color: $color-text;
+    }
+  }
+}
+
+// Inline start/end date pickers shown while editing the range.
+.itinerary-dates-edit {
+  display: flex;
+  align-items: center;
+  gap: $spacing-xs;
+
+  .modal__input {
+    width: auto;
+  }
+}
+
+.itinerary-dates-edit__sep {
+  color: $color-text-muted;
 }
 
 .itinerary-detail__tabs {

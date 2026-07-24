@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import CalendarWeekly from '../calendar/CalendarWeekly';
 import CalendarDaily from '../calendar/CalendarDaily';
 import DayTodoPanel from '../calendar/DayTodoPanel';
@@ -46,6 +46,18 @@ function ItineraryPlan({ itinerary }) {
     if (d > tripEnd) return itinerary.endDate;
     return date;
   };
+
+  // If the trip's dates change (edited in the header), pull the focus back in range so
+  // the view never sits on a now-excluded day.
+  useEffect(() => {
+    if (!tripStart || !tripEnd) return;
+    setFocusDate((d) => {
+      const day = startOfDay(d);
+      if (day < tripStart) return itinerary.startDate;
+      if (day > tripEnd) return itinerary.endDate;
+      return d;
+    });
+  }, [tripStart, tripEnd, itinerary.startDate, itinerary.endDate]);
 
   const { items, refetch } = useItineraryItems(itinerary.id, range.startISO, range.endISO);
   const {

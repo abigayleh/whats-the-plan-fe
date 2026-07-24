@@ -4,6 +4,7 @@ import ItineraryPlan from './ItineraryPlan';
 import ItineraryNotes from './ItineraryNotes';
 import ItineraryPolls from './ItineraryPolls';
 import IconPicker from '../common/IconPicker';
+import ItineraryDateRange from './ItineraryDateRange';
 import { MapIcon } from '../layout/icons';
 
 const TABS = [
@@ -11,8 +12,6 @@ const TABS = [
   { key: 'notes', label: 'Notes' },
   { key: 'polls', label: 'Polls', needsGroup: true },
 ];
-
-const fmt = (d) => (d ? d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }) : '');
 
 // The itinerary hub: editable title, date range, and the Plan / Notes / Polls tabs.
 function ItineraryDetail() {
@@ -64,11 +63,12 @@ function ItineraryDetail() {
             disabled={!editable}
           />
         </div>
-        <p className="itinerary-detail__dates">
-          {fmt(itinerary.startDate)}
-          {' – '}
-          {fmt(itinerary.endDate)}
-        </p>
+        <ItineraryDateRange
+          startDate={itinerary.startDate}
+          endDate={itinerary.endDate}
+          editable={editable}
+          onChange={(range) => updateItinerary(itinerary.id, range)}
+        />
       </header>
 
       <nav className="itinerary-detail__tabs">
