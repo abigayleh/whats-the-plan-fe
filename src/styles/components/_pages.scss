@@ -399,6 +399,22 @@
 
 // --- TipTap document ---
 
+// Contextual table controls; sticky so they stay reachable while editing a long table.
+.page-doc__table-toolbar {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  display: flex;
+  flex-wrap: wrap;
+  gap: $spacing-xs;
+  padding: $spacing-xs 0;
+  background: $color-surface;
+}
+
+.page-doc__table-toolbar-danger {
+  color: $color-danger;
+}
+
 .page-doc {
   .ProseMirror {
     outline: none;

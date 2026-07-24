@@ -5,6 +5,7 @@ import { TableKit } from '@tiptap/extension-table';
 import { TaskList, TaskItem } from '@tiptap/extension-list';
 import Image from '@tiptap/extension-image';
 import PagesEditorContext from './PagesEditorContext';
+import TableToolbar from './TableToolbar';
 import PageLink from './extensions/PageLink';
 import slashCommand from './extensions/slashCommand';
 import linkShortcut from './extensions/linkShortcut';
@@ -51,6 +52,7 @@ function PageDocument({
 
   return (
     <PagesEditorContext.Provider value={ctx}>
+      {editable && <TableToolbar editor={editor} />}
       <EditorContent editor={editor} className="page-doc" />
     </PagesEditorContext.Provider>
   );
