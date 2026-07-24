@@ -7,6 +7,15 @@ export const toBeStatus = (status) => STATUS_TO_BE[status] || 'TODO';
 
 const toDate = (value) => (value ? new Date(value) : null);
 
+// Date-only fields (itinerary start/end) are stored at UTC midnight. Parsing them as a plain
+// Date shifts the calendar day for anyone behind UTC, so a picked date renders a day earlier
+// and edits look like they revert. Rebuild the same calendar day at LOCAL midnight instead.
+const toDateOnly = (value) => {
+  if (!value) return null;
+  const [y, m, d] = String(value).slice(0, 10).split('-').map(Number);
+  return new Date(y, m - 1, d);
+};
+
 export const adaptGroup = (g) => ({
   id: g.id,
   name: g.name,
@@ -121,8 +130,8 @@ export const adaptItinerary = (it) => ({
   icon: it.icon ?? null,
   completedAt: toDate(it.completedAt),
   createdById: it.createdById,
-  startDate: toDate(it.startDate),
-  endDate: toDate(it.endDate),
+  startDate: toDateOnly(it.startDate),
+  endDate: toDateOnly(it.endDate),
   createdAt: toDate(it.createdAt),
 });
 
