@@ -212,6 +212,24 @@
   margin-right: $spacing-xs;
 }
 
+// Drag-and-drop feedback: the lifted row fades; the drop target shows a line above/below
+// (reorder as a sibling) or a full outline (nest as a child).
+.page-tree__row--dragging {
+  opacity: 0.4;
+}
+
+.page-tree__row--drop-before {
+  box-shadow: inset 0 2px 0 $color-primary;
+}
+
+.page-tree__row--drop-after {
+  box-shadow: inset 0 -2px 0 $color-primary;
+}
+
+.page-tree__row--drop-child {
+  box-shadow: inset 0 0 0 2px $color-primary;
+}
+
 // --- Right pane: editor ---
 
 .pages__content {

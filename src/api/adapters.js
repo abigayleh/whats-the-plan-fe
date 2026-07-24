@@ -135,6 +135,7 @@ export const adaptPage = (p) => ({
   ownerId: p.ownerId,
   createdById: p.createdById,
   parentId: p.parentId ?? null,
+  position: p.position ?? 0,
   hasContent: p.hasContent ?? false,
   createdAt: toDate(p.createdAt),
   updatedAt: toDate(p.updatedAt),

@@ -50,6 +50,22 @@ export default function usePages() {
 
   const movePage = useCallback((id, parentId) => updatePage(id, { parentId }), [updatePage]);
 
+  // Reorder/reparent siblings under `parentId`. Optimistic: reflow the tree at once, then let
+  // the socket refresh reconcile; roll back to the pre-drop snapshot if the write fails.
+  const reorderPages = useCallback(async (parentId, orderedIds) => {
+    let snapshot;
+    setPages((prev) => {
+      snapshot = prev;
+      const index = new Map(orderedIds.map((id, i) => [id, i]));
+      return prev.map((p) => (index.has(p.id) ? { ...p, parentId, position: index.get(p.id) } : p));
+    });
+    try {
+      await pagesApi.reorder(parentId, orderedIds);
+    } catch {
+      setPages(snapshot);
+    }
+  }, []);
+
   const deletePage = useCallback(async (id) => {
     await pagesApi.remove(id);
     await refresh();
@@ -59,6 +75,6 @@ export default function usePages() {
   const saveContent = useCallback((id, content) => pagesApi.update(id, { content }), []);
 
   return {
-    pages, loading, refresh, addPage, updatePage, movePage, deletePage, saveContent,
+    pages, loading, refresh, addPage, updatePage, movePage, reorderPages, deletePage, saveContent,
   };
 }

@@ -1,18 +1,39 @@
 import { NavLink } from 'react-router-dom';
+import { useDraggable, useDroppable } from '@dnd-kit/core';
 import { ChevronIcon, PlusIcon, PagesIcon } from '../layout/icons';
 import { getTaskIcon } from '../../constants/taskIcons';
 
 // One row in the page tree, recursing into its children when expanded.
+// Manageable rows are draggable; every row is a drop target for reorder/reparent.
 function PageTreeNode({
-  node, depth, expanded, onToggle, onNewChild,
+  node, depth, expanded, onToggle, onNewChild, canManagePage, drag,
 }) {
   const hasChildren = node.children.length > 0;
   const isOpen = expanded[node.id] !== false; // default expanded
   const NodeIcon = getTaskIcon(node.icon)?.Icon;
+  const canManage = canManagePage(node);
+
+  // Pointer drag only (no keyboard sensor), so the row needs the listeners but not the
+  // dnd-kit a11y attributes, which would add a duplicate tab stop over the inner link.
+  const draggable = useDraggable({ id: node.id, disabled: !canManage });
+  const droppable = useDroppable({ id: node.id });
+  const setRowRef = (el) => { draggable.setNodeRef(el); droppable.setNodeRef(el); };
+
+  const dropBand = drag?.overId === node.id ? drag.band : null;
+  const rowClass = [
+    'page-tree__row',
+    drag?.activeId === node.id && 'page-tree__row--dragging',
+    dropBand && `page-tree__row--drop-${dropBand}`,
+  ].filter(Boolean).join(' ');
 
   return (
     <li className="page-tree__node">
-      <div className="page-tree__row" style={{ paddingLeft: `${0.9 + depth * 0.9}rem` }}>
+      <div
+        ref={setRowRef}
+        className={rowClass}
+        style={{ paddingLeft: `${0.9 + depth * 0.9}rem` }}
+        {...(canManage ? draggable.listeners : {})}
+      >
         {hasChildren && (
           // A sibling of the NavLink below, not nested in it — clicking it can't navigate.
           <button
@@ -57,6 +78,8 @@ function PageTreeNode({
               expanded={expanded}
               onToggle={onToggle}
               onNewChild={onNewChild}
+              canManagePage={canManagePage}
+              drag={drag}
             />
           ))}
         </ul>

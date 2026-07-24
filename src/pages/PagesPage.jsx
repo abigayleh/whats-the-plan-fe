@@ -14,7 +14,7 @@ import useLocalStorageState from '../hooks/useLocalStorageState';
 function PagesPage() {
   const { currentUser, personalSpace, groups } = useAppData();
   const {
-    pages, loading, addPage, updatePage, deletePage, saveContent,
+    pages, loading, addPage, updatePage, deletePage, saveContent, reorderPages,
   } = usePages();
   const [showNew, setShowNew] = useState(false);
   const [collapsed, setCollapsed] = useLocalStorageState('pages-sidebar-collapsed', false);
@@ -90,6 +90,8 @@ function PagesPage() {
             loading={loading}
             personalSpace={personalSpace}
             groups={groups}
+            canManagePage={canManagePage}
+            onReorder={reorderPages}
             onNewChild={(parent) => createPage({ groupId: parent.groupId, parentId: parent.id })}
           />
         </aside>
