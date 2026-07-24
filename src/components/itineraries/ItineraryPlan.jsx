@@ -32,6 +32,21 @@ function ItineraryPlan({ itinerary }) {
     return { startISO: start.toISOString(), endISO: end.toISOString() };
   }, [view, focusDate]);
 
+  // Trip bounds (day granularity) drive week-view disabling and nav clamping.
+  const tripStart = useMemo(() => (itinerary.startDate ? startOfDay(itinerary.startDate) : null), [itinerary.startDate]);
+  const tripEnd = useMemo(() => (itinerary.endDate ? startOfDay(itinerary.endDate) : null), [itinerary.endDate]);
+  const isDayDisabled = useMemo(() => {
+    if (!tripStart || !tripEnd) return undefined;
+    return (day) => { const d = startOfDay(day); return d < tripStart || d > tripEnd; };
+  }, [tripStart, tripEnd]);
+  const clampToTrip = (date) => {
+    if (!tripStart || !tripEnd) return date;
+    const d = startOfDay(date);
+    if (d < tripStart) return itinerary.startDate;
+    if (d > tripEnd) return itinerary.endDate;
+    return date;
+  };
+
   const { items, refetch } = useItineraryItems(itinerary.id, range.startISO, range.endISO);
   const {
     listTasks, saveItem, deleteItem, toggleStatus, moveItem,
@@ -142,11 +157,31 @@ function ItineraryPlan({ itinerary }) {
   }
 
   function handleSelectDay(day) {
-    setFocusDate(day);
+    setFocusDate(clampToTrip(day));
     setView('day');
   }
-  function handlePrev() { setFocusDate((d) => addDays(d, view === 'week' ? -7 : -1)); }
-  function handleNext() { setFocusDate((d) => addDays(d, view === 'week' ? 7 : 1)); }
+  // Switching to the day view lands on a date inside the trip, never an out-of-range week day.
+  function switchView(key) {
+    if (key === 'day') setFocusDate((d) => clampToTrip(d));
+    setView(key);
+  }
+
+  // Nav is bounded to the trip: prev/next stop at the first/last day (day view) or the
+  // first/last week that still holds an in-range day (week view).
+  const navPrevDisabled = useMemo(() => {
+    if (!tripStart) return false;
+    const edge = view === 'day' ? startOfDay(focusDate) : startOfDay(getWeekDays(focusDate)[0]);
+    return edge <= tripStart;
+  }, [view, focusDate, tripStart]);
+  const navNextDisabled = useMemo(() => {
+    if (!tripEnd) return false;
+    const days = getWeekDays(focusDate);
+    const edge = view === 'day' ? startOfDay(focusDate) : startOfDay(days[days.length - 1]);
+    return edge >= tripEnd;
+  }, [view, focusDate, tripEnd]);
+
+  function handlePrev() { if (!navPrevDisabled) setFocusDate((d) => addDays(d, view === 'week' ? -7 : -1)); }
+  function handleNext() { if (!navNextDisabled) setFocusDate((d) => addDays(d, view === 'week' ? 7 : 1)); }
   function openNewTodo() { setPlanItemModal({ mode: 'new', seed: { dueDate: focusDate } }); }
 
   const label = view === 'week' ? formatWeekRange(getWeekDays(focusDate)) : formatFullDate(focusDate);
@@ -154,14 +189,14 @@ function ItineraryPlan({ itinerary }) {
   return (
     <div className="itinerary-plan">
       <div className="calendar-toolbar">
-        <button type="button" className="calendar-toolbar__nav" onClick={handlePrev} aria-label="Previous">‹</button>
+        <button type="button" className="calendar-toolbar__nav" onClick={handlePrev} disabled={navPrevDisabled} aria-label="Previous">‹</button>
         <div className="calendar-toolbar__label-group">
           <span className="calendar-toolbar__label">{label}</span>
           <button type="button" className="calendar-toolbar__today" onClick={() => setFocusDate(itinerary.startDate || new Date())}>
             Trip start
           </button>
         </div>
-        <button type="button" className="calendar-toolbar__nav" onClick={handleNext} aria-label="Next">›</button>
+        <button type="button" className="calendar-toolbar__nav" onClick={handleNext} disabled={navNextDisabled} aria-label="Next">›</button>
       </div>
 
       <div className="calendar-filters">
@@ -171,7 +206,7 @@ function ItineraryPlan({ itinerary }) {
               key={key}
               type="button"
               className={`view-switcher__option${view === key ? ' view-switcher__option--active' : ''}`}
-              onClick={() => setView(key)}
+              onClick={() => switchView(key)}
             >
               {viewLabel}
             </button>
@@ -187,6 +222,7 @@ function ItineraryPlan({ itinerary }) {
           <CalendarWeekly
             focusDate={focusDate}
             tasks={baseVisibleItems}
+            isDayDisabled={isDayDisabled}
             onSelectDay={handleSelectDay}
             onToggleTask={toggleItemStatus}
             onOpenTask={openItem}

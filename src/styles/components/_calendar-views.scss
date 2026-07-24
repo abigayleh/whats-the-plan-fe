@@ -121,6 +121,13 @@ $timeline-allday-height: 2.75rem;
       background: $color-primary-soft;
       color: $color-primary;
     }
+
+    // Out-of-range day in a bounded (itinerary) week: greyed and unclickable.
+    &--disabled {
+      color: $color-text-muted;
+      opacity: 0.4;
+      cursor: default;
+    }
   }
 
   &__weekday {
@@ -167,6 +174,15 @@ $timeline-allday-height: 2.75rem;
 // One day's timeline column — all-day strip + absolute-positioned hour blocks.
 // Shared by week (7 narrow columns) and day (1 wide column) views.
 .calendar-timeline {
+  // Out-of-range day column in a bounded (itinerary) week: dimmed, no create/drop.
+  &--disabled {
+    opacity: 0.4;
+
+    .calendar-timeline__col {
+      cursor: default;
+    }
+  }
+
   &__allday {
     height: $timeline-allday-height;
     display: flex;

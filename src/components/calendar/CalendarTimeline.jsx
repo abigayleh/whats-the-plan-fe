@@ -31,7 +31,8 @@ export function CalendarHourGutter({ showAllday = false }) {
 // absolute-positioned hour timeline below. Used by CalendarWeekly (7 columns) and
 // CalendarDaily (1 wide column) so both views share click-to-create + drag/drop.
 function CalendarTimeline({
-  day, tasks, now, showAllday = true, onToggleTask, onOpenTask, onCreateTask, onMoveTask, onPushToTomorrow,
+  day, tasks, now, showAllday = true, disabled = false,
+  onToggleTask, onOpenTask, onCreateTask, onMoveTask, onPushToTomorrow,
 }) {
   const timedTasks = tasks.filter((task) => isTaskTimed(task) && isTaskOnDay(task, day));
   const alldayTasks = tasks.filter((task) => !isTaskTimed(task) && getTaskDay(task) && isTaskOnDay(task, day));
@@ -42,6 +43,7 @@ function CalendarTimeline({
   const nowPosition = getTimelinePosition(now) * 100;
 
   function handleColumnClick(e) {
+    if (disabled) return;
     const rect = e.currentTarget.getBoundingClientRect();
     const fraction = (e.clientY - rect.top) / rect.height;
     const { hour, minute } = getTimeFromTimelinePosition(fraction);
@@ -50,6 +52,7 @@ function CalendarTimeline({
 
   function handleColumnDrop(e) {
     e.preventDefault();
+    if (disabled) return;
     const taskId = e.dataTransfer.getData('text/plain');
     if (!taskId) return;
     const rect = e.currentTarget.getBoundingClientRect();
@@ -62,13 +65,14 @@ function CalendarTimeline({
 
   function handleAlldayDrop(e) {
     e.preventDefault();
+    if (disabled) return;
     const taskId = e.dataTransfer.getData('text/plain');
     if (!taskId) return;
     onMoveTask?.(taskId, { day, timed: false });
   }
 
   return (
-    <div className="calendar-timeline">
+    <div className={`calendar-timeline${disabled ? ' calendar-timeline--disabled' : ''}`}>
       {showAllday && (
         <div
           className="calendar-timeline__allday"

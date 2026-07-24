@@ -307,6 +307,8 @@
   border: 1px solid $color-border;
   border-radius: $radius-md;
   overflow: hidden;
+  // Trap Leaflet's control z-indexes (1000) so they can't render above modals.
+  isolation: isolate;
 }
 
 .itinerary-map__canvas {
@@ -439,9 +441,19 @@
 }
 
 .itinerary-stops__label {
+  flex: 1;
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+// Travel time from the previous numbered stop (walk/drive per the map toggle).
+.itinerary-stops__time {
+  flex-shrink: 0;
+  font-size: $font-size-xs;
+  color: $color-text-muted;
+  font-variant-numeric: tabular-nums;
 }
 
 // --- Notes & Polls tabs ---

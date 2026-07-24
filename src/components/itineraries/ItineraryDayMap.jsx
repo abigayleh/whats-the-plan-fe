@@ -13,6 +13,16 @@ const ROUTE_COLOR = '#c56a4a';
 // is car-only, so walk vs drive would be identical there.
 const ROUTER = { foot: 'routed-foot', driving: 'routed-car' };
 
+// A route leg duration (seconds) → a short "24 min" / "1 hr 5 min" label.
+function formatDuration(seconds) {
+  const mins = Math.round(seconds / 60);
+  if (mins < 1) return '<1 min';
+  if (mins < 60) return `${mins} min`;
+  const h = Math.floor(mins / 60);
+  const m = mins % 60;
+  return m ? `${h} hr ${m} min` : `${h} hr`;
+}
+
 function pinIcon(order, active) {
   const cls = `itin-pin${order == null ? ' itin-pin--open' : ''}${active ? ' itin-pin--active' : ''}`;
   const inner = order == null ? `<div class="${cls}"></div>` : `<div class="${cls}"><span>${order}</span></div>`;
@@ -40,7 +50,7 @@ function ItineraryDayMap({ pins }) {
   const points = useMemo(() => pins.map((p) => [p.lat, p.lng]), [pins]);
   const [hovered, setHovered] = useState(null);
   const [profile, setProfile] = useState('foot');
-  const [route, setRoute] = useState(null); // { coords: [[lat,lng]…], fallback } | null
+  const [route, setRoute] = useState(null); // { coords: [[lat,lng]…], fallback, legs: [sec…] } | null
 
   // Numbered (scheduled) stops in order, as a "lng,lat;…" string for the OSRM request.
   const coordStr = useMemo(
@@ -61,13 +71,18 @@ function ItineraryDayMap({ pins }) {
         const data = await (await fetch(url)).json();
         if (!active) return;
         if (data.code === 'Ok' && data.routes?.[0]?.geometry) {
-          setRoute({ coords: data.routes[0].geometry.coordinates.map(([lng, lat]) => [lat, lng]), fallback: false });
+          const r = data.routes[0];
+          setRoute({
+            coords: r.geometry.coordinates.map(([lng, lat]) => [lat, lng]),
+            legs: (r.legs || []).map((l) => l.duration),
+            fallback: false,
+          });
         } else {
-          setRoute({ coords: straight, fallback: true });
+          setRoute({ coords: straight, legs: [], fallback: true });
         }
       } catch {
         // Routing failed/rate-limited — a straight dashed connector keeps the day readable.
-        if (active) setRoute({ coords: straight, fallback: true });
+        if (active) setRoute({ coords: straight, legs: [], fallback: true });
       }
     })();
     return () => { active = false; };
@@ -113,19 +128,26 @@ function ItineraryDayMap({ pins }) {
       </div>
 
       <ul className="itinerary-stops">
-        {pins.map((p) => (
-          <li
-            key={p.id}
-            className={`itinerary-stops__item${hovered === p.id ? ' itinerary-stops__item--active' : ''}`}
-            onMouseEnter={() => setHovered(p.id)}
-            onMouseLeave={() => setHovered(null)}
-          >
-            <span className={`itinerary-stops__badge${p.order == null ? ' itinerary-stops__badge--open' : ''}`}>
-              {p.order ?? ''}
-            </span>
-            <span className="itinerary-stops__label">{p.title}</span>
-          </li>
-        ))}
+        {pins.map((p) => {
+          // Time from the previous numbered stop to this one (the OSRM leg into it).
+          const legSeconds = p.order >= 2 ? route?.legs?.[p.order - 2] : null;
+          return (
+            <li
+              key={p.id}
+              className={`itinerary-stops__item${hovered === p.id ? ' itinerary-stops__item--active' : ''}`}
+              onMouseEnter={() => setHovered(p.id)}
+              onMouseLeave={() => setHovered(null)}
+            >
+              <span className={`itinerary-stops__badge${p.order == null ? ' itinerary-stops__badge--open' : ''}`}>
+                {p.order ?? ''}
+              </span>
+              <span className="itinerary-stops__label">{p.title}</span>
+              {legSeconds != null && (
+                <span className="itinerary-stops__time">{formatDuration(legSeconds)}</span>
+              )}
+            </li>
+          );
+        })}
       </ul>
     </div>
   );

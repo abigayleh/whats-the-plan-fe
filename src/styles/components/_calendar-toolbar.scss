@@ -158,6 +158,12 @@
     font-size: $font-size-lg;
     cursor: pointer;
 
+    &:disabled {
+      color: $color-text-muted;
+      opacity: 0.4;
+      cursor: default;
+    }
+
     @include respond-below(tablet) {
       width: 2.75rem;
       height: 2.75rem;
