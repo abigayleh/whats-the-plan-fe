@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { CloseIcon } from '../layout/icons';
+import Modal from '../common/Modal';
 import { TASK_ICONS } from '../../constants/taskIcons';
 
 const todayInput = () => {
@@ -38,16 +39,8 @@ function NewItineraryModal({
   }
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal" onClick={(e) => e.stopPropagation()}>
-        <div className="modal__header">
-          <h2 className="modal__title">New Itinerary</h2>
-          <button type="button" className="modal__close" onClick={onClose} aria-label="Close">
-            <CloseIcon />
-          </button>
-        </div>
-
-        <form className="modal__form" onSubmit={handleSubmit}>
+    <Modal title="New Itinerary" onClose={onClose}>
+      <form className="modal__form" onSubmit={handleSubmit}>
           {error && <p className="auth-card__error">{error}</p>}
 
           <label className="modal__field">
@@ -141,9 +134,8 @@ function NewItineraryModal({
               {saving ? 'Creating…' : 'Create'}
             </button>
           </div>
-        </form>
-      </div>
-    </div>
+      </form>
+    </Modal>
   );
 }
 

@@ -7,6 +7,7 @@ import { adaptPoll } from '../../api/adapters';
 import { socket } from '../../socket/socketClient';
 import PollCard from '../polls/PollCard';
 import PollCreateModal from '../polls/PollCreateModal';
+import ConfirmModal from '../common/ConfirmModal';
 import { PlusIcon } from '../layout/icons';
 
 const EVENTS = ['poll:created', 'poll:vote', 'poll:deleted'];
@@ -15,6 +16,7 @@ const EVENTS = ['poll:created', 'poll:vote', 'poll:deleted'];
 function ItineraryPolls({ itinerary, group, currentUser }) {
   const [polls, setPolls] = useState([]);
   const [showCreate, setShowCreate] = useState(false);
+  const [confirmingPoll, setConfirmingPoll] = useState(null);
   const latest = useRef(0);
 
   const refetch = useCallback(async () => {
@@ -40,10 +42,9 @@ function ItineraryPolls({ itinerary, group, currentUser }) {
     refetch();
   }
 
-  async function handleDelete(poll) {
-    // eslint-disable-next-line no-alert
-    if (!window.confirm('Delete this poll?')) return;
-    await pollsApi.remove(poll.id);
+  async function confirmDelete() {
+    await pollsApi.remove(confirmingPoll.id);
+    setConfirmingPoll(null);
     refetch();
   }
 
@@ -76,7 +77,7 @@ function ItineraryPolls({ itinerary, group, currentUser }) {
               poll={poll}
               group={group}
               onVote={handleVote}
-              onDelete={canDelete(poll) ? handleDelete : null}
+              onDelete={canDelete(poll) ? setConfirmingPoll : null}
             />
           ))}
         </div>
@@ -84,6 +85,15 @@ function ItineraryPolls({ itinerary, group, currentUser }) {
 
       {showCreate && (
         <PollCreateModal groups={[group]} onClose={() => setShowCreate(false)} onSave={handleCreate} />
+      )}
+
+      {confirmingPoll && (
+        <ConfirmModal
+          title="Delete poll"
+          message="Delete this poll?"
+          onConfirm={confirmDelete}
+          onCancel={() => setConfirmingPoll(null)}
+        />
       )}
     </div>
   );

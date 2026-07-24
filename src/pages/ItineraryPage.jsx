@@ -5,6 +5,7 @@ import {
 import { TravelIcon, PlusIcon } from '../components/layout/icons';
 import ItineraryList from '../components/itineraries/ItineraryList';
 import NewItineraryModal from '../components/itineraries/NewItineraryModal';
+import ConfirmModal from '../components/common/ConfirmModal';
 import useAppData from '../hooks/useAppData';
 import useItineraries from '../hooks/useItineraries';
 
@@ -16,6 +17,7 @@ function ItineraryPage() {
     itineraries, loading, addItinerary, updateItinerary, setCompleted, deleteItinerary,
   } = useItineraries();
   const [showNew, setShowNew] = useState(false);
+  const [confirmingItinerary, setConfirmingItinerary] = useState(null);
   const navigate = useNavigate();
   const { pathname } = useLocation();
   const { itineraryId } = useParams();
@@ -34,10 +36,10 @@ function ItineraryPage() {
     navigate(`/itinerary/${itinerary.id}`);
   }
 
-  async function handleDelete(itinerary) {
-    // eslint-disable-next-line no-alert
-    if (!window.confirm(`Delete "${itinerary.title}"? Its to-dos, notes, and polls are removed too.`)) return;
+  async function confirmDelete() {
+    const itinerary = confirmingItinerary;
     await deleteItinerary(itinerary.id);
+    setConfirmingItinerary(null);
     if (itinerary.id === itineraryId) navigate('/itinerary');
   }
 
@@ -64,7 +66,7 @@ function ItineraryPage() {
           itineraries={itineraries}
           loading={loading}
           onSetCompleted={setCompleted}
-          onDelete={handleDelete}
+          onDelete={setConfirmingItinerary}
         />
       </aside>
 
@@ -85,6 +87,15 @@ function ItineraryPage() {
           personalSpace={personalSpace}
           onClose={() => setShowNew(false)}
           onCreate={handleNew}
+        />
+      )}
+
+      {confirmingItinerary && (
+        <ConfirmModal
+          title="Delete itinerary"
+          message={`Delete "${confirmingItinerary.title}"? Its to-dos, notes, and polls are removed too.`}
+          onConfirm={confirmDelete}
+          onCancel={() => setConfirmingItinerary(null)}
         />
       )}
     </div>
