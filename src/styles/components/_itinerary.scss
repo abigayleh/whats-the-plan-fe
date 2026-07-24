@@ -295,7 +295,14 @@
   }
 }
 
+.itinerary-map-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-sm;
+}
+
 .itinerary-map {
+  position: relative;
   height: 32rem;
   border: 1px solid $color-border;
   border-radius: $radius-md;
@@ -337,9 +344,102 @@
   font-size: 13px;
   font-weight: 700;
   line-height: 1;
+  transition: transform 0.12s ease, box-shadow 0.12s ease;
 
   &--open {
     background: $color-surface;
     border: 2px dashed $color-primary;
   }
+
+  // Highlighted when its stop row (or the pin itself) is hovered.
+  &--active {
+    transform: scale(1.25);
+    box-shadow: 0 0 0 4px rgba($color-primary, 0.3), 0 1px 4px rgba(0, 0, 0, 0.35);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .itin-pin {
+    transition: none;
+  }
+}
+
+// --- Walk/drive toggle overlaid on the map ---
+
+.route-toggle {
+  position: absolute;
+  top: $spacing-sm;
+  right: $spacing-sm; // top-left is Leaflet's zoom control
+  z-index: 1000;
+  display: flex;
+  padding: 3px;
+  background: $color-surface;
+  border: 1px solid $color-border;
+  border-radius: 999px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.15);
+}
+
+.route-toggle__option {
+  border: none;
+  background: none;
+  padding: 3px 12px;
+  border-radius: 999px;
+  font-size: $font-size-xs;
+  font-weight: 600;
+  color: $color-text-muted;
+  cursor: pointer;
+
+  &--active {
+    background: $color-primary;
+    color: #fff;
+  }
+}
+
+// --- Stops list under the map (hover-linked to the pins) ---
+
+.itinerary-stops {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.itinerary-stops__item {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+  padding: $spacing-xs $spacing-sm;
+  border-radius: $radius-sm;
+  font-size: $font-size-sm;
+
+  &--active {
+    background: $color-primary-soft;
+  }
+}
+
+.itinerary-stops__badge {
+  flex-shrink: 0;
+  width: 1.4rem;
+  height: 1.4rem;
+  border-radius: 50%;
+  background: $color-primary;
+  color: #fff;
+  font-size: $font-size-xs;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  &--open {
+    background: $color-surface;
+    border: 1.5px dashed $color-primary;
+  }
+}
+
+.itinerary-stops__label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
