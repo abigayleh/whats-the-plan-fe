@@ -1,7 +1,7 @@
 import {
   ShoppingIcon, GroceriesIcon, TravelIcon, HomeIcon, HealthIcon, FitnessIcon, WorkIcon, CelebrationIcon,
   MoneyIcon, StarIcon, GameIcon, LaptopIcon, BookIcon, CartIcon, HeartIcon, MusicIcon, FoodIcon, GiftIcon,
-  CameraIcon,
+  CameraIcon, PetsIcon, HobbiesIcon, VacationIcon, CoffeeIcon, PlaneIcon, NatureIcon, SportsIcon,
 } from '../components/layout/icons';
 
 export const TASK_ICONS = [
@@ -24,6 +24,13 @@ export const TASK_ICONS = [
   { key: 'food', label: 'Food', Icon: FoodIcon },
   { key: 'gift', label: 'Gift', Icon: GiftIcon },
   { key: 'camera', label: 'Camera', Icon: CameraIcon },
+  { key: 'pets', label: 'Pets', Icon: PetsIcon },
+  { key: 'hobbies', label: 'Hobbies', Icon: HobbiesIcon },
+  { key: 'vacation', label: 'Vacation', Icon: VacationIcon },
+  { key: 'coffee', label: 'Coffee', Icon: CoffeeIcon },
+  { key: 'plane', label: 'Flight', Icon: PlaneIcon },
+  { key: 'nature', label: 'Nature', Icon: NatureIcon },
+  { key: 'sports', label: 'Sports', Icon: SportsIcon },
 ];
 
 export function getTaskIcon(key) {

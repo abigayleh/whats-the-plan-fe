@@ -358,3 +358,70 @@ export function CameraIcon(props) {
     </svg>
   );
 }
+
+export function PetsIcon(props) {
+  return (
+    <svg viewBox="0 0 24 24" width="16" height="16" {...strokeProps} {...props}>
+      <circle cx="7" cy="9" r="1.6" />
+      <circle cx="12" cy="7.5" r="1.7" />
+      <circle cx="17" cy="9" r="1.6" />
+      <path d="M12 12c-2.5 0-4.5 1.8-4.5 4 0 1.7 1.5 2.5 3 2.5.7 0 1-.3 1.5-.3s.8.3 1.5.3c1.5 0 3-.8 3-2.5 0-2.2-2-4-4.5-4Z" />
+    </svg>
+  );
+}
+
+export function HobbiesIcon(props) {
+  return (
+    <svg viewBox="0 0 24 24" width="16" height="16" {...strokeProps} {...props}>
+      <path d="M12 3a9 9 0 0 0 0 18c1.4 0 2-1 2-2s-.5-1.5-.5-2.5S14.5 15 16 15h1a4 4 0 0 0 4-4c0-4.4-4-8-9-8Z" />
+      <circle cx="8" cy="9" r="1" />
+      <circle cx="12" cy="7" r="1" />
+      <circle cx="16" cy="9.5" r="1" />
+    </svg>
+  );
+}
+
+export function VacationIcon(props) {
+  return (
+    <svg viewBox="0 0 24 24" width="16" height="16" {...strokeProps} {...props}>
+      <path d="M12 21V9" />
+      <path d="M12 9c-1-3-4-4-8-3M12 9c1-3 4-4 8-3M12 9c-2-2-3-5-2-8M12 9c2-2 3-5 2-8" />
+    </svg>
+  );
+}
+
+export function CoffeeIcon(props) {
+  return (
+    <svg viewBox="0 0 24 24" width="16" height="16" {...strokeProps} {...props}>
+      <path d="M4 8h13v6a4 4 0 0 1-4 4H8a4 4 0 0 1-4-4V8Z" />
+      <path d="M17 9h2a2.5 2.5 0 0 1 0 5h-2" />
+      <path d="M8 3c-.5 1 .5 2 0 3M12 3c-.5 1 .5 2 0 3" />
+    </svg>
+  );
+}
+
+export function PlaneIcon(props) {
+  return (
+    <svg viewBox="0 0 24 24" width="16" height="16" {...strokeProps} {...props}>
+      <path d="M22 4 11 15M22 4l-7 18-4-7-7-4 18-7Z" />
+    </svg>
+  );
+}
+
+export function NatureIcon(props) {
+  return (
+    <svg viewBox="0 0 24 24" width="16" height="16" {...strokeProps} {...props}>
+      <path d="M4 20c0-9 6-15 16-16 1 10-5 16-16 16Z" />
+      <path d="M4 20C8 14 12 11 18 9" />
+    </svg>
+  );
+}
+
+export function SportsIcon(props) {
+  return (
+    <svg viewBox="0 0 24 24" width="16" height="16" {...strokeProps} {...props}>
+      <circle cx="12" cy="12" r="9" />
+      <path d="m12 7 3 2-1 4h-4l-1-4 3-2ZM12 7V3M15 9l3.5-1.5M14 13l2.5 3M10 13l-2.5 3M9 9 5.5 7.5" />
+    </svg>
+  );
+}
