@@ -1,5 +1,7 @@
 import { useState } from 'react';
-import { Outlet, useLocation, useNavigate } from 'react-router-dom';
+import {
+  Outlet, useLocation, useNavigate, useParams,
+} from 'react-router-dom';
 import {
   PagesIcon, PlusIcon, ChevronIcon, MenuIcon,
 } from '../components/layout/icons';
@@ -8,6 +10,7 @@ import NewPageModal from '../components/pages/NewPageModal';
 import useAppData from '../hooks/useAppData';
 import usePages from '../hooks/usePages';
 import useLocalStorageState from '../hooks/useLocalStorageState';
+import useRememberedItem from '../hooks/useRememberedItem';
 
 // Two-pane Notion-style layout: a scoped page tree on the left, the selected page on
 // the right (rendered through the nested :pageId route via Outlet context).
@@ -20,7 +23,13 @@ function PagesPage() {
   const [collapsed, setCollapsed] = useLocalStorageState('pages-sidebar-collapsed', false);
   const navigate = useNavigate();
   const { pathname } = useLocation();
+  const { pageId } = useParams();
   const atRoot = pathname === '/pages' || pathname === '/pages/';
+
+  // Reopen the last page viewed when landing on /pages, instead of the empty state.
+  useRememberedItem({
+    storageKey: 'pages-last-id', currentId: pageId, atRoot, loading, items: pages, pathPrefix: '/pages',
+  });
 
   // Mirrors the API: only the owner or a group admin may edit/delete/move a page.
   function canManagePage(page) {
