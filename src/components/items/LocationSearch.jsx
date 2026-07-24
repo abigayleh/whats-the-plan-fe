@@ -1,10 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
 import { CloseIcon } from '../layout/icons';
+import * as geocodeApi from '../../api/geocode';
 
-// Free OpenStreetMap geocoding — no key. Debounced + min length to respect its ~1 req/s policy.
-const NOMINATIM = 'https://nominatim.openstreetmap.org/search';
-
-// A place picker backed by Nominatim. `value` is { label, lat, lng } | null.
+// A place picker backed by the backend geocode proxy (Nominatim has no browser CORS).
+// `value` is { label, lat, lng } | null. Debounced + min length to respect the ~1 req/s policy.
 function LocationSearch({ value, onChange }) {
   const [query, setQuery] = useState('');
   const [results, setResults] = useState([]);
@@ -22,9 +21,7 @@ function LocationSearch({ value, onChange }) {
     clearTimeout(timer.current);
     timer.current = setTimeout(async () => {
       try {
-        const res = await fetch(`${NOMINATIM}?format=jsonv2&limit=5&q=${encodeURIComponent(query.trim())}`);
-        const rows = await res.json();
-        setResults(rows.map((r) => ({ label: r.display_name, lat: parseFloat(r.lat), lng: parseFloat(r.lon) })));
+        setResults(await geocodeApi.search(query.trim()));
       } catch {
         setResults([]);
       } finally {
