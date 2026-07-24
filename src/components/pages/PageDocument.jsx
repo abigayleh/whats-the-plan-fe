@@ -52,10 +52,8 @@ function PageDocument({
 
   return (
     <PagesEditorContext.Provider value={ctx}>
-      <div className="page-doc-wrap">
-        {editable && <TableToolbar editor={editor} />}
-        <EditorContent editor={editor} className="page-doc" />
-      </div>
+      {editable && <TableToolbar editor={editor} />}
+      <EditorContent editor={editor} className="page-doc" />
     </PagesEditorContext.Provider>
   );
 }
