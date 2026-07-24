@@ -399,16 +399,33 @@
 
 // --- TipTap document ---
 
-// Contextual table controls; sticky so they stay reachable while editing a long table.
+// Contextual table controls: float them over the top-right of the editor (no layout shift)
+// and keep them faded until the editor is hovered, so they come into focus only when wanted.
+.page-doc-wrap {
+  position: relative;
+}
+
 .page-doc__table-toolbar {
-  position: sticky;
+  position: absolute;
   top: 0;
+  right: 0;
   z-index: 5;
   display: flex;
   flex-wrap: wrap;
   gap: $spacing-xs;
-  padding: $spacing-xs 0;
+  padding: $spacing-xs;
   background: $color-surface;
+  border: 1px solid $color-border;
+  border-radius: $radius-sm;
+  box-shadow: $shadow-md;
+  opacity: 0.35;
+  transition: opacity 0.15s ease;
+
+  .page-doc-wrap:hover &,
+  &:hover,
+  &:focus-within {
+    opacity: 1;
+  }
 }
 
 .page-doc__table-toolbar-danger {
