@@ -10,3 +10,7 @@ export const remove = (id) => apiFetch(`/api/itineraries/${id}`, { method: 'DELE
 
 // Expanded to-do occurrences within a date range, for the itinerary's own week/day views.
 export const tasks = (id, { start, end }) => apiFetch(`/api/itineraries/${id}/tasks?${qs({ start, end })}`);
+
+// Polls scoped to this itinerary (group itineraries only).
+export const polls = (id) => apiFetch(`/api/itineraries/${id}/polls`);
+export const createPoll = (id, body) => apiFetch(`/api/itineraries/${id}/polls`, { method: 'POST', body });

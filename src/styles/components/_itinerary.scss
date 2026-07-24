@@ -443,3 +443,28 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+
+// --- Notes & Polls tabs ---
+
+.itinerary-notes__status {
+  margin-top: $spacing-sm;
+  font-size: $font-size-xs;
+  color: $color-text-muted;
+}
+
+.itinerary-polls__header {
+  margin-bottom: $spacing-md;
+
+  .button {
+    display: inline-flex;
+    align-items: center;
+    gap: $spacing-xs;
+  }
+}
+
+.itinerary-polls__list {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-md;
+  max-width: 40rem;
+}

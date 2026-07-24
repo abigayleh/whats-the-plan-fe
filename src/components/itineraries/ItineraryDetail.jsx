@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useOutletContext, useParams } from 'react-router-dom';
 import ItineraryPlan from './ItineraryPlan';
+import ItineraryNotes from './ItineraryNotes';
+import ItineraryPolls from './ItineraryPolls';
 import IconPicker from '../common/IconPicker';
 import { MapIcon } from '../layout/icons';
 
@@ -13,10 +15,11 @@ const TABS = [
 const fmt = (d) => (d ? d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }) : '');
 
 // The itinerary hub: editable title, date range, and the Plan / Notes / Polls tabs.
-// Plan is filled in Phase 2; Notes and Polls in Phase 6.
 function ItineraryDetail() {
   const { itineraryId } = useParams();
-  const { itineraries, canManage, updateItinerary } = useOutletContext();
+  const {
+    itineraries, currentUser, groups, canManage, updateItinerary,
+  } = useOutletContext();
   const itinerary = itineraries.find((it) => it.id === itineraryId);
 
   const [title, setTitle] = useState(itinerary?.title ?? '');
@@ -29,6 +32,7 @@ function ItineraryDetail() {
 
   const editable = canManage(itinerary);
   const tabs = TABS.filter((t) => !t.needsGroup || itinerary.groupId);
+  const group = groups.find((g) => g.id === itinerary.groupId) ?? null;
 
   function commitTitle() {
     const next = title.trim();
@@ -82,8 +86,10 @@ function ItineraryDetail() {
 
       <div className="itinerary-detail__tab-content">
         {tab === 'plan' && <ItineraryPlan itinerary={itinerary} />}
-        {tab === 'notes' && <p className="itinerary-detail__placeholder">Shared notes are coming soon.</p>}
-        {tab === 'polls' && <p className="itinerary-detail__placeholder">Group polls are coming soon.</p>}
+        {tab === 'notes' && <ItineraryNotes itinerary={itinerary} editable={editable} />}
+        {tab === 'polls' && group && (
+          <ItineraryPolls itinerary={itinerary} group={group} currentUser={currentUser} />
+        )}
       </div>
     </div>
   );
