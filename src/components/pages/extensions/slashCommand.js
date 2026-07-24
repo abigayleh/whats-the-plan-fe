@@ -2,9 +2,10 @@ import { Extension } from '@tiptap/core';
 import Suggestion from '@tiptap/suggestion';
 import { PluginKey } from '@tiptap/pm/state';
 import {
-  ListsIcon, CheckIcon, TableIcon, PagesIcon,
+  ListsIcon, CheckIcon, TableIcon, PagesIcon, CameraIcon,
 } from '../../layout/icons';
 import suggestionRender from './suggestionRender';
+import { promptUrl, normalizeUrl } from './urlPrompt';
 
 // Distinct key so this Suggestion plugin doesn't collide with the @-mention one.
 const slashKey = new PluginKey('slashCommand');
@@ -31,6 +32,22 @@ const COMMANDS = [
     // Bridges to the mention picker by re-inserting the trigger char.
     command: (c) => c.insertContent('@'),
   },
+  {
+    key: 'image',
+    title: 'Image',
+    subtitle: 'embed by URL',
+    Icon: CameraIcon,
+    // Deletes the "/image" range (returned chain), then prompts for a URL and inserts it.
+    command: (c, editor) => {
+      promptUrl({
+        editor,
+        onSubmit: (url) => {
+          if (url) editor.chain().focus().setImage({ src: normalizeUrl(url) }).run();
+        },
+      });
+      return c;
+    },
+  },
 ];
 
 const SlashCommand = Extension.create({
@@ -44,7 +61,7 @@ const SlashCommand = Extension.create({
         char: '/',
         startOfLine: false,
         command: ({ editor, range, props }) => {
-          props.command(editor.chain().focus().deleteRange(range)).run();
+          props.command(editor.chain().focus().deleteRange(range), editor).run();
         },
         items: ({ query }) => COMMANDS.filter(
           (c) => c.title.toLowerCase().includes(query.toLowerCase()),

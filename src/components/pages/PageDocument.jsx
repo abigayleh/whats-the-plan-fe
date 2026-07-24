@@ -3,9 +3,11 @@ import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import { TableKit } from '@tiptap/extension-table';
 import { TaskList, TaskItem } from '@tiptap/extension-list';
+import Image from '@tiptap/extension-image';
 import PagesEditorContext from './PagesEditorContext';
 import PageLink from './extensions/PageLink';
 import slashCommand from './extensions/slashCommand';
+import linkShortcut from './extensions/linkShortcut';
 import pageMention from './extensions/pageMention';
 
 // The TipTap document. Keyed by pageId upstream, so it remounts per page with fresh content.
@@ -18,12 +20,21 @@ function PageDocument({
   useEffect(() => { scopeRef.current = scopePages; }, [scopePages]);
 
   const extensions = useMemo(() => [
-    StarterKit,
+    // StarterKit v3 bundles the Link mark, so configure it here rather than adding a second Link.
+    StarterKit.configure({
+      link: {
+        openOnClick: true,
+        autolink: true,
+        HTMLAttributes: { target: '_blank', rel: 'noopener noreferrer nofollow' },
+      },
+    }),
     TableKit,
     TaskList,
     TaskItem.configure({ nested: true }),
+    Image.configure({ inline: true }),
     PageLink,
     slashCommand,
+    linkShortcut,
     pageMention.configure({ getPages: () => scopeRef.current }),
   ], []);
 

@@ -454,21 +454,54 @@
       }
     }
 
-    // To-do checkboxes
+    // To-do checkboxes: TipTap renders each item as <li><label><input></label><div>…</div></li>.
     ul[data-type='taskList'] {
       list-style: none;
       padding-left: 0;
 
       li {
         display: flex;
-        gap: $spacing-sm;
         align-items: flex-start;
+        gap: $spacing-sm;
+
+        > label {
+          flex-shrink: 0;
+          margin-top: 0.3rem; // line up the checkbox with the first line of text
+          user-select: none;
+        }
+
+        // Content column fills the row so wrapped lines align under the text, not the checkbox.
+        > div {
+          flex: 1;
+          min-width: 0;
+
+          > p { margin: 0; }
+        }
       }
 
       input[type='checkbox'] {
-        margin-top: 0.3rem;
         accent-color: $color-primary;
       }
+
+      // Nested task lists sit inside the content div, indenting under the parent's text.
+      ul[data-type='taskList'] {
+        margin-top: $spacing-xs;
+      }
+    }
+
+    // Inline images embedded by URL stay responsive.
+    img {
+      max-width: 100%;
+      height: auto;
+    }
+
+    // Link marks — the .page-link chip node styles itself, so leave it alone.
+    a:not(.page-link__chip) {
+      color: $color-primary;
+      text-decoration: underline;
+      cursor: pointer;
+
+      &:hover { color: $color-primary-hover; }
     }
   }
 }
@@ -514,6 +547,22 @@
 .suggestion-popup {
   position: fixed;
   z-index: 60;
+}
+
+// Inline URL field for embedding an image or applying a link (mounted inside .suggestion-popup).
+.page-doc__url-input {
+  width: 18rem;
+  padding: $spacing-xs $spacing-sm;
+  background: $color-surface;
+  border: 1px solid $color-border;
+  border-radius: $radius-sm;
+  box-shadow: 0 0.5rem 1.5rem rgba(0, 0, 0, 0.12);
+  color: $color-text;
+
+  &:focus {
+    outline: none;
+    border-color: $color-primary;
+  }
 }
 
 .suggestion-menu {
