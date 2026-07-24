@@ -12,6 +12,7 @@ import { ancestorsOf } from '../../utils/pageTree';
 import PageDocument from './PageDocument';
 import MovePageMenu from './MovePageMenu';
 import PageIconPicker from './PageIconPicker';
+import ConfirmModal from '../common/ConfirmModal';
 
 const SAVE_LABEL = { saving: 'Saving…', saved: 'Saved', idle: '' };
 
@@ -28,6 +29,7 @@ function PageEditor() {
   const [status, setStatus] = useState('loading'); // loading | ready | missing
   const [saveState, setSaveState] = useState('idle'); // idle | saving | saved
   const [staleRemote, setStaleRemote] = useState(false);
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
   const lastSave = useRef(0); // timestamp of our last write, to ignore our own socket echo
 
@@ -104,9 +106,7 @@ function PageEditor() {
     setPage((prev) => (prev ? { ...prev, icon } : prev));
   }
 
-  async function handleDelete() {
-    // eslint-disable-next-line no-alert
-    if (!window.confirm('Delete this page? Its subpages move up a level.')) return;
+  async function confirmDelete() {
     await deletePage(pageId);
     navigate('/pages');
   }
@@ -133,7 +133,7 @@ function PageEditor() {
             <button
               type="button"
               className="task-actions__button task-actions__button--danger"
-              onClick={handleDelete}
+              onClick={() => setConfirmingDelete(true)}
               aria-label="Delete page"
               data-tooltip="Delete page"
             >
@@ -171,6 +171,15 @@ function PageEditor() {
         pages={pages}
         scopePages={scopePages}
       />
+
+      {confirmingDelete && (
+        <ConfirmModal
+          title="Delete page"
+          message="Delete this page? Its subpages move up a level."
+          onConfirm={confirmDelete}
+          onCancel={() => setConfirmingDelete(false)}
+        />
+      )}
     </div>
   );
 }

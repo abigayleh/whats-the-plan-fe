@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { CloseIcon, PlusIcon } from '../layout/icons';
+import Modal from '../common/Modal';
 
 const MAX_OPTIONS = 20; // mirrors the API
 
@@ -51,16 +52,8 @@ function PollCreateModal({ groups, onClose, onSave }) {
   }
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal" onClick={(e) => e.stopPropagation()}>
-        <div className="modal__header">
-          <h2 className="modal__title">New Poll</h2>
-          <button type="button" className="modal__close" onClick={onClose} aria-label="Close">
-            <CloseIcon />
-          </button>
-        </div>
-
-        <form className="modal__form" onSubmit={handleSubmit}>
+    <Modal title="New Poll" onClose={onClose}>
+      <form className="modal__form" onSubmit={handleSubmit}>
           {error && <p className="auth-card__error">{error}</p>}
 
           <label className="modal__field">
@@ -137,8 +130,7 @@ function PollCreateModal({ groups, onClose, onSave }) {
             </button>
           </div>
         </form>
-      </div>
-    </div>
+    </Modal>
   );
 }
 

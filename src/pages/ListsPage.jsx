@@ -10,6 +10,7 @@ import ListSection from '../components/lists/ListSection';
 import SortableListSection from '../components/lists/SortableListSection';
 import PlanItemModal from '../components/items/PlanItemModal';
 import ListModal from '../components/lists/ListModal';
+import ConfirmModal from '../components/common/ConfirmModal';
 import useAppData from '../hooks/useAppData';
 import usePlanItems from '../hooks/usePlanItems';
 import useLocalStorageState from '../hooks/useLocalStorageState';
@@ -24,6 +25,7 @@ function ListsPage() {
   } = useAppData();
   const { saveItem, deleteItem } = usePlanItems();
   const [listModal, setListModal] = useState(null); // null | { mode:'new' } | { mode:'edit', list }
+  const [confirmingList, setConfirmingList] = useState(null);
   const [editingTask, setEditingTask] = useState(null); // task object | 'new' | null
   const [newTaskListId, setNewTaskListId] = useState(null);
   const [showCompleted, setShowCompleted] = useLocalStorageState('lists-show-completed', true);
@@ -84,11 +86,15 @@ function ListsPage() {
     setListModal(null);
   }
 
-  function handleDeleteList(list) {
+  function deleteListMessage(list) {
     const count = tasks.filter((t) => t.listId === list.id).length;
     const warning = count ? ` and its ${count} task${count === 1 ? '' : 's'}` : '';
-    // eslint-disable-next-line no-alert
-    if (window.confirm(`Delete "${list.name}"${warning}? This can't be undone.`)) deleteList(list.id);
+    return `Delete "${list.name}"${warning}? This can't be undone.`;
+  }
+
+  async function confirmDeleteList() {
+    await deleteList(confirmingList.id);
+    setConfirmingList(null);
   }
 
   function handleAddTask(listId) {
@@ -127,7 +133,7 @@ function ListsPage() {
     onEditTask: handleEditTask,
     onAddTask: handleAddTask,
     onEditList: canManageList(list) ? (l) => setListModal({ mode: 'edit', list: l }) : null,
-    onDeleteList: canManageList(list) ? handleDeleteList : null,
+    onDeleteList: canManageList(list) ? setConfirmingList : null,
   });
 
   return (
@@ -203,6 +209,15 @@ function ListsPage() {
           onClose={() => setEditingTask(null)}
           onSave={handleSaveTask}
           onDelete={handleDeleteTask}
+        />
+      )}
+
+      {confirmingList && (
+        <ConfirmModal
+          title="Delete list"
+          message={deleteListMessage(confirmingList)}
+          onConfirm={confirmDeleteList}
+          onCancel={() => setConfirmingList(null)}
         />
       )}
     </section>

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { CloseIcon } from '../layout/icons';
+import Modal from '../common/Modal';
 import { ACCENT_KEYS } from '../../constants/colors';
 
 function GroupCreateModal({ onClose, onSave }) {
@@ -13,16 +13,8 @@ function GroupCreateModal({ onClose, onSave }) {
   }
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal" onClick={(e) => e.stopPropagation()}>
-        <div className="modal__header">
-          <h2 className="modal__title">New Group</h2>
-          <button type="button" className="modal__close" onClick={onClose} aria-label="Close">
-            <CloseIcon />
-          </button>
-        </div>
-
-        <form className="modal__form" onSubmit={handleSubmit}>
+    <Modal title="New Group" onClose={onClose}>
+      <form className="modal__form" onSubmit={handleSubmit}>
           <label className="modal__field">
             <span className="modal__label">Name</span>
             <input
@@ -61,8 +53,7 @@ function GroupCreateModal({ onClose, onSave }) {
             </button>
           </div>
         </form>
-      </div>
-    </div>
+    </Modal>
   );
 }
 

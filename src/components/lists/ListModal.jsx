@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { CloseIcon } from '../layout/icons';
+import Modal from '../common/Modal';
 import { TASK_ICONS } from '../../constants/taskIcons';
 import { ACCENT_KEYS } from '../../constants/colors';
 import useAppData from '../../hooks/useAppData';
@@ -35,16 +36,8 @@ function ListModal({ list, groups, onClose, onSave }) {
   }
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal" onClick={(e) => e.stopPropagation()}>
-        <div className="modal__header">
-          <h2 className="modal__title">{isEdit ? 'Edit List' : 'New List'}</h2>
-          <button type="button" className="modal__close" onClick={onClose} aria-label="Close">
-            <CloseIcon />
-          </button>
-        </div>
-
-        <form className="modal__form" onSubmit={handleSubmit}>
+    <Modal title={isEdit ? 'Edit List' : 'New List'} onClose={onClose}>
+      <form className="modal__form" onSubmit={handleSubmit}>
           {error && <p className="auth-card__error">{error}</p>}
 
           <label className="modal__field">
@@ -165,8 +158,7 @@ function ListModal({ list, groups, onClose, onSave }) {
             </button>
           </div>
         </form>
-      </div>
-    </div>
+    </Modal>
   );
 }
 

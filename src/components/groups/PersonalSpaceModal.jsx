@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { CloseIcon } from '../layout/icons';
+import Modal from '../common/Modal';
 import { ACCENT_KEYS } from '../../constants/colors';
 
 function PersonalSpaceModal({ personalSpace, onClose, onSave }) {
@@ -14,16 +14,8 @@ function PersonalSpaceModal({ personalSpace, onClose, onSave }) {
   }
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal" onClick={(e) => e.stopPropagation()}>
-        <div className="modal__header">
-          <h2 className="modal__title">Personal Space</h2>
-          <button type="button" className="modal__close" onClick={onClose} aria-label="Close">
-            <CloseIcon />
-          </button>
-        </div>
-
-        <form className="modal__form" onSubmit={handleSubmit}>
+    <Modal title="Personal Space" onClose={onClose}>
+      <form className="modal__form" onSubmit={handleSubmit}>
           <label className="modal__field">
             <span className="modal__label">Name</span>
             <input
@@ -62,8 +54,7 @@ function PersonalSpaceModal({ personalSpace, onClose, onSave }) {
             </button>
           </div>
         </form>
-      </div>
-    </div>
+    </Modal>
   );
 }
 

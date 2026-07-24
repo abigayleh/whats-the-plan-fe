@@ -7,6 +7,7 @@ import useGroupMembers from '../../hooks/useGroupMembers';
 import useAutoGrowTextarea from '../../hooks/useAutoGrowTextarea';
 import AttachmentUploader from '../lists/AttachmentUploader';
 import LocationSearch from './LocationSearch';
+import Modal from '../common/Modal';
 import Linkify from '../common/Linkify';
 import {
   combineDateAndTime, getTaskDay, isTaskTimed, toDateInputValue, toTimeInputValue,
@@ -290,16 +291,8 @@ function PlanItemModal({
     : (isEdit ? 'Edit Task' : 'New Task');
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal" onClick={(e) => e.stopPropagation()}>
-        <div className="modal__header">
-          <h2 className="modal__title">{modalTitle}</h2>
-          <button type="button" className="modal__close" onClick={onClose} aria-label="Close">
-            <CloseIcon />
-          </button>
-        </div>
-
-        <form className="modal__form" onSubmit={(e) => { e.preventDefault(); handleDone(); }}>
+    <Modal title={modalTitle} onClose={onClose}>
+      <form className="modal__form" onSubmit={(e) => { e.preventDefault(); handleDone(); }}>
           {error && <p className="auth-card__error">{error}</p>}
 
           <label className="modal__field">
@@ -592,8 +585,7 @@ function PlanItemModal({
             </button>
           </div>
         </form>
-      </div>
-    </div>
+    </Modal>
   );
 }
 

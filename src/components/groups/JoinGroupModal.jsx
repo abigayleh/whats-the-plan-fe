@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { CloseIcon } from '../layout/icons';
+import Modal from '../common/Modal';
 
 function JoinGroupModal({ onClose, onJoin }) {
   const [code, setCode] = useState('');
@@ -22,16 +22,8 @@ function JoinGroupModal({ onClose, onJoin }) {
   }
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal" onClick={(e) => e.stopPropagation()}>
-        <div className="modal__header">
-          <h2 className="modal__title">Join a Group</h2>
-          <button type="button" className="modal__close" onClick={onClose} aria-label="Close">
-            <CloseIcon />
-          </button>
-        </div>
-
-        <form className="modal__form" onSubmit={handleSubmit}>
+    <Modal title="Join a Group" onClose={onClose}>
+      <form className="modal__form" onSubmit={handleSubmit}>
           {error && <p className="auth-card__error">{error}</p>}
           <label className="modal__field">
             <span className="modal__label">Invite code</span>
@@ -55,8 +47,7 @@ function JoinGroupModal({ onClose, onJoin }) {
             </button>
           </div>
         </form>
-      </div>
-    </div>
+    </Modal>
   );
 }
 

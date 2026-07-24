@@ -3,6 +3,7 @@ import {
   Link, useNavigate, useParams,
 } from 'react-router-dom';
 import { GroupsIcon } from '../components/layout/icons';
+import ConfirmModal from '../components/common/ConfirmModal';
 import { ACCENT_KEYS } from '../constants/colors';
 import useAppData from '../hooks/useAppData';
 import * as groupsApi from '../api/groups';
@@ -186,25 +187,13 @@ function GroupSettingsPage() {
       </div>
 
       {showLeaveWarning && (
-        <div className="modal-overlay" onClick={() => setShowLeaveWarning(false)}>
-          <div className="modal" onClick={(e) => e.stopPropagation()}>
-            <div className="modal__header">
-              <h2 className="modal__title">You&apos;re the only admin</h2>
-            </div>
-            <p className="group-settings__warning-text">
-              Promote another member to admin before leaving, or leave anyway to permanently delete this group.
-            </p>
-            <div className="modal__footer">
-              <div className="modal__footer-spacer" />
-              <button type="button" className="button button--ghost" onClick={() => setShowLeaveWarning(false)}>
-                Cancel
-              </button>
-              <button type="button" className="button button--danger" onClick={handleDeleteGroup}>
-                Leave &amp; Delete Group
-              </button>
-            </div>
-          </div>
-        </div>
+        <ConfirmModal
+          title="You're the only admin"
+          message="Promote another member to admin before leaving, or leave anyway to permanently delete this group."
+          confirmLabel="Leave & Delete Group"
+          onConfirm={handleDeleteGroup}
+          onCancel={() => setShowLeaveWarning(false)}
+        />
       )}
     </section>
   );

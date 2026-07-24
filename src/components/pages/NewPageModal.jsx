@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { CloseIcon } from '../layout/icons';
+import Modal from '../common/Modal';
 import { TASK_ICONS } from '../../constants/taskIcons';
 
 // Create a top-level page. Scope is chosen here and is fixed once the page exists.
@@ -25,16 +26,8 @@ function NewPageModal({
   }
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal" onClick={(e) => e.stopPropagation()}>
-        <div className="modal__header">
-          <h2 className="modal__title">New Page</h2>
-          <button type="button" className="modal__close" onClick={onClose} aria-label="Close">
-            <CloseIcon />
-          </button>
-        </div>
-
-        <form className="modal__form" onSubmit={handleSubmit}>
+    <Modal title="New Page" onClose={onClose}>
+      <form className="modal__form" onSubmit={handleSubmit}>
           {error && <p className="auth-card__error">{error}</p>}
 
           <label className="modal__field">
@@ -107,8 +100,7 @@ function NewPageModal({
             </button>
           </div>
         </form>
-      </div>
-    </div>
+    </Modal>
   );
 }
 

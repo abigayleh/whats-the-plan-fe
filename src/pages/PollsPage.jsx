@@ -3,6 +3,7 @@ import { PollsIcon, PlusIcon } from '../components/layout/icons';
 import ToggleChips from '../components/calendar/ToggleChips';
 import PollCard from '../components/polls/PollCard';
 import PollCreateModal from '../components/polls/PollCreateModal';
+import ConfirmModal from '../components/common/ConfirmModal';
 import useAppData from '../hooks/useAppData';
 import usePolls from '../hooks/usePolls';
 import * as pollsApi from '../api/polls';
@@ -12,6 +13,7 @@ function PollsPage() {
   const { polls, refetch } = usePolls(groups);
   const [hiddenGroupIds, setHiddenGroupIds] = useState(() => new Set());
   const [showModal, setShowModal] = useState(false);
+  const [confirmingPoll, setConfirmingPoll] = useState(null);
 
   const groupById = useMemo(() => new Map(groups.map((group) => [group.id, group])), [groups]);
   const activeGroupIds = useMemo(
@@ -49,12 +51,11 @@ function PollsPage() {
     refetch();
   }
 
-  async function handleDelete(poll) {
-    // eslint-disable-next-line no-alert
-    if (!window.confirm(`Delete "${poll.question}"? This can't be undone.`)) return;
+  async function confirmDelete() {
     try {
-      await pollsApi.remove(poll.id);
+      await pollsApi.remove(confirmingPoll.id);
     } catch { /* swallowed: refetch reveals whether it actually went */ }
+    setConfirmingPoll(null);
     refetch();
   }
 
@@ -101,7 +102,7 @@ function PollsPage() {
             poll={poll}
             group={groupById.get(poll.groupId)}
             onVote={handleVote}
-            onDelete={canDelete(poll) ? handleDelete : null}
+            onDelete={canDelete(poll) ? setConfirmingPoll : null}
           />
         ))}
       </div>
@@ -111,6 +112,15 @@ function PollsPage() {
           groups={groups}
           onClose={() => setShowModal(false)}
           onSave={handleCreate}
+        />
+      )}
+
+      {confirmingPoll && (
+        <ConfirmModal
+          title="Delete poll"
+          message={`Delete "${confirmingPoll.question}"? This can't be undone.`}
+          onConfirm={confirmDelete}
+          onCancel={() => setConfirmingPoll(null)}
         />
       )}
     </section>
