@@ -30,6 +30,28 @@ WebSocket server live in the separate [`whats-the-plan-be`](https://github.com/a
 
 Auth is JWT (access + refresh tokens); the client talks to the backend over REST + Socket.io.
 
+## Technical highlights
+
+- **Real-time sync** — mutations broadcast over Socket.io rooms (`user:`, `group:`, `conversation:`); clients reconcile live, with no polling.
+- **Optimistic updates with rollback** — writes hit the shared cache immediately and revert on failure. Server facts live in one place and aren't mirrored into component state, so views can't drift.
+- **JWT auth with silent refresh** — access + refresh tokens; a `401` transparently refreshes and retries the original request.
+- **Custom rich-text editor** — TipTap extended with bespoke nodes: page-to-page links, a `/` slash-command menu, an `@`-mention picker, tables, and image embeds.
+- **Recurring events expanded on read** — recurrence rules are stored once and occurrences generated per query window, not pre-materialized.
+- **Timezone-correct dates** — calendar/date-only fields are handled as true calendar days to avoid UTC drift.
+- **Transactional drag-and-drop** — dnd-kit on the client; a single DB transaction on the server keeps sibling order consistent.
+
+## Architecture
+
+```mermaid
+flowchart LR
+  Client["React + Vite<br/>(this repo)"]
+  Server["Express + Socket.io"]
+  DB[("PostgreSQL · Prisma")]
+  Client -- "REST + JWT" --> Server
+  Client -- "WebSocket" --> Server
+  Server --> DB
+```
+
 ## Getting started
 
 **Prerequisites:** Node 18+, and the [backend](https://github.com/abigayleh/whats-the-plan-be) running (defaults to `http://localhost:4000`).
@@ -72,3 +94,7 @@ src/
 
 State follows a single-source-of-truth model: components read server data from shared hooks
 and mutations update that cache — server facts aren't mirrored into local component state.
+
+## License
+
+[MIT](LICENSE) © Abigayle Hickey
