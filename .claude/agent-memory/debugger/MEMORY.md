@@ -1,0 +1,1 @@
+- [BE FK cascade verification](be_fk_cascade_verification.md) — how to query real Postgres FK delete-rules on BE's Supabase DB; confirmed Group->List->Task cascade already works (2026-07-16), so re-verify before assuming it's broken.

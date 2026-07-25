@@ -1,0 +1,3 @@
+- [Architecture](architecture.md) — how events/to-dos share one PlanItem shape via adapters.js, usePlanItems.js, PlanItemModal.jsx
+- [PlanItem conversion gotchas](plan-item-gotchas.md) — saveItem needs payload.origin, task→event conversion is UI-blocked, orphan-on-partial-failure risk, isTaskOverdue ignores recurrence
+- [Pages feature](pages-feature.md) — BE pageAccess/delete-reparent verified sound; FE debounce/suggestion cleanup sound; real bug in PageEditor echo-suppression timing; worktree branch-mismatch gotcha for npm verification
