@@ -13,3 +13,11 @@ body {
   color: $color-primary;
   text-decoration: underline;
 }
+
+// Search-match emphasis (see components/common/HighlightText). The browser default for
+// <mark> is a yellow that sits outside the palette entirely.
+.highlight {
+  background: $color-primary-soft;
+  color: inherit;
+  border-radius: $radius-xs;
+}

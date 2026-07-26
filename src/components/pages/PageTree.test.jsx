@@ -82,4 +82,49 @@ describe('PageTree', () => {
     await user.click(screen.getAllByRole('button', { name: 'Add subpage' })[0]);
     expect(onNewChild).toHaveBeenCalledWith(expect.objectContaining({ id: 'p1' }));
   });
+
+  describe('search', () => {
+    it('narrows to matches and keeps their ancestors visible', () => {
+      renderTree({ query: 'child' });
+      expect(screen.getByText('Child')).toBeInTheDocument();
+      expect(screen.getByText('Zeta')).toBeInTheDocument(); // its parent
+      expect(screen.queryByText('Alpha')).not.toBeInTheDocument();
+    });
+
+    // A match nested under a collapsed parent must still show, so ancestors are forced open.
+    it('reveals a match under a parent the user had collapsed', async () => {
+      renderTree();
+      await userEvent.click(screen.getByRole('button', { name: 'Hide subpages' }));
+      expect(screen.queryByText('Child')).not.toBeInTheDocument();
+
+      renderTree({ query: 'child' });
+      expect(screen.getByText('Child')).toBeInTheDocument();
+    });
+
+    it('drops scopes with no match rather than calling them empty', () => {
+      renderTree({ query: 'zeta' });
+      expect(screen.queryByText('Crew')).not.toBeInTheDocument();
+      expect(screen.queryByText('No pages yet')).not.toBeInTheDocument();
+    });
+
+    it('reports when nothing matches at all', () => {
+      renderTree({ query: 'nothingmatches' });
+      expect(screen.getByText(/No pages match/)).toBeInTheDocument();
+    });
+
+    // Sibling order would be computed from the visible subset, so reordering is off until
+    // the search is cleared. DndContext mounts a live region -- its absence means no
+    // drag context is active.
+    const dndMounted = () => document.querySelectorAll('[id^="DndLiveRegion"]').length > 0;
+
+    it('mounts a drag context when not filtering', () => {
+      renderTree();
+      expect(dndMounted()).toBe(true);
+    });
+
+    it('mounts no drag context while filtering', () => {
+      renderTree({ query: 'child' });
+      expect(dndMounted()).toBe(false);
+    });
+  });
 });

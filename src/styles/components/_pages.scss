@@ -89,6 +89,47 @@
 
 // --- Page tree ---
 
+// Sidebar title filter. The icon sits inside the field, so the input carries the padding
+// rather than a wrapper border that would double up on focus.
+.page-search {
+  position: relative;
+  display: flex;
+  align-items: center;
+  margin: 0 0.9rem; // matches the scope headings' inset
+}
+
+.page-search__icon {
+  position: absolute;
+  left: $spacing-xs;
+  color: $color-text-muted;
+  pointer-events: none;
+}
+
+.page-search__input {
+  width: 100%;
+  padding-left: 1.6rem;
+  padding-right: 1.6rem;
+  font-size: $font-size-sm;
+
+  &::-webkit-search-cancel-button {
+    display: none; // replaced by the explicit clear button, so the two don't stack
+  }
+}
+
+.page-search__clear {
+  position: absolute;
+  right: $spacing-xs;
+  display: flex;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: $color-text-muted;
+
+  &:hover {
+    color: $color-text;
+  }
+}
+
 .page-tree__scope {
   margin-top: $spacing-sm;
 }

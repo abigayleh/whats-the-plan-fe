@@ -15,6 +15,9 @@ const pages = [
   {
     id: 'p1', title: 'Roadmap', groupId: null, parentId: null, position: 0,
   },
+  {
+    id: 'p2', title: 'Shopping', groupId: null, parentId: null, position: 1,
+  },
 ];
 
 function mockHooks(overrides = {}) {
@@ -62,5 +65,31 @@ describe('PagesPage', () => {
     renderWithRouter(<PagesPage />, { route: '/pages' });
     await user.click(screen.getByLabelText('New page'));
     expect(screen.getByText('New Page')).toBeInTheDocument();
+  });
+
+  it('filters the tree as you type and restores it when cleared', async () => {
+    mockHooks();
+    renderWithRouter(<PagesPage />);
+    expect(screen.getByText('Shopping')).toBeInTheDocument();
+
+    await userEvent.type(screen.getByLabelText('Search pages'), 'road');
+    // The match is split around a <mark>, so assert on the link's accessible name.
+    expect(screen.getByRole('link', { name: 'Roadmap' })).toBeInTheDocument();
+    expect(screen.getByText('Road').tagName).toBe('MARK');
+    expect(screen.queryByText('Shopping')).not.toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole('button', { name: 'Clear search' }));
+    expect(screen.getByText('Shopping')).toBeInTheDocument();
+  });
+
+  it('clears the search on Escape', async () => {
+    mockHooks();
+    renderWithRouter(<PagesPage />);
+    const input = screen.getByLabelText('Search pages');
+    await userEvent.type(input, 'road');
+    expect(screen.queryByText('Shopping')).not.toBeInTheDocument();
+
+    await userEvent.type(input, '{Escape}');
+    expect(screen.getByText('Shopping')).toBeInTheDocument();
   });
 });

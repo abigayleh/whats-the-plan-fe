@@ -3,7 +3,7 @@ import {
   Outlet, useLocation, useNavigate, useParams,
 } from 'react-router-dom';
 import {
-  PagesIcon, PlusIcon, ChevronIcon, MenuIcon,
+  PagesIcon, PlusIcon, ChevronIcon, MenuIcon, SearchIcon, CloseIcon,
 } from '../components/layout/icons';
 import PageTree from '../components/pages/PageTree';
 import NewPageModal from '../components/pages/NewPageModal';
@@ -20,6 +20,7 @@ function PagesPage() {
     pages, loading, addPage, updatePage, deletePage, saveContent, reorderPages,
   } = usePages();
   const [showNew, setShowNew] = useState(false);
+  const [search, setSearch] = useState('');
   const [collapsed, setCollapsed] = useLocalStorageState('pages-sidebar-collapsed', false);
   const navigate = useNavigate();
   const { pathname } = useLocation();
@@ -94,7 +95,31 @@ function PagesPage() {
               <PlusIcon width={16} height={16} />
             </button>
           </div>
+          <div className="page-search">
+            <SearchIcon className="page-search__icon" width={14} height={14} />
+            <input
+              className="page-search__input"
+              type="search"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Escape') setSearch(''); }}
+              placeholder="Search pages"
+              aria-label="Search pages"
+            />
+            {search && (
+              <button
+                type="button"
+                className="page-search__clear"
+                onClick={() => setSearch('')}
+                aria-label="Clear search"
+              >
+                <CloseIcon width={13} height={13} />
+              </button>
+            )}
+          </div>
+
           <PageTree
+            query={search}
             pages={pages}
             loading={loading}
             personalSpace={personalSpace}

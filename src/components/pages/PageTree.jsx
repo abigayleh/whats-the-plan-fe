@@ -3,7 +3,7 @@ import {
   DndContext, closestCenter, PointerSensor, useSensor, useSensors,
 } from '@dnd-kit/core';
 import useLocalStorageState from '../../hooks/useLocalStorageState';
-import { descendantIds, resolveDrop } from '../../utils/pageTree';
+import { descendantIds, resolveDrop, filterPagesByTitle } from '../../utils/pageTree';
 import PageTreeNode from './PageTreeNode';
 
 // Turns a flat, single-scope page list into a parent→children forest (roots first),
@@ -36,7 +36,7 @@ function bandFor(active, over) {
 }
 
 function PageTree({
-  pages, loading, personalSpace, groups, onNewChild, canManagePage, onReorder,
+  pages, loading, personalSpace, groups, onNewChild, canManagePage, onReorder, query = '',
 }) {
   const [expanded, setExpanded] = useLocalStorageState('pages-tree-expanded', {});
   const [drag, setDrag] = useState(null); // { activeId, overId, band } during a drag
@@ -44,11 +44,20 @@ function PageTree({
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }));
 
+  const filtering = query.trim().length > 0;
+
   // Personal first, then one section per group. Each section is its own scope.
+  // `all` stays unfiltered: a drop is resolved against the real sibling order, never the
+  // narrowed view (drag is off while filtering, but the two must not be conflated).
   const scopes = [
-    { key: 'personal', name: personalSpace.name, pages: pages.filter((p) => !p.groupId) },
-    ...groups.map((g) => ({ key: g.id, name: g.name, pages: pages.filter((p) => p.groupId === g.id) })),
-  ];
+    { key: 'personal', name: personalSpace.name, all: pages.filter((p) => !p.groupId) },
+    ...groups.map((g) => ({ key: g.id, name: g.name, all: pages.filter((p) => p.groupId === g.id) })),
+  ].map((scope) => {
+    const { pages: visible, ancestorIds } = filterPagesByTitle(scope.all, query);
+    return { ...scope, pages: visible, ancestorIds };
+  });
+
+  const noMatches = filtering && scopes.every((s) => s.pages.length === 0);
 
   function handleDragOver(scopePages, { active, over }) {
     // Ignore hovering over yourself or your own descendants — those drops can't happen.
@@ -70,41 +79,61 @@ function PageTree({
   }
 
   if (loading) return <p className="page-tree__empty">Loading…</p>;
+  if (noMatches) return <p className="page-tree__empty">No pages match “{query.trim()}”.</p>;
 
   return (
     <div className="page-tree">
-      {scopes.map((scope) => (
-        <div key={scope.key} className="page-tree__scope">
-          <p className="page-tree__scope-title">{scope.name}</p>
-          {scope.pages.length === 0 ? (
-            <p className="page-tree__empty">No pages yet</p>
-          ) : (
-            <DndContext
-              sensors={sensors}
-              collisionDetection={closestCenter}
-              onDragStart={({ active }) => setDrag({ activeId: active.id })}
-              onDragOver={(e) => handleDragOver(scope.pages, e)}
-              onDragEnd={(e) => handleDragEnd(scope.pages, e)}
-              onDragCancel={() => setDrag(null)}
-            >
-              <ul className="page-tree__list">
-                {buildForest(scope.pages).map((node) => (
-                  <PageTreeNode
-                    key={node.id}
-                    node={node}
-                    depth={0}
-                    expanded={expanded}
-                    onToggle={toggle}
-                    onNewChild={onNewChild}
-                    canManagePage={canManagePage}
-                    drag={drag}
-                  />
-                ))}
-              </ul>
-            </DndContext>
-          )}
-        </div>
-      ))}
+      {scopes.map((scope) => {
+        // A parent only shows because it leads to a match, so it must be open regardless
+        // of what the user last collapsed — otherwise the match it leads to stays hidden.
+        const shownExpanded = filtering
+          ? { ...expanded, ...Object.fromEntries([...scope.ancestorIds].map((id) => [id, true])) }
+          : expanded;
+
+        const list = (
+          <ul className="page-tree__list">
+            {buildForest(scope.pages).map((node) => (
+              <PageTreeNode
+                key={node.id}
+                node={node}
+                depth={0}
+                expanded={shownExpanded}
+                onToggle={toggle}
+                onNewChild={onNewChild}
+                canManagePage={canManagePage}
+                drag={drag}
+                query={query}
+              />
+            ))}
+          </ul>
+        );
+
+        // Scopes with nothing to show drop out during a search rather than each printing
+        // "No pages yet", which would read as a claim about the scope, not the query.
+        if (filtering && scope.pages.length === 0) return null;
+
+        return (
+          <div key={scope.key} className="page-tree__scope">
+            <p className="page-tree__scope-title">{scope.name}</p>
+            {scope.pages.length === 0 ? (
+              <p className="page-tree__empty">No pages yet</p>
+            ) : filtering ? list : (
+              // Reordering a narrowed tree would compute sibling order from the visible
+              // subset, so dragging is off until the search is cleared.
+              <DndContext
+                sensors={sensors}
+                collisionDetection={closestCenter}
+                onDragStart={({ active }) => setDrag({ activeId: active.id })}
+                onDragOver={(e) => handleDragOver(scope.all, e)}
+                onDragEnd={(e) => handleDragEnd(scope.all, e)}
+                onDragCancel={() => setDrag(null)}
+              >
+                {list}
+              </DndContext>
+            )}
+          </div>
+        );
+      })}
     </div>
   );
 }

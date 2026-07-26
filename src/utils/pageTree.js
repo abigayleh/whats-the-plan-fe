@@ -14,6 +14,36 @@ export function ancestorsOf(id, pages) {
   return chain;
 }
 
+// Narrows a page list to title matches plus every ancestor of a match, so a nested hit
+// still renders in place rather than losing its context. Descendants of a match are NOT
+// pulled in — a folder matching by name shouldn't drag its whole subtree into the results.
+// `ancestorIds` lets the caller force those parents open regardless of stored expansion.
+export function filterPagesByTitle(pages, query) {
+  const needle = query.trim().toLowerCase();
+  if (!needle) return { pages, matchIds: null, ancestorIds: new Set() };
+
+  const byId = new Map(pages.map((p) => [p.id, p]));
+  const matchIds = new Set(
+    pages.filter((p) => (p.title || 'Untitled').toLowerCase().includes(needle)).map((p) => p.id),
+  );
+
+  const ancestorIds = new Set();
+  matchIds.forEach((id) => {
+    let cursor = byId.get(id)?.parentId;
+    // Terminates on a cycle too: every id visited is added, so the guard always trips.
+    while (cursor && !ancestorIds.has(cursor) && byId.has(cursor)) {
+      ancestorIds.add(cursor);
+      cursor = byId.get(cursor).parentId;
+    }
+  });
+
+  return {
+    pages: pages.filter((p) => matchIds.has(p.id) || ancestorIds.has(p.id)),
+    matchIds,
+    ancestorIds,
+  };
+}
+
 // Siblings under `parentId`, ordered as the tree renders them (position, then title).
 function orderedSiblings(parentId, pages) {
   return pages
