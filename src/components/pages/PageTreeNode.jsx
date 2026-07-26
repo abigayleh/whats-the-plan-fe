@@ -34,20 +34,6 @@ function PageTreeNode({
         style={{ '--page-row-indent': `${0.9 + depth * 0.9}rem`, paddingLeft: 'var(--page-row-indent)' }}
         {...(canManage ? draggable.listeners : {})}
       >
-        {hasChildren && (
-          // A sibling of the NavLink below, not nested in it — clicking it can't navigate.
-          <button
-            type="button"
-            className="page-tree__toggle"
-            style={{ left: `${depth * 0.9}rem` }}
-            onClick={() => onToggle(node.id)}
-            aria-label={isOpen ? 'Hide subpages' : 'Show subpages'}
-            aria-expanded={isOpen}
-          >
-            <ChevronIcon width={13} height={13} className={`page-tree__chevron${isOpen ? ' page-tree__chevron--open' : ''}`} />
-          </button>
-        )}
-
         <NavLink
           to={`/pages/${node.id}`}
           className={({ isActive }) => `page-tree__link${isActive ? ' page-tree__link--active' : ''}`}
@@ -66,6 +52,19 @@ function PageTreeNode({
         >
           <PlusIcon width={14} height={14} />
         </button>
+
+        {hasChildren && (
+          // A sibling of the NavLink above, not nested in it — clicking it can't navigate.
+          <button
+            type="button"
+            className="page-tree__toggle"
+            onClick={() => onToggle(node.id)}
+            aria-label={isOpen ? 'Hide subpages' : 'Show subpages'}
+            aria-expanded={isOpen}
+          >
+            <ChevronIcon width={14} height={14} className={`page-tree__chevron${isOpen ? ' page-tree__chevron--open' : ''}`} />
+          </button>
+        )}
       </div>
 
       {hasChildren && isOpen && (

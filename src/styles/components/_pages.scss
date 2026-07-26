@@ -130,27 +130,21 @@
   }
 }
 
-// A disclosure chevron in the left gutter — absolute so it never pushes the page right.
-// The visible box stays put (so root icons keep lining up with the section headers);
-// a ::before pseudo-element pads the actual clickable area a bit past those bounds.
+// The disclosure control, at the trailing edge of the row after the title. It used to sit
+// in the left gutter, where a 0.9rem slot squeezed the arrow down to a sliver — and a mark
+// in that gutter competes with the row's own indentation to mean the same thing.
 .page-tree__toggle {
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  width: 0.9rem;
   display: flex;
   align-items: center;
   justify-content: center;
+  flex-shrink: 0;
+  width: 1.4rem;
+  height: 1.4rem;
+  margin-right: $spacing-xs;
   background: none;
   border: none;
   cursor: pointer;
   color: $color-text-muted;
-
-  &::before {
-    content: '';
-    position: absolute;
-    inset: -0.1rem -0.3rem;
-  }
 
   &:hover,
   &:focus-visible {
@@ -161,15 +155,8 @@
 // Points down when the subpages are showing and up when they're hidden — a sideways
 // chevron reads as "go there" rather than "open this".
 .page-tree__chevron {
-  padding: 0.15rem;
-  border-radius: $radius-xs;
   transform: rotate(180deg);
-  transition: transform 0.12s ease, background 0.12s ease;
-
-  .page-tree__toggle:hover &,
-  .page-tree__toggle:focus-visible & {
-    background: $color-border;
-  }
+  transition: transform 0.12s ease;
 
   &--open {
     transform: rotate(0deg);
