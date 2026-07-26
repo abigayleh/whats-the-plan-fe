@@ -71,7 +71,8 @@ export default function usePlanItems() {
     // A recurring occurrence toggles only its own day; the series keeps recurring. A plain
     // to-do flips its whole status.
     if (item.isRecurring) {
-      await toggleTaskOccurrence(item.sourceId, item.scheduledStart ?? item.dueDate);
+      // The occurrence carries this day's own status; the series row's doesn't.
+      await toggleTaskOccurrence(item, item.scheduledStart ?? item.dueDate);
       return;
     }
     await toggleTaskStatus(item.sourceId);

@@ -96,10 +96,13 @@ describe('usePlanItems.toggleStatus', () => {
 
   it('toggles a single occurrence for a recurring to-do', async () => {
     const due = new Date('2026-01-10T00:00:00Z');
-    await setup().current.toggleStatus({
-      origin: 'task', sourceId: 't1', isRecurring: true, dueDate: due,
-    });
-    expect(store.toggleTaskOccurrence).toHaveBeenCalledWith('t1', due);
+    // The whole occurrence goes through: only it knows this day's status, which the
+    // series row doesn't carry.
+    const item = {
+      origin: 'task', sourceId: 't1', isRecurring: true, dueDate: due, status: 'todo',
+    };
+    await setup().current.toggleStatus(item);
+    expect(store.toggleTaskOccurrence).toHaveBeenCalledWith(item, due);
   });
 });
 

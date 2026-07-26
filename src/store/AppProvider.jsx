@@ -129,7 +129,12 @@ function AppProvider({ children }) {
     const isMine = (t) => t.assignedToId === currentUser.id || t.groupId == null;
     if (!isMine(task) || !isTaskOnDay(task, new Date())) return;
     const others = tasks.some((t) => (
-      t.id !== task.id && isMine(t) && t.status !== 'done' && isTaskOnDay(t, new Date())
+      t.sourceId !== task.sourceId && isMine(t) && t.status !== 'done'
+      // A series row's status is the series', not this day's — per-day completion lives on
+      // the expanded occurrence, which `tasks` doesn't carry. Counting the row would leave
+      // any recurring to-do blocking confetti on every day it recurs, forever.
+      && !t.recurrenceRule
+      && isTaskOnDay(t, new Date())
     ));
     if (!others) setConfettiKey((k) => k + 1);
   }, [tasks, currentUser]);
@@ -279,10 +284,13 @@ function AppProvider({ children }) {
       await refreshLists();
     },
     // Marks one day of a recurring series done/undone without touching the series itself.
-    async toggleTaskOccurrence(taskId, date) {
-      const task = tasks.find((t) => t.id === taskId);
+    // Takes the occurrence, not an id: only it knows this day's status, which the series row
+    // doesn't carry — and confetti has to know whether this toggle completes or reopens.
+    async toggleTaskOccurrence(occurrence, date) {
+      const task = tasks.find((t) => t.id === occurrence.sourceId);
       if (!task || !date) return;
-      await listsApi.updateTask(task.listId, taskId, { occurrenceDate: new Date(date).toISOString() });
+      checkDayComplete(occurrence, occurrence.status === 'done' ? 'todo' : 'done');
+      await listsApi.updateTask(task.listId, task.id, { occurrenceDate: new Date(date).toISOString() });
       await refreshLists();
     },
 
