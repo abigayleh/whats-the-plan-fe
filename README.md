@@ -97,4 +97,4 @@ and mutations update that cache — server facts aren't mirrored into local comp
 
 ## License
 
-[MIT](LICENSE) © Abigayle Hickey
+Proprietary — all rights reserved. © 2026 Abigayle Hickey. See [LICENSE](LICENSE).
