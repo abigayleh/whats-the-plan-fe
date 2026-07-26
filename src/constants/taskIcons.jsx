@@ -33,6 +33,14 @@ export const TASK_ICONS = [
   { key: 'sports', label: 'Sports', Icon: SportsIcon },
 ];
 
+// Offered alongside the icon set in the picker. Any other emoji works too — the picker
+// takes free input — so this is a shortcut, not the allowed set.
+export const EMOJI_OPTIONS = [
+  '📁', '📝', '✅', '⭐', '🎯', '🔥', '💡', '📚', '🏠', '🛒',
+  '🎉', '❤️', '✈️', '🍕', '💰', '🎵', '🐶', '⚽', '🌿', '☕',
+  '💻', '🎁', '📷', '🏋️', '🩺', '🧳', '🎮', '🚗', '🌞', '🌙',
+];
+
 export function getTaskIcon(key) {
   return TASK_ICONS.find((item) => item.key === key) ?? null;
 }

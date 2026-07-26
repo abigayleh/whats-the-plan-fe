@@ -2,9 +2,9 @@ import { useEffect, useState } from 'react';
 import { CheckIcon, RepeatIcon } from '../layout/icons';
 import { formatDateShort, formatTime } from '../../utils/date';
 import { getTaskDay, isTaskOverdue, isTaskTimed } from '../../utils/tasks';
-import { getTaskIcon } from '../../constants/taskIcons';
 import TaskActionButtons from '../tasks/TaskActionButtons';
 import Linkify from '../common/Linkify';
+import EntityIcon from '../common/EntityIcon';
 
 function TaskRow({
   task, lists, onToggle, onClick, draggable = false, plain = false,
@@ -24,8 +24,6 @@ function TaskRow({
   const timed = isTaskTimed(task);
   const subtaskCount = task.subtasks?.length ?? 0;
   const subtaskDone = task.subtasks?.filter((s) => s.done).length ?? 0;
-  const categoryIcon = getTaskIcon(task.icon);
-  const CategoryIcon = categoryIcon?.Icon;
   // A whole recurring series (list view) has a live recurrenceRule; a single calendar occurrence
   // does not. The series can't be checked done as a whole — completion is per day on the calendar.
   const seriesRow = Boolean(task.recurrenceRule);
@@ -68,7 +66,7 @@ function TaskRow({
       </span>
       <span className="task-row__body">
         <span className="task-row__title">
-          {CategoryIcon && <CategoryIcon className="task-row__icon" />}
+          <EntityIcon icon={task.icon} className="task-row__icon" />
           <Linkify text={task.title} />
           {task.recurrenceRule && <RepeatIcon className="task-row__repeat-icon" />}
         </span>

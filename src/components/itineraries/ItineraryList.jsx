@@ -2,19 +2,20 @@ import { NavLink } from 'react-router-dom';
 import {
   MapIcon, CheckIcon, TrashIcon, SkipForwardIcon,
 } from '../layout/icons';
-import { getTaskIcon } from '../../constants/taskIcons';
+import EntityIcon from '../common/EntityIcon';
 
 function ItineraryRow({
   itinerary, completed, onSetCompleted, onDelete,
 }) {
-  const Icon = getTaskIcon(itinerary.icon)?.Icon ?? MapIcon;
   return (
     <li className="itinerary-list__row">
       <NavLink
         to={`/itinerary/${itinerary.id}`}
         className={({ isActive }) => `itinerary-list__link${isActive ? ' itinerary-list__link--active' : ''}`}
       >
-        <span className="itinerary-list__icon"><Icon width={16} height={16} /></span>
+        <span className="itinerary-list__icon">
+          <EntityIcon icon={itinerary.icon} size={16} fallback={<MapIcon width={16} height={16} />} />
+        </span>
         <span className="itinerary-list__title">{itinerary.title}</span>
       </NavLink>
       <div className="itinerary-list__actions">

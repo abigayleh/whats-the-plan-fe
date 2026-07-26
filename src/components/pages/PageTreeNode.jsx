@@ -1,7 +1,7 @@
 import { NavLink } from 'react-router-dom';
 import { useDraggable, useDroppable } from '@dnd-kit/core';
 import { ChevronIcon, PlusIcon, PagesIcon } from '../layout/icons';
-import { getTaskIcon } from '../../constants/taskIcons';
+import EntityIcon from '../common/EntityIcon';
 
 // One row in the page tree, recursing into its children when expanded.
 // Manageable rows are draggable; every row is a drop target for reorder/reparent.
@@ -10,7 +10,6 @@ function PageTreeNode({
 }) {
   const hasChildren = node.children.length > 0;
   const isOpen = expanded[node.id] !== false; // default expanded
-  const NodeIcon = getTaskIcon(node.icon)?.Icon;
   const canManage = canManagePage(node);
 
   // Pointer drag only (no keyboard sensor), so the row needs the listeners but not the
@@ -53,7 +52,7 @@ function PageTreeNode({
           className={({ isActive }) => `page-tree__link${isActive ? ' page-tree__link--active' : ''}`}
         >
           <span className="page-tree__icon">
-            {NodeIcon ? <NodeIcon width={15} height={15} /> : <PagesIcon width={15} height={15} />}
+            <EntityIcon icon={node.icon} size={15} fallback={<PagesIcon width={15} height={15} />} />
           </span>
           <span className="page-tree__title">{node.title || 'Untitled'}</span>
         </NavLink>

@@ -6,7 +6,7 @@ import TaskRow from './TaskRow';
 import usePlanItems from '../../hooks/usePlanItems';
 import useLocalStorageState from '../../hooks/useLocalStorageState';
 import { getTaskDay } from '../../utils/tasks';
-import { getTaskIcon } from '../../constants/taskIcons';
+import EntityIcon from '../common/EntityIcon';
 
 function sortTasks(tasks) {
   return [...tasks].sort((a, b) => {
@@ -31,7 +31,7 @@ function ListSection({
   const visible = hideScheduled ? sorted.filter((task) => getTaskDay(task) == null) : sorted;
   const todoTasks = visible.filter((task) => task.status !== 'done');
   const doneTasks = visible.filter((task) => task.status === 'done');
-  const ListIcon = getTaskIcon(list.icon)?.Icon;
+  const hasIcon = Boolean(list.icon);
 
   const { saveItem } = usePlanItems();
   // Blur can fire as a side effect of the input unmounting (e.g. navigating away) — a
@@ -83,9 +83,9 @@ function ListSection({
           <span className={`list-section__collapse-icon${collapsed ? ' list-section__collapse-icon--collapsed' : ''}`}>
             <ChevronIcon />
           </span>
-          {!ListIcon && <span className="list-section__color-dot" />}
+          {!hasIcon && <span className="list-section__color-dot" />}
           <span className="list-section__list-name">
-            {ListIcon && <ListIcon className="list-section__list-icon" />}
+            <EntityIcon icon={list.icon} className="list-section__list-icon" />
             {list.name}
           </span>
           <span className="list-section__task-count">

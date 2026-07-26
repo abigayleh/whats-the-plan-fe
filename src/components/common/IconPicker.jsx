@@ -1,18 +1,29 @@
 import { useState } from 'react';
 import { CloseIcon } from '../layout/icons';
-import { TASK_ICONS, getTaskIcon } from '../../constants/taskIcons';
+import { TASK_ICONS, EMOJI_OPTIONS, getTaskIcon } from '../../constants/taskIcons';
+import EntityIcon from './EntityIcon';
+import { firstEmoji } from '../../utils/emoji';
 
 // Shows an entity's icon (or a fallback); clicking it opens the shared icon set — the same one
-// Lists and Pages use — to pick or clear one. Reuses the ListModal icon-picker markup.
+// Lists and Pages use — plus an emoji row, to pick or clear one.
 function IconPicker({
   icon, onChange, disabled, FallbackIcon, ariaLabel = 'Change icon',
 }) {
   const [open, setOpen] = useState(false);
-  const Icon = getTaskIcon(icon)?.Icon;
+  const [typed, setTyped] = useState('');
+  // Anything set that isn't a known icon key is an emoji.
+  const customEmoji = icon && !getTaskIcon(icon) ? icon : null;
 
   function pick(key) {
     onChange(key);
+    setTyped('');
     setOpen(false);
+  }
+
+  function submitTyped(e) {
+    e.preventDefault();
+    const emoji = firstEmoji(typed);
+    if (emoji) pick(emoji);
   }
 
   return (
@@ -24,7 +35,7 @@ function IconPicker({
         aria-label={ariaLabel}
         disabled={disabled}
       >
-        {Icon ? <Icon width={28} height={28} /> : <FallbackIcon width={28} height={28} />}
+        <EntityIcon icon={icon} size={28} fallback={<FallbackIcon width={28} height={28} />} />
       </button>
 
       {open && (
@@ -52,6 +63,32 @@ function IconPicker({
                 <OptionIcon />
               </button>
             ))}
+
+            <p className="icon-picker__heading">Emoji</p>
+            {EMOJI_OPTIONS.map((emoji) => (
+              <button
+                key={emoji}
+                type="button"
+                className={`icon-picker__option${icon === emoji ? ' icon-picker__option--active' : ''}`}
+                onClick={() => pick(emoji)}
+                aria-label={emoji}
+                aria-pressed={icon === emoji}
+              >
+                <span className="entity-emoji">{emoji}</span>
+              </button>
+            ))}
+
+            <form className="icon-picker__custom" onSubmit={submitTyped}>
+              <input
+                type="text"
+                className="icon-picker__input"
+                value={typed}
+                onChange={(e) => setTyped(e.target.value)}
+                placeholder={customEmoji ? `Current ${customEmoji} — type another` : 'Or type any emoji…'}
+                aria-label="Use a custom emoji"
+              />
+              <button type="submit" className="icon-picker__use" disabled={!firstEmoji(typed)}>Use</button>
+            </form>
           </div>
         </>
       )}

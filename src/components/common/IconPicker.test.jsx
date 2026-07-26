@@ -41,4 +41,33 @@ describe('IconPicker', () => {
     render(<IconPicker icon={null} onChange={vi.fn()} FallbackIcon={Fallback} disabled ariaLabel="Pick icon" />);
     expect(screen.getByRole('button', { name: 'Pick icon' })).toBeDisabled();
   });
+
+  it('picks an emoji from the offered set', async () => {
+    const onChange = vi.fn();
+    render(<IconPicker icon={null} onChange={onChange} FallbackIcon={Fallback} />);
+    await userEvent.click(screen.getByRole('button', { name: 'Change icon' }));
+    await userEvent.click(screen.getByRole('button', { name: '🎯' }));
+    expect(onChange).toHaveBeenCalledWith('🎯');
+  });
+
+  it('accepts a typed emoji outside the offered set', async () => {
+    const onChange = vi.fn();
+    render(<IconPicker icon={null} onChange={onChange} FallbackIcon={Fallback} />);
+    await userEvent.click(screen.getByRole('button', { name: 'Change icon' }));
+    await userEvent.type(screen.getByLabelText('Use a custom emoji'), '🦕');
+    await userEvent.click(screen.getByRole('button', { name: 'Use' }));
+    expect(onChange).toHaveBeenCalledWith('🦕');
+  });
+
+  it('will not submit an empty custom emoji', async () => {
+    render(<IconPicker icon={null} onChange={vi.fn()} FallbackIcon={Fallback} />);
+    await userEvent.click(screen.getByRole('button', { name: 'Change icon' }));
+    expect(screen.getByRole('button', { name: 'Use' })).toBeDisabled();
+  });
+
+  it('shows a set emoji on the trigger instead of the fallback', () => {
+    render(<IconPicker icon="🦕" onChange={vi.fn()} FallbackIcon={Fallback} />);
+    expect(screen.getByText('🦕')).toBeInTheDocument();
+    expect(screen.queryByTestId('fallback')).not.toBeInTheDocument();
+  });
 });

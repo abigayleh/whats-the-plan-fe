@@ -176,6 +176,31 @@
       color: $color-primary;
     }
   }
+
+  // Full-row break so the emoji block starts on its own line under the icon set.
+  &__heading {
+    flex-basis: 100%;
+    margin: $spacing-xs 0 0;
+    color: $color-text-muted;
+    font-size: $font-size-sm;
+  }
+
+  &__custom {
+    flex-basis: 100%;
+    display: flex;
+    gap: $spacing-xs;
+  }
+
+  &__input {
+    flex: 1;
+    min-width: 0;
+  }
+}
+
+// A picked emoji stands in for an icon anywhere one renders.
+.entity-emoji {
+  line-height: 1;
+  font-style: normal;
 }
 
 .scope-picker {
