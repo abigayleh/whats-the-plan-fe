@@ -61,4 +61,13 @@ describe('PageTreeNode', () => {
     renderNode(leaf, { drag: { overId: 'p1', band: 'child' } });
     expect(document.querySelector('.page-tree__row--drop-child')).toBeInTheDocument();
   });
+
+  // The before/after drop line is drawn from this variable, so it has to track depth
+  // in step with the padding or the line starts in the wrong place.
+  it('exposes its indent as a variable matching its padding', () => {
+    renderNode(leaf, { depth: 2 });
+    const row = document.querySelector('.page-tree__row');
+    expect(row.style.getPropertyValue('--page-row-indent')).toBe('2.7rem');
+    expect(row.style.paddingLeft).toBe('var(--page-row-indent)');
+  });
 });

@@ -158,10 +158,12 @@
   }
 }
 
+// Points down when the subpages are showing and up when they're hidden — a sideways
+// chevron reads as "go there" rather than "open this".
 .page-tree__chevron {
   padding: 0.15rem;
   border-radius: $radius-xs;
-  transform: rotate(-90deg);
+  transform: rotate(180deg);
   transition: transform 0.12s ease, background 0.12s ease;
 
   .page-tree__toggle:hover &,
@@ -212,22 +214,46 @@
   margin-right: $spacing-xs;
 }
 
-// Drag-and-drop feedback: the lifted row fades; the drop target shows a line above/below
-// (reorder as a sibling) or a full outline (nest as a child).
+// Drag-and-drop feedback. The two outcomes have to look different at a glance, not just
+// differently-shaped: dropping *between* rows draws a line in the gap, dropping *into* a
+// row fills it. Same colour, opposite treatment — line vs fill.
 .page-tree__row--dragging {
   opacity: 0.4;
 }
 
-.page-tree__row--drop-before {
-  box-shadow: inset 0 2px 0 $color-primary;
+// A bar in the gap between rows, starting at the title so it reads as "at this depth".
+.page-tree__row--drop-before::after,
+.page-tree__row--drop-after::after {
+  content: '';
+  position: absolute;
+  left: var(--page-row-indent, 0); // starts at the title, so the bar shows the target depth
+  right: 0;
+  height: 3px;
+  border-radius: 999px;
+  background: $color-primary;
 }
 
-.page-tree__row--drop-after {
-  box-shadow: inset 0 -2px 0 $color-primary;
+.page-tree__row--drop-before::after {
+  top: -2px;
 }
 
-.page-tree__row--drop-child {
+.page-tree__row--drop-after::after {
+  bottom: -2px;
+}
+
+// Nesting fills the row instead — the page lands inside this one. Doubled class so the
+// fill beats the row's own :hover background, which is always active mid-drag.
+.page-tree__row.page-tree__row--drop-child {
+  background: $color-primary-soft;
   box-shadow: inset 0 0 0 2px $color-primary;
+
+  .page-tree__title {
+    font-weight: 600;
+  }
+
+  .page-tree__icon {
+    color: $color-primary;
+  }
 }
 
 // --- Right pane: editor ---

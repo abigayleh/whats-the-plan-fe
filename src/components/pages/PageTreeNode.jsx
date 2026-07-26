@@ -30,7 +30,8 @@ function PageTreeNode({
       <div
         ref={setRowRef}
         className={rowClass}
-        style={{ paddingLeft: `${0.9 + depth * 0.9}rem` }}
+        // Kept as a variable as well as padding: the drop-line starts at this same offset.
+        style={{ '--page-row-indent': `${0.9 + depth * 0.9}rem`, paddingLeft: 'var(--page-row-indent)' }}
         {...(canManage ? draggable.listeners : {})}
       >
         {hasChildren && (
