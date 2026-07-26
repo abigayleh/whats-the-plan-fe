@@ -70,6 +70,14 @@ npm run dev             # start the dev server (http://localhost:5173)
 | `npm run build` | Production build to `dist/` |
 | `npm run preview` | Serve the production build locally |
 | `npm run lint` | Lint with oxlint |
+| `npm run test:run` | Run the test suite once (Vitest) |
+| `npm test` | Run tests in watch mode |
+
+## Testing
+
+**544 tests** with Vitest + React Testing Library — unit tests over the utils,
+adapters, API client, and all hooks, plus component tests across every feature
+area. Run `npm run test:run`. See [TESTING.md](TESTING.md) for conventions.
 
 ## Environment
 
