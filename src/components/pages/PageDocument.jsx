@@ -10,6 +10,28 @@ import PageLink from './extensions/PageLink';
 import slashCommand from './extensions/slashCommand';
 import linkShortcut from './extensions/linkShortcut';
 import pageMention from './extensions/pageMention';
+import { imageFilesFrom, fileToScaledDataUrl } from '../../utils/image';
+
+// Pasted/dropped images become inline data URLs. Returning true claims the event so the
+// browser doesn't also paste the file's name as text; the insert lands a tick later, at
+// the position the caret held when the paste happened.
+function insertImages(view, dataTransfer) {
+  const files = imageFilesFrom(dataTransfer);
+  if (!files.length) return false;
+  const at = view.state.selection.from;
+  Promise.all(files.map((file) => fileToScaledDataUrl(file)))
+    .then((sources) => {
+      const { image } = view.state.schema.nodes;
+      if (!image) return;
+      const tr = sources.reduce(
+        (acc, src) => acc.insert(acc.mapping.map(at), image.create({ src })),
+        view.state.tr,
+      );
+      view.dispatch(tr);
+    })
+    .catch(() => { /* a decode failure leaves the document untouched */ });
+  return true;
+}
 
 // The TipTap document. Keyed by pageId upstream, so it remounts per page with fresh content.
 // `pages` resolves link-chip titles; `scopePages` feeds the @-mention picker (same scope only).
@@ -43,6 +65,10 @@ function PageDocument({
     extensions,
     content: content || '',
     editable,
+    editorProps: {
+      handlePaste: (view, event) => insertImages(view, event.clipboardData),
+      handleDrop: (view, event) => insertImages(view, event.dataTransfer),
+    },
     onUpdate: ({ editor: ed }) => onChange(ed.getJSON()),
   });
 

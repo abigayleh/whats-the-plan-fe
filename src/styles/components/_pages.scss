@@ -484,6 +484,17 @@
     ul { list-style: disc; }
     ol { list-style: decimal; }
 
+    // A pasted image keeps its own size until it would overflow the column.
+    img {
+      max-width: 100%;
+      height: auto;
+      border-radius: $radius-sm;
+
+      &.ProseMirror-selectednode {
+        outline: 2px solid $color-primary;
+      }
+    }
+
     blockquote {
       border-left: 3px solid $color-border;
       padding-left: $spacing-md;
