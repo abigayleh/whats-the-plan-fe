@@ -14,7 +14,9 @@ import MovePageMenu from './MovePageMenu';
 import PageIconPicker from './PageIconPicker';
 import ConfirmModal from '../common/ConfirmModal';
 
-const SAVE_LABEL = { saving: 'Saving…', saved: 'Saved', idle: '' };
+const SAVE_LABEL = {
+  saving: 'Saving…', saved: 'Saved', error: "Couldn't save — changes are not stored", idle: '',
+};
 
 // The right pane: loads a page's full content, edits title + document, autosaves both.
 function PageEditor() {
@@ -27,7 +29,7 @@ function PageEditor() {
   const [page, setPage] = useState(null);
   const [title, setTitle] = useState('');
   const [status, setStatus] = useState('loading'); // loading | ready | missing
-  const [saveState, setSaveState] = useState('idle'); // idle | saving | saved
+  const [saveState, setSaveState] = useState('idle'); // idle | saving | saved | error
   const [staleRemote, setStaleRemote] = useState(false);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
@@ -82,7 +84,9 @@ function PageEditor() {
       await saveContent(id, content);
       setSaveState('saved');
     } catch {
-      setSaveState('idle');
+      // Falling back to 'idle' here read as "nothing to save" — which is how a rejected
+      // save (an over-limit body, say) looked exactly like a successful one.
+      setSaveState('error');
     }
   }, 800);
 
@@ -127,7 +131,9 @@ function PageEditor() {
           </nav>
         )}
         <div className="page-editor__actions">
-          <span className="page-editor__save">{SAVE_LABEL[saveState]}</span>
+          <span className={`page-editor__save${saveState === 'error' ? ' page-editor__save--error' : ''}`}>
+            {SAVE_LABEL[saveState]}
+          </span>
           {editable && <MovePageMenu page={page} pages={pages} onMove={handleMove} />}
           {editable && (
             <button
@@ -165,6 +171,7 @@ function PageEditor() {
 
       <PageDocument
         key={`${pageId}:${reloadKey}`}
+        pageId={pageId}
         content={page.content}
         editable={editable}
         onChange={(content) => persist(pageId, content)}

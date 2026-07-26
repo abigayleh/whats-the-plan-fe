@@ -1,13 +1,47 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Image from '@tiptap/extension-image';
 import { ReactNodeViewRenderer, NodeViewWrapper } from '@tiptap/react';
 import { clampImageWidth, MIN_IMAGE_WIDTH } from '../../../utils/imageWidth';
+import { attachmentIdFrom } from '../../../utils/attachmentSrc';
+import * as attachmentsApi from '../../../api/attachments';
+
+// Files sit behind Bearer auth, so an `attachment:<id>` reference can't go straight into an
+// <img src>. It's fetched as a blob and shown through an object URL, revoked on the way out
+// so a long editing session doesn't leak them.
+function useAttachmentUrl(src) {
+  const attachmentId = attachmentIdFrom(src);
+  const [url, setUrl] = useState(null);
+  const [failed, setFailed] = useState(false);
+
+  useEffect(() => {
+    if (!attachmentId) return undefined;
+    let active = true;
+    let created = null;
+    setFailed(false);
+    attachmentsApi.objectUrl(attachmentId)
+      .then((next) => {
+        if (!active) { URL.revokeObjectURL(next); return; }
+        created = next;
+        setUrl(next);
+      })
+      .catch(() => { if (active) setFailed(true); });
+    return () => {
+      active = false;
+      if (created) URL.revokeObjectURL(created);
+    };
+  }, [attachmentId]);
+
+  // A plain URL needs no resolving.
+  if (!attachmentId) return { url: src, failed: false };
+  return { url, failed };
+}
 
 // Drag the corner handle to resize. The width is held in local state during the drag and
 // written to the document only on release — updating per pointer-move would fire the page's
 // autosave on every pixel, and the whole document goes up on each save.
 function ResizableImageView({ node, updateAttributes, selected, editor }) {
   const { src, alt, title, width } = node.attrs;
+  const { url, failed } = useAttachmentUrl(src);
   const wrapRef = useRef(null);
   const [dragWidth, setDragWidth] = useState(null);
   const shown = dragWidth ?? width;
@@ -38,14 +72,18 @@ function ResizableImageView({ node, updateAttributes, selected, editor }) {
       ref={wrapRef}
       className={`page-image${selected ? ' page-image--selected' : ''}`}
     >
-      <img
-        src={src}
-        alt={alt || ''}
-        title={title || undefined}
-        draggable={false}
-        style={shown ? { width: `${shown}px` } : undefined}
-      />
-      {editor.isEditable && (
+      {failed && <span className="page-image__failed" contentEditable={false}>Image unavailable</span>}
+      {!failed && !url && <span className="page-image__loading" contentEditable={false} />}
+      {url && (
+        <img
+          src={url}
+          alt={alt || ''}
+          title={title || undefined}
+          draggable={false}
+          style={shown ? { width: `${shown}px` } : undefined}
+        />
+      )}
+      {url && editor.isEditable && (
         <span
           className="page-image__handle"
           role="slider"

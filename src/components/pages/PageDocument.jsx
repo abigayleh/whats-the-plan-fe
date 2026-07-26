@@ -10,33 +10,40 @@ import slashCommand from './extensions/slashCommand';
 import linkShortcut from './extensions/linkShortcut';
 import pageMention from './extensions/pageMention';
 import ResizableImage from './extensions/ResizableImage';
-import { imageFilesFrom, fileToScaledDataUrl } from '../../utils/image';
+import { imageFilesFrom, fileToScaledBlob } from '../../utils/image';
+import { attachmentSrc } from '../../utils/attachmentSrc';
+import * as attachmentsApi from '../../api/attachments';
 
-// Pasted/dropped images become inline data URLs. Returning true claims the event so the
-// browser doesn't also paste the file's name as text; the insert lands a tick later, at
-// the position the caret held when the paste happened.
-function insertImages(view, dataTransfer) {
+// A pasted image is uploaded first and the document stores only its attachment id --
+// inlining the bytes pushed the whole document past the API's body limit on every save.
+// Returning true claims the event so the browser doesn't also paste the file's name as
+// text; the insert lands once the upload resolves, at the caret's position at paste time.
+function insertImages(view, dataTransfer, pageId) {
   const files = imageFilesFrom(dataTransfer);
-  if (!files.length) return false;
+  if (!files.length || !pageId) return false;
   const at = view.state.selection.from;
-  Promise.all(files.map((file) => fileToScaledDataUrl(file)))
-    .then((sources) => {
+  Promise.all(files.map(async (file) => {
+    const blob = await fileToScaledBlob(file);
+    const named = new File([blob], file.name || 'image.jpg', { type: blob.type || file.type });
+    return attachmentsApi.upload(named, { pageId });
+  }))
+    .then((uploaded) => {
       const { image } = view.state.schema.nodes;
       if (!image) return;
-      const tr = sources.reduce(
-        (acc, src) => acc.insert(acc.mapping.map(at), image.create({ src })),
+      const tr = uploaded.reduce(
+        (acc, att) => acc.insert(acc.mapping.map(at), image.create({ src: attachmentSrc(att.id) })),
         view.state.tr,
       );
       view.dispatch(tr);
     })
-    .catch(() => { /* a decode failure leaves the document untouched */ });
+    .catch(() => { /* a failed upload leaves the document untouched */ });
   return true;
 }
 
 // The TipTap document. Keyed by pageId upstream, so it remounts per page with fresh content.
 // `pages` resolves link-chip titles; `scopePages` feeds the @-mention picker (same scope only).
 function PageDocument({
-  content, editable, onChange, pages, scopePages,
+  pageId, content, editable, onChange, pages, scopePages,
 }) {
   // A ref keeps the mention picker reading the latest same-scope pages without rebuilding the editor.
   const scopeRef = useRef(scopePages);
@@ -66,8 +73,8 @@ function PageDocument({
     content: content || '',
     editable,
     editorProps: {
-      handlePaste: (view, event) => insertImages(view, event.clipboardData),
-      handleDrop: (view, event) => insertImages(view, event.dataTransfer),
+      handlePaste: (view, event) => insertImages(view, event.clipboardData, pageId),
+      handleDrop: (view, event) => insertImages(view, event.dataTransfer, pageId),
     },
     onUpdate: ({ editor: ed }) => onChange(ed.getJSON()),
   });

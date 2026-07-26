@@ -1,9 +1,13 @@
 import { apiFetch, apiFetchBlob } from './client';
 
-export function upload(file, taskId) {
+// Exactly one owner — a task's attachment list, or an image embedded in a page. A bare
+// string stays supported so the task callers read unchanged.
+export function upload(file, owner) {
+  const { taskId = null, pageId = null } = typeof owner === 'string' ? { taskId: owner } : owner;
   const form = new FormData();
   form.append('file', file);
-  form.append('taskId', taskId);
+  if (taskId) form.append('taskId', taskId);
+  if (pageId) form.append('pageId', pageId);
   return apiFetch('/api/attachments', { method: 'POST', body: form });
 }
 

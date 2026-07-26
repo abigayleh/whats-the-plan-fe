@@ -1,7 +1,7 @@
 import {
   describe, it, expect, vi, beforeEach,
 } from 'vitest';
-import { imageFilesFrom, fileToScaledDataUrl } from './image';
+import { imageFilesFrom, fileToScaledBlob } from './image';
 
 const file = (type, name = 'f') => new File(['x'], name, { type });
 
@@ -19,7 +19,7 @@ describe('imageFilesFrom', () => {
   });
 });
 
-describe('fileToScaledDataUrl', () => {
+describe('fileToScaledBlob', () => {
   let drawn;
 
   beforeEach(() => {
@@ -32,12 +32,12 @@ describe('fileToScaledDataUrl', () => {
       fillRect: vi.fn(),
       drawImage: vi.fn((...args) => { drawn = args; }),
     });
-    vi.spyOn(HTMLCanvasElement.prototype, 'toDataURL')
-      .mockImplementation((type) => `data:${type};base64,AAAA`);
+    vi.spyOn(HTMLCanvasElement.prototype, 'toBlob')
+      .mockImplementation((cb, type) => cb(new Blob(['x'], { type })));
   });
 
   it('scales the long edge down to the cap and keeps the aspect ratio', async () => {
-    await fileToScaledDataUrl(file('image/png'), { maxEdge: 1200 });
+    await fileToScaledBlob(file('image/png'), { maxEdge: 1200 });
     expect(drawn.slice(3)).toEqual([1200, 600]);
   });
 
@@ -45,12 +45,18 @@ describe('fileToScaledDataUrl', () => {
     vi.stubGlobal('createImageBitmap', vi.fn(async () => ({
       width: 40, height: 20, close: vi.fn(),
     })));
-    await fileToScaledDataUrl(file('image/png'), { maxEdge: 1200 });
+    await fileToScaledBlob(file('image/png'), { maxEdge: 1200 });
     expect(drawn.slice(3)).toEqual([40, 20]);
   });
 
   it('encodes as JPEG so alpha does not come out black', async () => {
-    const url = await fileToScaledDataUrl(file('image/png'));
-    expect(url).toBe('data:image/jpeg;base64,AAAA');
+    const blob = await fileToScaledBlob(file('image/png'));
+    expect(blob.type).toBe('image/jpeg');
+  });
+
+  it('falls back to the original file when the encode yields nothing', async () => {
+    HTMLCanvasElement.prototype.toBlob.mockImplementation((cb) => cb(null));
+    const original = file('image/png', 'shot.png');
+    expect(await fileToScaledBlob(original)).toBe(original);
   });
 });

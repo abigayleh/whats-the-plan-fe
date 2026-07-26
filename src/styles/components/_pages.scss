@@ -318,6 +318,13 @@
 .page-editor__save {
   font-size: $font-size-xs;
   color: $color-text-muted;
+
+  // A rejected save has to look different from a quiet one — reading "Saved" while
+  // nothing was stored is how the image bug hid.
+  &--error {
+    color: $color-danger;
+    font-weight: 600;
+  }
 }
 
 .page-editor__stale {
@@ -638,7 +645,26 @@
   }
 
   &:hover .page-image__handle,
-  &--selected .page-image__handle {
+  &--selected // Placeholder while the blob is fetched, and the fallback when it can't be.
+.page-image__loading {
+  display: inline-block;
+  width: 8rem;
+  height: 5rem;
+  border-radius: $radius-sm;
+  background: $color-border-light;
+}
+
+.page-image__failed {
+  display: inline-block;
+  padding: $spacing-xs $spacing-sm;
+  border: 1px dashed $color-border;
+  border-radius: $radius-sm;
+  color: $color-text-muted;
+  font-size: $font-size-sm;
+  line-height: 1.4;
+}
+
+.page-image__handle {
     opacity: 1;
   }
 }

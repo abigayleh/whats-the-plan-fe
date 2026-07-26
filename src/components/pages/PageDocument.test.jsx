@@ -5,11 +5,26 @@ import {
   renderWithRouter, screen, waitFor,
 } from '../../test/utils';
 import PageDocument from './PageDocument';
+import * as attachmentsApi from '../../api/attachments';
+
+vi.mock('../../api/attachments', () => ({
+  objectUrl: vi.fn(),
+  upload: vi.fn(),
+}));
 
 // A document holding a single page-link chip pointing at `pageId`.
 const linkDoc = (pageId) => ({
   type: 'doc',
   content: [{ type: 'paragraph', content: [{ type: 'pageLink', attrs: { pageId } }] }],
+});
+
+// A document holding a single image reference, optionally at a saved width.
+const refDoc = (width) => ({
+  type: 'doc',
+  content: [{
+    type: 'paragraph',
+    content: [{ type: 'image', attrs: { src: 'attachment:a1', width } }],
+  }],
 });
 
 // A document holding a single image, optionally at a saved width.
@@ -64,6 +79,25 @@ describe('PageDocument', () => {
     );
     await waitFor(() => expect(container.querySelector('.page-image img')).toBeInTheDocument());
     expect(container.querySelector('.page-image__handle')).not.toBeInTheDocument();
+  });
+
+  // Files sit behind Bearer auth, so a reference has to be fetched and shown as a blob URL.
+  it('resolves an attachment reference to a fetched object URL', async () => {
+    attachmentsApi.objectUrl.mockResolvedValue('blob:resolved');
+    const { container } = renderWithRouter(
+      <PageDocument pageId="p1" content={refDoc()} editable onChange={vi.fn()} pages={[]} scopePages={[]} />,
+    );
+    await waitFor(() => expect(container.querySelector('.page-image img')).toBeInTheDocument());
+    expect(container.querySelector('.page-image img')).toHaveAttribute('src', 'blob:resolved');
+    expect(attachmentsApi.objectUrl).toHaveBeenCalledWith('a1');
+  });
+
+  it('shows a fallback when the attachment cannot be fetched', async () => {
+    attachmentsApi.objectUrl.mockRejectedValue(new Error('gone'));
+    renderWithRouter(
+      <PageDocument pageId="p1" content={refDoc()} editable onChange={vi.fn()} pages={[]} scopePages={[]} />,
+    );
+    expect(await screen.findByText('Image unavailable')).toBeInTheDocument();
   });
 
   it('omits the table toolbar in read-only mode', async () => {
