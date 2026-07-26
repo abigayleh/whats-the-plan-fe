@@ -12,6 +12,15 @@ const linkDoc = (pageId) => ({
   content: [{ type: 'paragraph', content: [{ type: 'pageLink', attrs: { pageId } }] }],
 });
 
+// A document holding a single image, optionally at a saved width.
+const imageDoc = (width) => ({
+  type: 'doc',
+  content: [{
+    type: 'paragraph',
+    content: [{ type: 'image', attrs: { src: 'data:image/gif;base64,R0lGODlhAQABAAAAACw=', width } }],
+  }],
+});
+
 describe('PageDocument', () => {
   it('renders the editor content region', async () => {
     const { container } = renderWithRouter(
@@ -38,6 +47,23 @@ describe('PageDocument', () => {
       <PageDocument content={linkDoc('gone')} editable={false} onChange={vi.fn()} pages={[]} scopePages={[]} />,
     );
     expect(await screen.findByText('Deleted page')).toBeInTheDocument();
+  });
+
+  it('renders an image at its persisted width, with a resize handle when editable', async () => {
+    const { container } = renderWithRouter(
+      <PageDocument content={imageDoc(320)} editable onChange={vi.fn()} pages={[]} scopePages={[]} />,
+    );
+    await waitFor(() => expect(container.querySelector('.page-image img')).toBeInTheDocument());
+    expect(container.querySelector('.page-image img')).toHaveStyle({ width: '320px' });
+    expect(container.querySelector('.page-image__handle')).toBeInTheDocument();
+  });
+
+  it('offers no resize handle in read-only mode', async () => {
+    const { container } = renderWithRouter(
+      <PageDocument content={imageDoc(320)} editable={false} onChange={vi.fn()} pages={[]} scopePages={[]} />,
+    );
+    await waitFor(() => expect(container.querySelector('.page-image img')).toBeInTheDocument());
+    expect(container.querySelector('.page-image__handle')).not.toBeInTheDocument();
   });
 
   it('omits the table toolbar in read-only mode', async () => {

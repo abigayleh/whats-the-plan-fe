@@ -3,13 +3,13 @@ import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import { TableKit } from '@tiptap/extension-table';
 import { TaskList, TaskItem } from '@tiptap/extension-list';
-import Image from '@tiptap/extension-image';
 import PagesEditorContext from './PagesEditorContext';
 import TableToolbar from './TableToolbar';
 import PageLink from './extensions/PageLink';
 import slashCommand from './extensions/slashCommand';
 import linkShortcut from './extensions/linkShortcut';
 import pageMention from './extensions/pageMention';
+import ResizableImage from './extensions/ResizableImage';
 import { imageFilesFrom, fileToScaledDataUrl } from '../../utils/image';
 
 // Pasted/dropped images become inline data URLs. Returning true claims the event so the
@@ -54,7 +54,7 @@ function PageDocument({
     TableKit,
     TaskList,
     TaskItem.configure({ nested: true }),
-    Image.configure({ inline: true }),
+    ResizableImage.configure({ inline: true }),
     PageLink,
     slashCommand,
     linkShortcut,

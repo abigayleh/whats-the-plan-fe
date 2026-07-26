@@ -476,10 +476,7 @@
       max-width: 100%;
       height: auto;
       border-radius: $radius-sm;
-
-      &.ProseMirror-selectednode {
-        outline: 2px solid $color-primary;
-      }
+      vertical-align: bottom; // kills the inline descender gap under the wrapper
     }
 
     blockquote {
@@ -628,6 +625,44 @@
 }
 
 // Inline URL field for embedding an image or applying a link (mounted inside .suggestion-popup).
+// An image in a page, with a corner handle for resizing. The handle only shows on hover or
+// while the node is selected, so it doesn't clutter a page being read.
+.page-image {
+  position: relative;
+  display: inline-block;
+  max-width: 100%;
+  line-height: 0;
+
+  &--selected img {
+    outline: 2px solid $color-primary;
+  }
+
+  &:hover .page-image__handle,
+  &--selected .page-image__handle {
+    opacity: 1;
+  }
+}
+
+.page-image__handle {
+  position: absolute;
+  right: -5px;
+  bottom: -5px;
+  width: 14px;
+  height: 14px;
+  border: 2px solid $color-surface;
+  border-radius: $radius-xs;
+  background: $color-primary;
+  cursor: nwse-resize;
+  opacity: 0;
+  transition: opacity 0.12s ease;
+
+  &:focus-visible {
+    opacity: 1;
+    outline: 2px solid $color-primary;
+    outline-offset: 2px;
+  }
+}
+
 .page-doc__url-input {
   width: 18rem;
   padding: $spacing-xs $spacing-sm;
