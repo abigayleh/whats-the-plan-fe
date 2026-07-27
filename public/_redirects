@@ -1,1 +1,10 @@
+# Public routes are prerendered with their own <title>/description/OG tags by
+# scripts/prerender.js. Serve those files explicitly so a crawler gets the right
+# metadata instead of falling through to the landing page below.
+/login      /login/index.html      200
+/register   /register/index.html   200
+/demo       /demo/index.html       200
+/verify     /verify/index.html     200
+
+# Everything else is the client-rendered app.
 /*  /index.html  200

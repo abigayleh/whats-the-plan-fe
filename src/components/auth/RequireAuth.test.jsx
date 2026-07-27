@@ -14,6 +14,7 @@ function renderAt(route = '/private') {
       <Route path="/login" element={<p>Login screen</p>} />
       <Route element={<RequireAuth />}>
         <Route path="/private" element={<p>Secret content</p>} />
+        <Route index element={<p>Secret content</p>} />
       </Route>
     </Routes>,
     { route },
@@ -39,6 +40,20 @@ describe('RequireAuth', () => {
   it('renders the protected outlet when authed', () => {
     vi.mocked(useAuth).mockReturnValue({ status: 'authed' });
     renderAt();
+    expect(screen.getByText('Secret content')).toBeInTheDocument();
+  });
+
+  // The root is the one public entry point, and its markup is what the build prerenders.
+  it('shows the landing page instead of the login redirect at the root', () => {
+    vi.mocked(useAuth).mockReturnValue({ status: 'anon' });
+    renderAt('/');
+    expect(screen.getByRole('heading', { level: 1, name: "What's the Plan?" })).toBeInTheDocument();
+    expect(screen.queryByText('Login screen')).not.toBeInTheDocument();
+  });
+
+  it('still renders the app at the root when authed', () => {
+    vi.mocked(useAuth).mockReturnValue({ status: 'authed' });
+    renderAt('/');
     expect(screen.getByText('Secret content')).toBeInTheDocument();
   });
 });

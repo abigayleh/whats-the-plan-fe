@@ -67,7 +67,7 @@ npm run dev             # start the dev server (http://localhost:5173)
 | Command | Does |
 |---|---|
 | `npm run dev` | Start the Vite dev server with HMR |
-| `npm run build` | Production build to `dist/` |
+| `npm run build` | Production build to `dist/`, then prerender the public routes |
 | `npm run preview` | Serve the production build locally |
 | `npm run lint` | Lint with oxlint |
 | `npm run test:run` | Run the test suite once (Vitest) |
@@ -75,7 +75,7 @@ npm run dev             # start the dev server (http://localhost:5173)
 
 ## Testing
 
-**544 tests** with Vitest + React Testing Library — unit tests over the utils,
+**650 tests** with Vitest + React Testing Library — unit tests over the utils,
 adapters, API client, and all hooks, plus component tests across every feature
 area. Run `npm run test:run`. See [TESTING.md](TESTING.md) for conventions.
 
@@ -86,6 +86,21 @@ Only one variable, and it is **public** (compiled into the browser bundle — ne
 | Variable | Purpose |
 |---|---|
 | `VITE_API_URL` | Base URL of the backend REST + Socket.io server (default `http://localhost:4000`) |
+
+`SITE_URL` is read at **build** time only (not a `VITE_` var, never bundled) for canonical
+tags, OG urls and the sitemap. Netlify already provides it as `URL`, so set `SITE_URL`
+only to override — otherwise a local build falls back to `http://localhost:4173`.
+
+## Search & link previews
+
+The app is client-rendered, so `scripts/prerender.js` runs after `vite build` and gives
+crawlers something to read: the landing page is rendered to static HTML with
+`react-dom/server`, each public route gets its own title / description / canonical /
+Open Graph tags, and `robots.txt` + `sitemap.xml` are generated from the same route table.
+Marketing copy lives in [`src/constants/site.js`](src/constants/site.js) and is shared by
+the page and the prerenderer. The 1200x630 preview card is rebuilt by
+`scripts/generate-og-image.sh`. Authenticated routes stay client-only and are disallowed
+in `robots.txt`.
 
 ## Project structure
 
