@@ -5,7 +5,10 @@ import { TableKit } from '@tiptap/extension-table';
 import { TaskList, TaskItem } from '@tiptap/extension-list';
 import PagesEditorContext from './PagesEditorContext';
 import TableToolbar from './TableToolbar';
+import TextBubbleMenu from './TextBubbleMenu';
 import PageLink from './extensions/PageLink';
+import textFormat from './extensions/textFormat';
+import indent from './extensions/indent';
 import slashCommand from './extensions/slashCommand';
 import linkShortcut from './extensions/linkShortcut';
 import pageMention from './extensions/pageMention';
@@ -62,6 +65,8 @@ function PageDocument({
     TaskList,
     TaskItem.configure({ nested: true }),
     ResizableImage.configure({ inline: true }),
+    textFormat,
+    indent,
     PageLink,
     slashCommand,
     linkShortcut,
@@ -85,7 +90,12 @@ function PageDocument({
 
   return (
     <PagesEditorContext.Provider value={ctx}>
-      {editable && <TableToolbar editor={editor} />}
+      {editable && (
+        <>
+          <TableToolbar editor={editor} />
+          <TextBubbleMenu editor={editor} />
+        </>
+      )}
       <EditorContent editor={editor} className="page-doc" />
     </PagesEditorContext.Provider>
   );
