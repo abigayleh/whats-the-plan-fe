@@ -20,6 +20,7 @@ vi.mock('../socket/socketClient', () => {
 });
 
 const rows = [{ id: 'i1', title: 'Trip', createdById: 'u1' }];
+const twoRows = [...rows, { id: 'i2', title: 'Other', createdById: 'u1' }];
 
 describe('useItineraries', () => {
   beforeEach(() => {
@@ -27,6 +28,7 @@ describe('useItineraries', () => {
     itinerariesApi.create.mockResolvedValue({ id: 'i2', title: 'New', createdById: 'u1' });
     itinerariesApi.update.mockResolvedValue({});
     itinerariesApi.remove.mockResolvedValue({});
+    itinerariesApi.reorder.mockResolvedValue({});
   });
 
   it('loads itineraries and clears the loading flag', async () => {
@@ -68,6 +70,24 @@ describe('useItineraries', () => {
     await waitFor(() => expect(result.current.loading).toBe(false));
     await act(async () => { await result.current.deleteItinerary('i1'); });
     expect(itinerariesApi.remove).toHaveBeenCalledWith('i1');
+  });
+
+  it('applies a reorder optimistically and persists it', async () => {
+    itinerariesApi.list.mockResolvedValue(twoRows);
+    const { result } = renderHook(() => useItineraries());
+    await waitFor(() => expect(result.current.itineraries).toHaveLength(2));
+    await act(async () => { await result.current.reorderItineraries(['i2', 'i1']); });
+    expect(itinerariesApi.reorder).toHaveBeenCalledWith(['i2', 'i1']);
+    expect(result.current.itineraries.map((it) => it.id)).toEqual(['i2', 'i1']);
+  });
+
+  it('rolls the reorder back when the write fails', async () => {
+    itinerariesApi.list.mockResolvedValue(twoRows);
+    itinerariesApi.reorder.mockRejectedValueOnce(new Error('down'));
+    const { result } = renderHook(() => useItineraries());
+    await waitFor(() => expect(result.current.itineraries).toHaveLength(2));
+    await act(async () => { await result.current.reorderItineraries(['i2', 'i1']); });
+    expect(result.current.itineraries.map((it) => it.id)).toEqual(['i1', 'i2']);
   });
 
   it('refreshes on a socket event', async () => {

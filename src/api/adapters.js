@@ -132,6 +132,9 @@ export const adaptItinerary = (it) => ({
   createdById: it.createdById,
   startDate: toDateOnly(it.startDate),
   endDate: toDateOnly(it.endDate),
+  // Expected length of a trip with no dates yet; sortOrder is the sidebar's manual order.
+  dayCount: it.dayCount ?? null,
+  sortOrder: it.sortOrder ?? 0,
   createdAt: toDate(it.createdAt),
 });
 

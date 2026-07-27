@@ -1,93 +1,57 @@
-import { NavLink } from 'react-router-dom';
-import {
-  MapIcon, CheckIcon, TrashIcon, SkipForwardIcon,
-} from '../layout/icons';
-import EntityIcon from '../common/EntityIcon';
+import ItinerarySection from './ItinerarySection';
+import useLocalStorageSet from '../../hooks/useLocalStorageSet';
+import { groupItineraries, reorderWithinSection } from '../../utils/itineraries';
 
-function ItineraryRow({
-  itinerary, completed, onSetCompleted, onDelete,
-}) {
-  return (
-    <li className="itinerary-list__row">
-      <NavLink
-        to={`/itinerary/${itinerary.id}`}
-        className={({ isActive }) => `itinerary-list__link${isActive ? ' itinerary-list__link--active' : ''}`}
-      >
-        <span className="itinerary-list__icon">
-          <EntityIcon icon={itinerary.icon} size={16} fallback={<MapIcon width={16} height={16} />} />
-        </span>
-        <span className="itinerary-list__title">{itinerary.title}</span>
-      </NavLink>
-      <div className="itinerary-list__actions">
-        <button
-          type="button"
-          className="task-actions__button itinerary-list__action"
-          onClick={() => onSetCompleted(itinerary.id, !completed)}
-          aria-label={completed ? 'Restore itinerary' : 'Mark itinerary completed'}
-          data-tooltip={completed ? 'Restore' : 'Complete'}
-        >
-          {completed ? <SkipForwardIcon width={15} height={15} /> : <CheckIcon width={15} height={15} />}
-        </button>
-        <button
-          type="button"
-          className="task-actions__button itinerary-list__action"
-          onClick={() => onDelete(itinerary)}
-          aria-label="Delete itinerary"
-          data-tooltip="Delete"
-        >
-          <TrashIcon width={15} height={15} />
-        </button>
-      </div>
-    </li>
-  );
-}
+const SECTIONS = [
+  { key: 'unplanned', title: 'To be planned' },
+  { key: 'planned', title: 'Planned', emptyText: 'No trips yet' },
+  { key: 'completed', title: 'Completed' },
+];
 
-// Flat list of itineraries, split into active trips and a Completed group at the bottom.
+// The itinerary sidebar: trips split into To be planned / Planned / Completed, each
+// section collapsible (remembered across reloads) and sortable within itself.
 function ItineraryList({
-  itineraries, loading, onSetCompleted, onDelete,
+  itineraries, loading, onSetCompleted, onDelete, onReorder,
 }) {
+  const [collapsedSections, setCollapsedSections] = useLocalStorageSet('itinerary-sections-collapsed');
+
+  function toggleSection(key) {
+    setCollapsedSections((prev) => {
+      const next = new Set(prev);
+      if (!next.delete(key)) next.add(key);
+      return next;
+    });
+  }
+
+  function handleReorder(sectionIds, activeId, overId) {
+    const ids = reorderWithinSection(itineraries, sectionIds, activeId, overId);
+    if (ids) onReorder(ids);
+  }
+
   if (loading) return <p className="itinerary-list__empty">Loading…</p>;
 
-  const active = itineraries.filter((it) => !it.completedAt);
-  const completed = itineraries.filter((it) => it.completedAt);
+  const grouped = groupItineraries(itineraries);
 
   return (
     <div className="itinerary-list">
-      <div className="itinerary-list__section">
-        <p className="itinerary-list__section-title">Trips</p>
-        {active.length === 0 ? (
-          <p className="itinerary-list__empty">No trips yet</p>
-        ) : (
-          <ul className="itinerary-list__items">
-            {active.map((it) => (
-              <ItineraryRow
-                key={it.id}
-                itinerary={it}
-                completed={false}
-                onSetCompleted={onSetCompleted}
-                onDelete={onDelete}
-              />
-            ))}
-          </ul>
-        )}
-      </div>
-
-      {completed.length > 0 && (
-        <div className="itinerary-list__section">
-          <p className="itinerary-list__section-title">Completed</p>
-          <ul className="itinerary-list__items">
-            {completed.map((it) => (
-              <ItineraryRow
-                key={it.id}
-                itinerary={it}
-                completed
-                onSetCompleted={onSetCompleted}
-                onDelete={onDelete}
-              />
-            ))}
-          </ul>
-        </div>
-      )}
+      {SECTIONS.map(({ key, title, emptyText }) => {
+        // Only Planned holds the sidebar's empty state; the other two just drop out.
+        if (grouped[key].length === 0 && !emptyText) return null;
+        return (
+          <ItinerarySection
+            key={key}
+            title={title}
+            itineraries={grouped[key]}
+            completed={key === 'completed'}
+            collapsed={collapsedSections.has(key)}
+            emptyText={emptyText}
+            onToggle={() => toggleSection(key)}
+            onSetCompleted={onSetCompleted}
+            onDelete={onDelete}
+            onReorder={handleReorder}
+          />
+        );
+      })}
     </div>
   );
 }

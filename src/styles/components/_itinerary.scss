@@ -14,8 +14,29 @@
   margin-top: $spacing-sm;
 }
 
-.itinerary-list__section-title {
+// The whole section header is the collapse control — a bare button, so it needs the reset.
+.itinerary-list__section-toggle {
+  display: flex;
+  align-items: center;
+  gap: $spacing-xs;
+  width: 100%;
   padding: $spacing-xs 0.9rem;
+  border: none;
+  background: none;
+  cursor: pointer;
+}
+
+.itinerary-list__section-chevron {
+  flex-shrink: 0;
+  color: $color-text-muted;
+  transition: transform 0.15s ease;
+
+  &--collapsed {
+    transform: rotate(-90deg);
+  }
+}
+
+.itinerary-list__section-title {
   font-size: $font-size-xs;
   font-weight: 600;
   text-transform: uppercase;
@@ -48,6 +69,25 @@
   &:hover .itinerary-list__action {
     opacity: 1;
   }
+
+  &--dragging {
+    opacity: 0.85;
+    background: $color-border-light;
+  }
+}
+
+.itinerary-list__drag-handle {
+  cursor: grab;
+  touch-action: none; // let the pointer sensor own the gesture on touch
+}
+
+// Trailing hint: "5 days" while unplanned, the end year once completed.
+.itinerary-list__row-meta {
+  margin-left: auto;
+  padding-left: $spacing-xs;
+  flex-shrink: 0;
+  font-size: $font-size-xs;
+  color: $color-text-muted;
 }
 
 .itinerary-list__link {
@@ -87,6 +127,12 @@
 
 .itinerary-list__action {
   opacity: 0;
+
+  // Otherwise a keyboard user (including the drag handle's keyboard sensor) focuses
+  // a button they can't see.
+  &:focus-visible {
+    opacity: 1;
+  }
   width: 1.4rem;
   height: 1.4rem;
   flex-shrink: 0;

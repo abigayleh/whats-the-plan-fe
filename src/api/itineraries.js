@@ -8,6 +8,9 @@ export const create = (body) => apiFetch('/api/itineraries', { method: 'POST', b
 export const update = (id, body) => apiFetch(`/api/itineraries/${id}`, { method: 'PATCH', body });
 export const remove = (id) => apiFetch(`/api/itineraries/${id}`, { method: 'DELETE' });
 
+// Persist the sidebar's manual order — `ids` is every itinerary, in its new order.
+export const reorder = (ids) => apiFetch('/api/itineraries/order', { method: 'PATCH', body: { ids } });
+
 // Expanded to-do occurrences within a date range, for the itinerary's own week/day views.
 export const tasks = (id, { start, end }) => apiFetch(`/api/itineraries/${id}/tasks?${qs({ start, end })}`);
 

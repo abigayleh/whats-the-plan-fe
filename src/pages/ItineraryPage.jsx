@@ -18,7 +18,8 @@ import useRememberedItem from '../hooks/useRememberedItem';
 function ItineraryPage() {
   const { currentUser, personalSpace, groups } = useAppData();
   const {
-    itineraries, loading, addItinerary, updateItinerary, setCompleted, deleteItinerary,
+    itineraries, loading, addItinerary, updateItinerary, setCompleted,
+    reorderItineraries, deleteItinerary,
   } = useItineraries();
   const [showNew, setShowNew] = useState(false);
   const [confirmingItinerary, setConfirmingItinerary] = useState(null);
@@ -99,6 +100,7 @@ function ItineraryPage() {
             loading={loading}
             onSetCompleted={setCompleted}
             onDelete={setConfirmingItinerary}
+            onReorder={reorderItineraries}
           />
         </aside>
       )}

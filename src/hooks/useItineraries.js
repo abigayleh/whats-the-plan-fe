@@ -12,6 +12,10 @@ export default function useItineraries() {
   const [itineraries, setItineraries] = useState([]);
   const [loading, setLoading] = useState(true);
   const latest = useRef(0);
+  // Mirrors the current itineraries so an optimistic write can snapshot them immediately,
+  // without waiting for React to run a state updater.
+  const current = useRef(itineraries);
+  current.current = itineraries;
 
   const refresh = useCallback(async () => {
     // Ticketed so a slower earlier fetch never overwrites a newer one.
@@ -53,12 +57,34 @@ export default function useItineraries() {
     [updateItinerary],
   );
 
+  // Optimistic: reorder locally at once, then let the write (and socket refresh) confirm it;
+  // roll back to the pre-drop snapshot if the write fails. `ids` is the full new order.
+  const reorderItineraries = useCallback(async (ids) => {
+    const snapshot = current.current;
+    const index = new Map(ids.map((id, i) => [id, i]));
+    setItineraries(
+      (prev) => [...prev].sort((a, b) => (index.get(a.id) ?? Infinity) - (index.get(b.id) ?? Infinity)),
+    );
+    try {
+      await itinerariesApi.reorder(ids);
+    } catch {
+      setItineraries(snapshot);
+    }
+  }, []);
+
   const deleteItinerary = useCallback(async (id) => {
     await itinerariesApi.remove(id);
     await refresh();
   }, [refresh]);
 
   return {
-    itineraries, loading, refresh, addItinerary, updateItinerary, setCompleted, deleteItinerary,
+    itineraries,
+    loading,
+    refresh,
+    addItinerary,
+    updateItinerary,
+    setCompleted,
+    reorderItineraries,
+    deleteItinerary,
   };
 }
