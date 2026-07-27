@@ -231,12 +231,14 @@ function CalendarPage() {
   // task id rather than a calendar-occurrence id, so wrap it into the shape openItem expects.
   const openTaskById = (task) => openItem({ origin: 'task', sourceId: task.id });
 
-  function createEventAt(day, hour, minute = 0) {
+  // Clicking an empty slot makes a to-do in the default list, timed to that slot — the modal's
+  // list select still offers "No list" to turn it into a bare event, as the Add event button does.
+  function createItemAt(day, hour, minute = 0) {
     const start = new Date(day);
     start.setHours(hour, minute, 0, 0);
     setPlanItemModal({
       mode: 'new',
-      defaultOrigin: 'event',
+      defaultOrigin: 'task',
       seed: { scheduledStart: start, scheduledEnd: new Date(start.getTime() + 60 * 60000) },
     });
   }
@@ -318,7 +320,7 @@ function CalendarPage() {
       tasks={baseVisibleItems}
       onToggleTask={toggleItemStatus}
       onOpenTask={openItem}
-      onCreateTask={createEventAt}
+      onCreateTask={createItemAt}
       onMoveTask={handleMoveItem}
       onPushToTomorrow={handleChipPushToTomorrow}
     />
@@ -418,7 +420,7 @@ function CalendarPage() {
                 onSelectDay={handleSelectDay}
                 onToggleTask={toggleItemStatus}
                 onOpenTask={openItem}
-                onCreateTask={createEventAt}
+                onCreateTask={createItemAt}
                 onMoveTask={handleMoveItem}
                 onPushToTomorrow={handleChipPushToTomorrow}
               />

@@ -49,6 +49,35 @@ describe('PlanItemModal', () => {
     expect(screen.getByRole('option', { name: 'Personal' })).toBeInTheDocument();
   });
 
+  it('seeds a new to-do into the space default list, not the first one', () => {
+    renderModal({ lists: [{ id: 'l0', name: 'Inbox', isSystem: false }, ...lists] });
+    expect(screen.getByLabelText('List')).toHaveValue('l1');
+  });
+
+  it('lets a new to-do be switched to a calendar event', async () => {
+    renderModal();
+    await userEvent.selectOptions(screen.getByLabelText('List'), '');
+    expect(screen.getByRole('heading', { name: 'New Event' })).toBeInTheDocument();
+  });
+
+  it('falls back to a calendar event when there is no writable list', () => {
+    renderModal({ lists: [{ id: 'sys', name: 'Assigned to Me', isSystem: true }] });
+    expect(screen.getByRole('heading', { name: 'New Event' })).toBeInTheDocument();
+    expect(screen.getByLabelText('List')).toHaveValue('');
+  });
+
+  it('keeps the seeded time when a to-do is created from a calendar slot', async () => {
+    const start = new Date('2026-07-15T14:00:00');
+    const { props } = renderModal({
+      defaultSchedule: { scheduledStart: start, scheduledEnd: new Date('2026-07-15T15:00:00') },
+    });
+    await userEvent.type(screen.getByLabelText('Title'), 'Call plumber');
+    await userEvent.click(screen.getByRole('button', { name: 'Done' }));
+    await waitFor(() => expect(props.onSave).toHaveBeenCalled());
+    expect(props.onSave.mock.calls[0][0]).toMatchObject({ origin: 'task', listId: 'l1' });
+    expect(props.onSave.mock.calls[0][0].scheduledStart).toEqual(start);
+  });
+
   it('excludes system lists from the list select', () => {
     renderModal();
     expect(screen.getByRole('option', { name: 'Groceries' })).toBeInTheDocument();

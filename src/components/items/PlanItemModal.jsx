@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useRef } from 'react';
 import { CheckIcon, CloseIcon } from '../layout/icons';
 import {
   RECURRENCE_OPTIONS, WEEKDAY_LABELS, recurrenceRuleFor, recurrenceValueFor, recurrenceDaysOfWeekFor,
@@ -36,10 +36,12 @@ function PlanItemModal({
     ?? writableLists.find((l) => l.isDefault)?.id
     ?? writableLists[0]?.id;
 
-  const [listId, setListId] = useState(() => {
-    if (isEdit) return item.origin === 'event' ? '' : (item.listId ?? '');
-    return defaultOrigin === 'event' ? '' : (defaultListId ?? preferredListId ?? '');
-  });
+  // The user's explicit List choice; `undefined` until they make one, so a new item follows the
+  // default below (which lands right even when `lists` was still loading at open time).
+  const [pickedListId, setPickedListId] = useState(
+    () => (isEdit ? (item.origin === 'event' ? '' : (item.listId ?? '')) : undefined),
+  );
+  const listId = pickedListId ?? (defaultOrigin === 'event' ? '' : (defaultListId ?? preferredListId ?? ''));
 
   // A bare calendar item has no list — to-do-only fields (status, attachments, assignee) are
   // hidden for it, and scope comes from the group select instead. Subtasks ARE shared with
@@ -51,12 +53,6 @@ function PlanItemModal({
   const canBeCalendarEvent = !isEdit || item.origin === 'event';
   const list = writableLists.find((l) => l.id === listId);
   const members = useGroupMembers(list?.groupId);
-
-  // Lists may still be loading when the modal opens, so adopt the preferred one once it arrives —
-  // but never override an explicit "no list" (bare calendar) choice.
-  useEffect(() => {
-    if (!isEdit && defaultOrigin !== 'event' && !listId && preferredListId) setListId(preferredListId);
-  }, [isEdit, defaultOrigin, listId, preferredListId]);
 
   const seed = item ?? defaultSchedule ?? null;
 
@@ -118,7 +114,7 @@ function PlanItemModal({
 
   // The assignee must belong to the new list's group, so a move that orphans them clears it.
   function handleListChange(newListId) {
-    setListId(newListId);
+    setPickedListId(newListId);
     const newGroupId = newListId ? (writableLists.find((l) => l.id === newListId)?.groupId ?? null) : null;
     const clearAssignee = newGroupId !== (list?.groupId ?? null);
     if (clearAssignee) setAssignedToId('');
