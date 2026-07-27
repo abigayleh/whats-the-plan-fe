@@ -23,6 +23,7 @@ const ChatPage = lazy(() => import('./pages/ChatPage'));
 const GroupsPage = lazy(() => import('./pages/GroupsPage'));
 const GroupSettingsPage = lazy(() => import('./pages/GroupSettingsPage'));
 const ProfilePage = lazy(() => import('./pages/ProfilePage'));
+const DemoPage = lazy(() => import('./pages/DemoPage'));
 
 function App() {
   return (
@@ -34,6 +35,7 @@ function App() {
               <Route path="/login" element={<LoginPage />} />
               <Route path="/register" element={<RegisterPage />} />
               <Route path="/verify" element={<VerifyPage />} />
+              <Route path="/demo" element={<DemoPage />} />
               <Route element={<RequireAuth />}>
                 <Route element={<AppShell />}>
                   <Route index element={<CalendarPage />} />

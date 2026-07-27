@@ -6,6 +6,11 @@ export const register = (email, password, name) =>
 export const login = (email, password) =>
   apiFetch('/api/auth/login', { method: 'POST', auth: false, body: { email, password } });
 
+// Public auto-login for the portfolio demo — no credentials; the backend resolves the
+// account from its own config, so nothing about it is exposed to the client.
+export const demoLogin = () =>
+  apiFetch('/api/auth/demo', { method: 'POST', auth: false });
+
 export const verifyEmail = (token) =>
   apiFetch('/api/auth/verify', { method: 'POST', auth: false, body: { token } });
 
