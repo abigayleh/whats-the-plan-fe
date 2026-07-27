@@ -2,7 +2,7 @@ import {
   describe, it, expect, vi, beforeEach,
 } from 'vitest';
 import {
-  renderWithRouter, screen, userEvent,
+  renderWithRouter, screen, userEvent, cleanup,
 } from '../../test/utils';
 import PageTree from './PageTree';
 
@@ -81,6 +81,38 @@ describe('PageTree', () => {
     // The first "Add subpage" button belongs to the first rendered root (Zeta / p1).
     await user.click(screen.getAllByRole('button', { name: 'Add subpage' })[0]);
     expect(onNewChild).toHaveBeenCalledWith(expect.objectContaining({ id: 'p1' }));
+  });
+
+  describe('remembered collapse state', () => {
+    it('restores collapsed pages after a remount', async () => {
+      const user = userEvent.setup();
+      renderTree();
+      await user.click(screen.getByRole('button', { name: 'Hide subpages' }));
+      expect(JSON.parse(localStorage.getItem('pages-tree-collapsed'))).toEqual(['p1']);
+
+      cleanup();
+      renderTree();
+      expect(screen.queryByText('Child')).not.toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Show subpages' })).toBeInTheDocument();
+    });
+
+    // A search forces matching ancestors open for the view only — clearing it must bring
+    // back exactly what the user had collapsed.
+    it('survives a search that forces the collapsed parent open', async () => {
+      const user = userEvent.setup();
+      renderTree();
+      await user.click(screen.getByRole('button', { name: 'Hide subpages' }));
+
+      cleanup();
+      renderTree({ query: 'child' });
+      expect(screen.getByText('Child')).toBeInTheDocument();
+      await user.click(screen.getByRole('button', { name: 'Hide subpages' }));
+      expect(JSON.parse(localStorage.getItem('pages-tree-collapsed'))).toEqual(['p1']);
+
+      cleanup();
+      renderTree();
+      expect(screen.queryByText('Child')).not.toBeInTheDocument();
+    });
   });
 
   describe('search', () => {

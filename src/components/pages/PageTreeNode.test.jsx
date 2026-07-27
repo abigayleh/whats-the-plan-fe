@@ -11,7 +11,7 @@ import PageTreeNode from './PageTreeNode';
 function renderNode(node, props = {}) {
   const merged = {
     depth: 0,
-    expanded: {},
+    collapsed: new Set(),
     onToggle: vi.fn(),
     onNewChild: vi.fn(),
     canManagePage: () => true,
@@ -31,6 +31,7 @@ function renderNode(node, props = {}) {
 const leaf = {
   id: 'p1', title: '', icon: null, children: [],
 };
+const parent = { ...leaf, id: 'p2', children: [{ ...leaf, id: 'c1' }] };
 
 describe('PageTreeNode', () => {
   it('falls back to "Untitled" and links to the page', () => {
@@ -50,9 +51,41 @@ describe('PageTreeNode', () => {
   it('shows a collapse toggle only when it has children', () => {
     renderNode(leaf);
     expect(screen.queryByRole('button', { name: /subpages/ })).not.toBeInTheDocument();
-    const parent = { ...leaf, id: 'p2', children: [{ ...leaf, id: 'c1', children: [] }] };
     renderNode(parent);
     expect(screen.getByRole('button', { name: 'Hide subpages' })).toBeInTheDocument();
+  });
+
+  // The chevron leads the row; childless rows keep the slot so the icons stay aligned.
+  it('puts the toggle first in the row, and an empty slot when there is nothing to toggle', () => {
+    renderNode(parent);
+    expect(document.querySelector('.page-tree__row').firstElementChild)
+      .toHaveClass('page-tree__toggle');
+    renderNode(leaf);
+    expect(document.querySelectorAll('.page-tree__row')[1].firstElementChild)
+      .toHaveClass('page-tree__toggle-spacer');
+  });
+
+  it('marks a row with children as a folder', () => {
+    renderNode(parent);
+    expect(document.querySelector('.page-tree__row')).toHaveClass('page-tree__row--folder');
+    renderNode(leaf);
+    expect(document.querySelectorAll('.page-tree__row')[1])
+      .not.toHaveClass('page-tree__row--folder');
+  });
+
+  // Reports the state it wants rather than "flip", so a row forced open by a search
+  // can't collapse-toggle the remembered state backwards.
+  it('asks for the opposite of the state it is showing', async () => {
+    const user = userEvent.setup();
+    // Non-manageable, so the row's drag listeners don't swallow the click (see above).
+    const opts = { canManagePage: () => false };
+    const { onToggle } = renderNode(parent, opts);
+    await user.click(screen.getByRole('button', { name: 'Hide subpages' }));
+    expect(onToggle).toHaveBeenCalledWith('p2', false);
+
+    const shown = renderNode(parent, { ...opts, collapsed: new Set(['p2']) });
+    await user.click(screen.getByRole('button', { name: 'Show subpages' }));
+    expect(shown.onToggle).toHaveBeenCalledWith('p2', true);
   });
 
   it('marks the active drag row and the current drop band', () => {
@@ -67,7 +100,7 @@ describe('PageTreeNode', () => {
   it('exposes its indent as a variable matching its padding', () => {
     renderNode(leaf, { depth: 2 });
     const row = document.querySelector('.page-tree__row');
-    expect(row.style.getPropertyValue('--page-row-indent')).toBe('2.7rem');
+    expect(row.style.getPropertyValue('--page-row-indent')).toBe('3.1rem');
     expect(row.style.paddingLeft).toBe('var(--page-row-indent)');
   });
 });

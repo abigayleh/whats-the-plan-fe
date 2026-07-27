@@ -2,7 +2,7 @@ import { useState } from 'react';
 import {
   DndContext, closestCenter, PointerSensor, useSensor, useSensors,
 } from '@dnd-kit/core';
-import useLocalStorageState from '../../hooks/useLocalStorageState';
+import useLocalStorageSet from '../../hooks/useLocalStorageSet';
 import { descendantIds, resolveDrop, filterPagesByTitle } from '../../utils/pageTree';
 import PageTreeNode from './PageTreeNode';
 
@@ -38,9 +38,18 @@ function bandFor(active, over) {
 function PageTree({
   pages, loading, personalSpace, groups, onNewChild, canManagePage, onReorder, query = '',
 }) {
-  const [expanded, setExpanded] = useLocalStorageState('pages-tree-expanded', {});
+  // Collapsed rather than expanded: rows default to open, so only the exceptions are stored.
+  const [collapsed, setCollapsed] = useLocalStorageSet('pages-tree-collapsed');
   const [drag, setDrag] = useState(null); // { activeId, overId, band } during a drag
-  const toggle = (id) => setExpanded((prev) => ({ ...prev, [id]: prev[id] === false }));
+
+  // Callers pass the state they want, not a flip, so a row forced open by a search can't
+  // toggle the remembered state the wrong way.
+  const setOpen = (id, open) => setCollapsed((prev) => {
+    const next = new Set(prev);
+    if (open) next.delete(id);
+    else next.add(id);
+    return next;
+  });
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }));
 
@@ -74,7 +83,7 @@ function PageTree({
     const band = bandFor(active, over);
     const result = resolveDrop(active.id, over.id, band, scopePages);
     if (!result) return;
-    if (band === 'child') setExpanded((prev) => ({ ...prev, [over.id]: true }));
+    if (band === 'child') setOpen(over.id, true);
     onReorder(result.parentId, result.orderedIds);
   }
 
@@ -84,11 +93,11 @@ function PageTree({
   return (
     <div className="page-tree">
       {scopes.map((scope) => {
-        // A parent only shows because it leads to a match, so it must be open regardless
-        // of what the user last collapsed — otherwise the match it leads to stays hidden.
-        const shownExpanded = filtering
-          ? { ...expanded, ...Object.fromEntries([...scope.ancestorIds].map((id) => [id, true])) }
-          : expanded;
+        // A parent only shows because it leads to a match, so it must be open regardless of
+        // what the user last collapsed — forced open for this render only, never written back.
+        const shownCollapsed = filtering
+          ? new Set([...collapsed].filter((id) => !scope.ancestorIds.has(id)))
+          : collapsed;
 
         const list = (
           <ul className="page-tree__list">
@@ -97,8 +106,8 @@ function PageTree({
                 key={node.id}
                 node={node}
                 depth={0}
-                expanded={shownExpanded}
-                onToggle={toggle}
+                collapsed={shownCollapsed}
+                onToggle={setOpen}
                 onNewChild={onNewChild}
                 canManagePage={canManagePage}
                 drag={drag}

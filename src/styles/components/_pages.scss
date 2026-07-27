@@ -141,7 +141,7 @@
 }
 
 .page-tree__scope-title {
-  padding: $spacing-xs 0.9rem; // 0.9rem aligns the header with the root page icons
+  padding: $spacing-xs 0.9rem; // 0.9rem aligns the header with the root rows' chevrons
   font-size: $font-size-xs;
   font-weight: 600;
   text-transform: uppercase;
@@ -171,17 +171,26 @@
   }
 }
 
-// The disclosure control, at the trailing edge of the row after the title. It used to sit
-// in the left gutter, where a 0.9rem slot squeezed the arrow down to a sliver — and a mark
-// in that gutter competes with the row's own indentation to mean the same thing.
+// A page with children reads as a folder: a flat hairline box on the sidebar's white,
+// the same treatment as the app's bordered cards.
+.page-tree__row--folder {
+  background: $color-bg;
+  box-shadow: inset 0 0 0 1px $color-border;
+}
+
+// The disclosure control leads the row, ahead of the page icon. Childless rows keep the
+// same slot empty so every icon in a level still lines up.
+.page-tree__toggle,
+.page-tree__toggle-spacer {
+  flex-shrink: 0;
+  width: 1.4rem;
+  height: 1.4rem;
+}
+
 .page-tree__toggle {
   display: flex;
   align-items: center;
   justify-content: center;
-  flex-shrink: 0;
-  width: 1.4rem;
-  height: 1.4rem;
-  margin-right: $spacing-xs;
   background: none;
   border: none;
   cursor: pointer;
@@ -210,7 +219,7 @@
   display: flex;
   align-items: center;
   gap: $spacing-xs;
-  padding: $spacing-xs 0; // no left pad — the row's paddingLeft sets the icon origin
+  padding: $spacing-xs 0; // no left pad — the row padding plus the toggle slot set the origin
   font-size: $font-size-sm;
   color: $color-text;
   border-radius: $radius-sm;
@@ -249,12 +258,13 @@
   opacity: 0.4;
 }
 
-// A bar in the gap between rows, starting at the title so it reads as "at this depth".
+// A bar in the gap between rows, starting where the row's content does so it reads as
+// "at this depth".
 .page-tree__row--drop-before::after,
 .page-tree__row--drop-after::after {
   content: '';
   position: absolute;
-  left: var(--page-row-indent, 0); // starts at the title, so the bar shows the target depth
+  left: var(--page-row-indent, 0);
   right: 0;
   height: 3px;
   border-radius: 999px;
