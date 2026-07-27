@@ -1,3 +1,4 @@
+@use 'sass:list';
 @use '../abstracts/variables' as *;
 @use '../abstracts/mixins' as *;
 
@@ -506,6 +507,57 @@
   color: $color-danger;
 }
 
+// Formatting bubble that follows the text selection. TipTap positions it and toggles
+// its visibility, so this only has to make it look like a card.
+.page-doc__bubble {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+  z-index: 10;
+  padding: $spacing-xs $spacing-sm;
+  border: 1px solid $color-border;
+  border-radius: $radius-sm;
+  background: $color-surface;
+}
+
+.page-doc__bubble-group {
+  display: flex;
+  align-items: center;
+  gap: $spacing-xs;
+
+  & + & {
+    padding-left: $spacing-sm;
+    border-left: 1px solid $color-border-light;
+  }
+
+  .button[aria-pressed='true'] {
+    color: $color-primary;
+    border-color: $color-primary;
+  }
+}
+
+// Colour swatches. The first one has no data-color and clears the mark back to body text.
+.page-doc__swatch {
+  width: 1.1rem;
+  height: 1.1rem;
+  padding: 0;
+  border: 1px solid $color-border;
+  border-radius: $radius-pill;
+  background: $color-text;
+  cursor: pointer;
+
+  @each $key, $pair in $accent-map {
+    &[data-color='#{$key}'] {
+      background: list.nth($pair, 1);
+    }
+  }
+
+  &[aria-pressed='true'] {
+    outline: 2px solid $color-text;
+    outline-offset: 1px;
+  }
+}
+
 .page-doc {
   .ProseMirror {
     outline: none;
@@ -612,6 +664,12 @@
         }
       }
 
+      // Strike the item's own text only — a nested list keeps each child's own state.
+      li[data-checked='true'] > div > p {
+        text-decoration: line-through;
+        color: $color-text-muted;
+      }
+
       input[type='checkbox'] {
         accent-color: $color-primary;
       }
@@ -619,6 +677,32 @@
       // Nested task lists sit inside the content div, indenting under the parent's text.
       ul[data-type='taskList'] {
         margin-top: $spacing-xs;
+      }
+    }
+
+    // A read-only document can't save a tick, and TipTap silently snaps the box back --
+    // so don't offer one.
+    &[contenteditable='false'] input[type='checkbox'] {
+      pointer-events: none;
+      opacity: 0.5;
+    }
+
+    // Bubble-menu marks: the document stores a palette key, the palette lives here.
+    .page-text {
+      @each $key, $pair in $accent-map {
+        &[data-color='#{$key}'] {
+          color: list.nth($pair, 1);
+        }
+      }
+
+      &[data-size='sm'] { font-size: $font-size-sm; }
+      &[data-size='lg'] { font-size: $font-size-lg; }
+      &[data-size='xl'] { font-size: $font-size-xl; }
+    }
+
+    @for $level from 1 through 4 {
+      [data-indent='#{$level}'] {
+        margin-left: $level * 1.5rem;
       }
     }
 

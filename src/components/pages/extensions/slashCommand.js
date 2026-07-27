@@ -11,13 +11,20 @@ import { promptUrl, normalizeUrl } from './urlPrompt';
 const slashKey = new PluginKey('slashCommand');
 
 // Block commands offered by the "/" menu. Each runs against the deleted "/query" range.
+// `keywords` match what people actually type — "/todo" never matched the title "To-do list".
 const COMMANDS = [
   { key: 'h1', title: 'Heading 1', command: (c) => c.toggleHeading({ level: 1 }) },
   { key: 'h2', title: 'Heading 2', command: (c) => c.toggleHeading({ level: 2 }) },
   { key: 'h3', title: 'Heading 3', command: (c) => c.toggleHeading({ level: 3 }) },
   { key: 'bullet', title: 'Bullet list', Icon: ListsIcon, command: (c) => c.toggleBulletList() },
   { key: 'ordered', title: 'Numbered list', Icon: ListsIcon, command: (c) => c.toggleOrderedList() },
-  { key: 'todo', title: 'To-do list', Icon: CheckIcon, command: (c) => c.toggleTaskList() },
+  {
+    key: 'todo',
+    title: 'To-do list',
+    keywords: 'todo task check checkbox checklist',
+    Icon: CheckIcon,
+    command: (c) => c.toggleTaskList(),
+  },
   {
     key: 'table',
     title: 'Table',
@@ -50,6 +57,10 @@ const COMMANDS = [
   },
 ];
 
+export const filterCommands = (query) => COMMANDS.filter(
+  (c) => `${c.title} ${c.keywords || ''}`.toLowerCase().includes(query.toLowerCase()),
+);
+
 const SlashCommand = Extension.create({
   name: 'slashCommand',
 
@@ -63,9 +74,7 @@ const SlashCommand = Extension.create({
         command: ({ editor, range, props }) => {
           props.command(editor.chain().focus().deleteRange(range), editor).run();
         },
-        items: ({ query }) => COMMANDS.filter(
-          (c) => c.title.toLowerCase().includes(query.toLowerCase()),
-        ),
+        items: ({ query }) => filterCommands(query),
         render: () => suggestionRender({ emptyLabel: 'No blocks' }),
       }),
     ];

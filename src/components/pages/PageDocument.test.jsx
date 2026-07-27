@@ -2,7 +2,7 @@ import {
   describe, it, expect, vi,
 } from 'vitest';
 import {
-  renderWithRouter, screen, waitFor,
+  renderWithRouter, screen, waitFor, userEvent,
 } from '../../test/utils';
 import PageDocument from './PageDocument';
 import * as attachmentsApi from '../../api/attachments';
@@ -35,6 +35,23 @@ const imageDoc = (width) => ({
     content: [{ type: 'image', attrs: { src: 'data:image/gif;base64,R0lGODlhAQABAAAAACw=', width } }],
   }],
 });
+
+// A one-item to-do list, at the given checked state.
+const taskDoc = (checked) => ({
+  type: 'doc',
+  content: [{
+    type: 'taskList',
+    content: [{
+      type: 'taskItem',
+      attrs: { checked },
+      content: [{ type: 'paragraph', content: [{ type: 'text', text: 'Buy milk' }] }],
+    }],
+  }],
+});
+
+const renderDoc = (props) => renderWithRouter(
+  <PageDocument pageId="p1" pages={[]} scopePages={[]} {...props} />,
+);
 
 describe('PageDocument', () => {
   it('renders the editor content region', async () => {
@@ -100,11 +117,42 @@ describe('PageDocument', () => {
     expect(await screen.findByText('Image unavailable')).toBeInTheDocument();
   });
 
-  it('omits the table toolbar in read-only mode', async () => {
-    const { container } = renderWithRouter(
-      <PageDocument content="" editable={false} onChange={vi.fn()} pages={[]} scopePages={[]} />,
-    );
+  it('ticking a to-do saves the checked item and strikes it through', async () => {
+    const onChange = vi.fn();
+    const { container } = renderDoc({ content: taskDoc(false), editable: true, onChange });
+    const box = await screen.findByRole('checkbox');
+
+    await userEvent.click(box);
+
+    expect(box).toBeChecked();
+    // data-checked is what the stylesheet strikes through.
+    expect(container.querySelector('li[data-checked="true"]')).toBeInTheDocument();
+    const [saved] = onChange.mock.calls.at(-1);
+    expect(saved.content[0].content[0].attrs.checked).toBe(true);
+  });
+
+  it('reloads a saved to-do already ticked', async () => {
+    renderDoc({ content: taskDoc(true), editable: true, onChange: vi.fn() });
+    expect(await screen.findByRole('checkbox')).toBeChecked();
+  });
+
+  // TipTap silently snaps a read-only checkbox back; the stylesheet keys off this
+  // attribute to make it inert instead.
+  it('leaves a read-only document non-editable, so its checkboxes save nothing', async () => {
+    const onChange = vi.fn();
+    const { container } = renderDoc({ content: taskDoc(false), editable: false, onChange });
+    const box = await screen.findByRole('checkbox');
+
+    await userEvent.click(box);
+
+    expect(box).not.toBeChecked();
+    expect(container.querySelector('.ProseMirror')).toHaveAttribute('contenteditable', 'false');
+  });
+
+  it('omits the table toolbar and the formatting bubble in read-only mode', async () => {
+    const { container } = renderDoc({ content: '', editable: false, onChange: vi.fn() });
     await waitFor(() => expect(container.querySelector('.page-doc')).toBeInTheDocument());
     expect(container.querySelector('.page-doc__table-toolbar')).not.toBeInTheDocument();
+    expect(screen.queryByRole('group', { name: 'Text colour' })).not.toBeInTheDocument();
   });
 });
