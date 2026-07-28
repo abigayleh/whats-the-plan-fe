@@ -105,4 +105,22 @@ describe('useItineraries', () => {
     await act(async () => { socket.__emit('itinerary:deleted'); });
     expect(result.current.itineraries).toHaveLength(1);
   });
+
+  // A silent failure here reads as "your trips were deleted" — an empty sidebar, no message.
+  it('reports a failed load rather than rendering an empty list', async () => {
+    itinerariesApi.list.mockRejectedValueOnce(new Error('Internal server error'));
+    const { result } = renderHook(() => useItineraries());
+    await waitFor(() => expect(result.current.loading).toBe(false));
+    expect(result.current.error).toBe('Internal server error');
+    expect(result.current.itineraries).toEqual([]);
+  });
+
+  it('clears the error once a later load succeeds', async () => {
+    itinerariesApi.list.mockRejectedValueOnce(new Error('down'));
+    const { result } = renderHook(() => useItineraries());
+    await waitFor(() => expect(result.current.error).toBe('down'));
+    await act(async () => { await result.current.refresh(); });
+    expect(result.current.error).toBeNull();
+    expect(result.current.itineraries).toHaveLength(1);
+  });
 });

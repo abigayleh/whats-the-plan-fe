@@ -11,6 +11,7 @@ const EVENTS = ['itinerary:created', 'itinerary:updated', 'itinerary:deleted'];
 export default function useItineraries() {
   const [itineraries, setItineraries] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const latest = useRef(0);
   // Mirrors the current itineraries so an optimistic write can snapshot them immediately,
   // without waiting for React to run a state updater.
@@ -25,8 +26,11 @@ export default function useItineraries() {
       const rows = await itinerariesApi.list();
       if (ticket !== latest.current) return;
       setItineraries(rows.map(adaptItinerary));
-    } catch {
-      // ignore — a failed refresh leaves the last known itineraries in place
+      setError(null);
+    } catch (err) {
+      // A failed refresh keeps the last known itineraries, but it must still be visible:
+      // an empty sidebar with no message reads as "your trips were deleted".
+      if (ticket === latest.current) setError(err?.message || 'Could not load itineraries');
     } finally {
       if (ticket === latest.current) setLoading(false);
     }
@@ -80,6 +84,7 @@ export default function useItineraries() {
   return {
     itineraries,
     loading,
+    error,
     refresh,
     addItinerary,
     updateItinerary,

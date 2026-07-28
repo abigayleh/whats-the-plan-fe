@@ -18,7 +18,7 @@ import useRememberedItem from '../hooks/useRememberedItem';
 function ItineraryPage() {
   const { currentUser, personalSpace, groups } = useAppData();
   const {
-    itineraries, loading, addItinerary, updateItinerary, setCompleted,
+    itineraries, loading, error, addItinerary, updateItinerary, setCompleted,
     reorderItineraries, deleteItinerary,
   } = useItineraries();
   const [showNew, setShowNew] = useState(false);
@@ -102,6 +102,7 @@ function ItineraryPage() {
               <PlusIcon width={16} height={16} />
             </button>
           </div>
+          {error && <p className="auth-card__error">{error}</p>}
           <ItineraryList
             itineraries={itineraries}
             loading={loading}
