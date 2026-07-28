@@ -8,7 +8,7 @@ import { itineraryMeta } from '../../utils/itineraries';
 function ItineraryRow({
   itinerary, completed, onSetCompleted, onDelete, sortable,
 }) {
-  const meta = itineraryMeta(itinerary);
+  const meta = itineraryMeta(itinerary, completed);
 
   return (
     <li

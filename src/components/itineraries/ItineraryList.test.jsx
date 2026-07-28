@@ -71,10 +71,11 @@ describe('ItineraryList', () => {
     expect(screen.getByText('Rome')).toBeInTheDocument();
   });
 
-  it('shows the day count on an unplanned trip and the year on a dated one', () => {
-    renderList([unplanned, done]);
+  it('shows the day count on an unplanned trip and the year on a completed one', () => {
+    renderList([unplanned, planned, done]);
     expect(screen.getByText('5 days')).toBeInTheDocument();
     expect(screen.getByText('(2025)')).toBeInTheDocument();
+    expect(screen.queryByText(`(${planned.startDate.getFullYear()})`)).not.toBeInTheDocument();
   });
 
   it('collapses a section and remembers it across a remount', async () => {
