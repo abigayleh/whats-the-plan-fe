@@ -1,12 +1,13 @@
 import { arrayMove } from '@dnd-kit/sortable';
+import { isScheduled } from '../constants/itinerary';
 
 // Sidebar grouping: a trip without dates is still being planned (it only knows how many
 // days it should run), a dated one is planned, and completedAt wins over both.
 export function groupItineraries(itineraries) {
   const active = itineraries.filter((it) => !it.completedAt);
   return {
-    unplanned: active.filter((it) => !it.startDate),
-    planned: active.filter((it) => it.startDate),
+    unplanned: active.filter((it) => !isScheduled(it)),
+    planned: active.filter(isScheduled),
     completed: itineraries.filter((it) => it.completedAt),
   };
 }
