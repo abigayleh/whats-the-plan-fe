@@ -78,9 +78,6 @@ describe('usePages', () => {
     const { result } = renderHook(() => usePages());
     await waitFor(() => expect(result.current.loading).toBe(false));
     const before = result.current.pages;
-    // Defer the rejection so the optimistic render commits first — this mirrors a real
-    // network failure. The rollback snapshot is captured inside the optimistic setPages
-    // updater, so it is only valid once that updater has run.
     let rejectReorder;
     pagesApi.reorder.mockReturnValueOnce(new Promise((_, rej) => { rejectReorder = rej; }));
     let pending;
@@ -89,6 +86,18 @@ describe('usePages', () => {
       rejectReorder(new Error('nope'));
       await pending;
     });
+    expect(result.current.pages).toEqual(before);
+  });
+
+  // The snapshot must come from a ref, not from inside the optimistic setPages updater:
+  // React may not have run that updater by the time an immediate rejection lands, which
+  // used to roll the whole tree back to undefined.
+  it('reorderPages rolls back when the write rejects immediately', async () => {
+    const { result } = renderHook(() => usePages());
+    await waitFor(() => expect(result.current.loading).toBe(false));
+    const before = result.current.pages;
+    pagesApi.reorder.mockRejectedValueOnce(new Error('nope'));
+    await act(async () => { await result.current.reorderPages(null, ['b', 'a']); });
     expect(result.current.pages).toEqual(before);
   });
 

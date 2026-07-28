@@ -13,6 +13,10 @@ export default function usePages() {
   const [pages, setPages] = useState([]);
   const [loading, setLoading] = useState(true);
   const latest = useRef(0);
+  // Mirrors the current pages so an optimistic write can snapshot them immediately, rather
+  // than from inside a state updater React may not have run by the time the write fails.
+  const current = useRef(pages);
+  current.current = pages;
 
   const refresh = useCallback(async () => {
     // Ticketed so a slower earlier fetch never overwrites a newer one.
@@ -53,12 +57,11 @@ export default function usePages() {
   // Reorder/reparent siblings under `parentId`. Optimistic: reflow the tree at once, then let
   // the socket refresh reconcile; roll back to the pre-drop snapshot if the write fails.
   const reorderPages = useCallback(async (parentId, orderedIds) => {
-    let snapshot;
-    setPages((prev) => {
-      snapshot = prev;
-      const index = new Map(orderedIds.map((id, i) => [id, i]));
-      return prev.map((p) => (index.has(p.id) ? { ...p, parentId, position: index.get(p.id) } : p));
-    });
+    const snapshot = current.current;
+    const index = new Map(orderedIds.map((id, i) => [id, i]));
+    setPages(
+      (prev) => prev.map((p) => (index.has(p.id) ? { ...p, parentId, position: index.get(p.id) } : p)),
+    );
     try {
       await pagesApi.reorder(parentId, orderedIds);
     } catch {
