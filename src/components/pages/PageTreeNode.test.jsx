@@ -65,12 +65,9 @@ describe('PageTreeNode', () => {
       .toHaveClass('page-tree__toggle-spacer');
   });
 
-  it('marks a row with children as a folder', () => {
+  it('leaves a row with children styled like any other', () => {
     renderNode(parent);
-    expect(document.querySelector('.page-tree__row')).toHaveClass('page-tree__row--folder');
-    renderNode(leaf);
-    expect(document.querySelectorAll('.page-tree__row')[1])
-      .not.toHaveClass('page-tree__row--folder');
+    expect(document.querySelector('.page-tree__row')).not.toHaveClass('page-tree__row--folder');
   });
 
   // Reports the state it wants rather than "flip", so a row forced open by a search

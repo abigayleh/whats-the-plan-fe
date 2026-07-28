@@ -22,7 +22,6 @@ function PageTreeNode({
   const dropBand = drag?.overId === node.id ? drag.band : null;
   const rowClass = [
     'page-tree__row',
-    hasChildren && 'page-tree__row--folder',
     drag?.activeId === node.id && 'page-tree__row--dragging',
     dropBand && `page-tree__row--drop-${dropBand}`,
   ].filter(Boolean).join(' ');
