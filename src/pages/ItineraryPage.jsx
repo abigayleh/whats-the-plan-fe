@@ -55,7 +55,14 @@ function ItineraryPage() {
   }
 
   const context = {
-    itineraries, currentUser, groups, canManage, updateItinerary, setCompleted, deleteItinerary,
+    itineraries,
+    currentUser,
+    groups,
+    personalSpace,
+    canManage,
+    updateItinerary,
+    setCompleted,
+    deleteItinerary,
   };
 
   return (

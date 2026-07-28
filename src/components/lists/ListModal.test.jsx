@@ -34,10 +34,21 @@ describe('ListModal', () => {
   it('submits the entered name to onSave', async () => {
     const onSave = vi.fn().mockResolvedValue();
     render(<ListModal groups={groups} onClose={() => {}} onSave={onSave} />);
-    await userEvent.type(screen.getByRole('textbox'), 'Camping gear');
+    await userEvent.type(screen.getByLabelText('Name'), 'Camping gear');
     await userEvent.click(screen.getByRole('button', { name: 'Create' }));
     await waitFor(() => expect(onSave).toHaveBeenCalled());
     expect(onSave.mock.calls[0][0]).toMatchObject({ name: 'Camping gear', groupId: null });
+  });
+
+  it('offers emoji alongside the icon set', async () => {
+    const onSave = vi.fn().mockResolvedValue();
+    render(<ListModal groups={groups} onClose={() => {}} onSave={onSave} />);
+    await userEvent.type(screen.getByLabelText('Name'), 'Snacks');
+    await userEvent.type(screen.getByLabelText('Use a custom emoji'), '🦕');
+    await userEvent.click(screen.getByRole('button', { name: 'Use' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Create' }));
+    await waitFor(() => expect(onSave).toHaveBeenCalled());
+    expect(onSave.mock.calls[0][0]).toMatchObject({ icon: '🦕' });
   });
 
   it('closes without saving on Cancel', async () => {

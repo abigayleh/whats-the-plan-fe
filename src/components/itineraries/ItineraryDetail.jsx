@@ -4,6 +4,9 @@ import ItineraryPlan from './ItineraryPlan';
 import ItineraryNotes from './ItineraryNotes';
 import ItineraryPolls from './ItineraryPolls';
 import IconPicker from '../common/IconPicker';
+import ConfirmModal from '../common/ConfirmModal';
+import PillPicker from '../common/PillPicker';
+import { scopeOptions } from '../../utils/scope';
 import ItineraryDateRange from './ItineraryDateRange';
 import { MapIcon } from '../layout/icons';
 
@@ -17,12 +20,13 @@ const TABS = [
 function ItineraryDetail() {
   const { itineraryId } = useParams();
   const {
-    itineraries, currentUser, groups, canManage, updateItinerary,
+    itineraries, currentUser, groups, personalSpace, canManage, updateItinerary,
   } = useOutletContext();
   const itinerary = itineraries.find((it) => it.id === itineraryId);
 
   const [title, setTitle] = useState(itinerary?.title ?? '');
   const [tab, setTab] = useState('plan');
+  const [pendingMove, setPendingMove] = useState(null);
 
   // Re-seed the title field when switching between itineraries.
   useEffect(() => { setTitle(itinerary?.title ?? ''); }, [itineraryId, itinerary?.title]);
@@ -32,6 +36,8 @@ function ItineraryDetail() {
   const editable = canManage(itinerary);
   const tabs = TABS.filter((t) => !t.needsGroup || itinerary.groupId);
   const group = groups.find((g) => g.id === itinerary.groupId) ?? null;
+  // Polls vanish when a trip leaves its group, so fall back rather than show an empty pane.
+  const activeTab = tabs.some((t) => t.key === tab) ? tab : 'plan';
 
   function commitTitle() {
     const next = title.trim();
@@ -40,6 +46,25 @@ function ItineraryDetail() {
       return;
     }
     updateItinerary(itinerary.id, { title: next });
+  }
+
+  // Widening scope (personal → group) costs nobody access; leaving a group does, so confirm it.
+  function requestScope(nextGroupId) {
+    if (nextGroupId === itinerary.groupId) return;
+    if (!itinerary.groupId) updateItinerary(itinerary.id, { groupId: nextGroupId });
+    else setPendingMove({ groupId: nextGroupId });
+  }
+
+  function moveMessage() {
+    const target = groups.find((g) => g.id === pendingMove.groupId);
+    const destination = target ? target.name : 'your personal space';
+    return `Move "${itinerary.title}" from ${group.name} to ${destination}? `
+      + `${group.name} members will lose access to the trip and its polls.`;
+  }
+
+  async function confirmMove() {
+    await updateItinerary(itinerary.id, { groupId: pendingMove.groupId });
+    setPendingMove(null);
   }
 
   return (
@@ -64,11 +89,20 @@ function ItineraryDetail() {
           />
         </div>
         <ItineraryDateRange
-          startDate={itinerary.startDate}
-          endDate={itinerary.endDate}
+          itinerary={itinerary}
           editable={editable}
-          onChange={(range) => updateItinerary(itinerary.id, range)}
+          onChange={(schedule) => updateItinerary(itinerary.id, schedule)}
         />
+        <div className="itinerary-detail__scope">
+          <span className="itinerary-detail__scope-label">Shared with</span>
+          <PillPicker
+            options={scopeOptions(personalSpace, groups)}
+            value={itinerary.groupId}
+            onChange={requestScope}
+            disabled={!editable}
+            ariaLabel="Shared with"
+          />
+        </div>
       </header>
 
       <nav className="itinerary-detail__tabs">
@@ -76,7 +110,7 @@ function ItineraryDetail() {
           <button
             key={t.key}
             type="button"
-            className={`itinerary-detail__tab${tab === t.key ? ' itinerary-detail__tab--active' : ''}`}
+            className={`itinerary-detail__tab${activeTab === t.key ? ' itinerary-detail__tab--active' : ''}`}
             onClick={() => setTab(t.key)}
           >
             {t.label}
@@ -91,6 +125,17 @@ function ItineraryDetail() {
           <ItineraryPolls itinerary={itinerary} group={group} currentUser={currentUser} />
         )}
       </div>
+
+      {pendingMove && (
+        <ConfirmModal
+          title="Move itinerary"
+          message={moveMessage()}
+          confirmLabel="Move"
+          danger={false}
+          onConfirm={confirmMove}
+          onCancel={() => setPendingMove(null)}
+        />
+      )}
     </div>
   );
 }

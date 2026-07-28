@@ -206,8 +206,8 @@ model Attachment {
 
 ## Itineraries
 
-- A named trip or outing spanning a date range
-- Scoped to a group (or private)
+- A named trip or outing, either **Planned** (a real date range) or **To be planned** (no dates, just `dayCount`) — never both
+- Scoped to a group (or private); the scope can be changed after creation via `PATCH /api/itineraries/:id { groupId }`
 - Child events link back via `Event.itineraryId`
 - Calendar renders itinerary as a multi-day banner; child events appear as normal chips, color-matched
 
@@ -329,8 +329,9 @@ model Itinerary {
   title       String
   destination String?
   description String?
-  startDate   DateTime
-  endDate     DateTime
+  startDate   DateTime?  // null together with endDate = "to be planned"
+  endDate     DateTime?
+  dayCount    Int?       // expected length while unscheduled; cleared once dates are set
   colorLabel  String?
   createdById String
   groupId     String?

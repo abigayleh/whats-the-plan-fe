@@ -27,9 +27,11 @@ const SYSTEM_LISTS = [
   },
 ];
 
+// An itinerary owns a list, and moving the trip between spaces moves that list with it.
 const LIST_EVENTS = [
   'list:created', 'list:updated', 'list:deleted', 'lists:arranged',
   'task:created', 'task:updated', 'task:deleted',
+  'itinerary:updated', 'itinerary:deleted',
 ];
 
 // Groups and lists/tasks are shared app-wide; polls live in usePolls, on the one page that needs them.

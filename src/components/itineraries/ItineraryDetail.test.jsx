@@ -29,6 +29,7 @@ function renderDetail({
     itineraries: list ?? [itinerary],
     currentUser: { id: 'me' },
     groups: [{ id: 'g1', name: 'Crew', role: 'ADMIN' }],
+    personalSpace: { name: 'Personal' },
     canManage,
     updateItinerary,
   };
@@ -95,5 +96,47 @@ describe('ItineraryDetail', () => {
   it('disables the title input in read-only mode', () => {
     renderDetail({ canManage: () => false });
     expect(screen.getByDisplayValue('Barcelona')).toBeDisabled();
+  });
+
+  it('moves a personal itinerary into a group without confirming', async () => {
+    const user = userEvent.setup();
+    const { updateItinerary } = renderDetail();
+    await user.click(screen.getByRole('button', { name: 'Crew' }));
+    expect(updateItinerary).toHaveBeenCalledWith('it1', { groupId: 'g1' });
+    expect(screen.queryByRole('heading', { name: 'Move itinerary' })).not.toBeInTheDocument();
+  });
+
+  it('confirms before moving an itinerary out of its group', async () => {
+    const user = userEvent.setup();
+    const { updateItinerary } = renderDetail({ itinerary: { ...base, groupId: 'g1' } });
+    await user.click(screen.getByRole('button', { name: 'Personal' }));
+    expect(updateItinerary).not.toHaveBeenCalled();
+    expect(screen.getByText(/Crew members will lose access/)).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Move' }));
+    expect(updateItinerary).toHaveBeenCalledWith('it1', { groupId: null });
+  });
+
+  it('leaves the scope unchanged when the move is cancelled', async () => {
+    const user = userEvent.setup();
+    const { updateItinerary } = renderDetail({ itinerary: { ...base, groupId: 'g1' } });
+    await user.click(screen.getByRole('button', { name: 'Personal' }));
+    await user.click(screen.getByRole('button', { name: 'Cancel' }));
+    expect(updateItinerary).not.toHaveBeenCalled();
+    expect(screen.getByRole('button', { name: 'Polls' })).toBeInTheDocument();
+  });
+
+  it('locks the scope picker in read-only mode', () => {
+    renderDetail({ canManage: () => false });
+    expect(screen.getByRole('button', { name: 'Crew' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Personal' })).toBeDisabled();
+  });
+
+  it('renders an itinerary with no dates', () => {
+    renderDetail({
+      itinerary: {
+        ...base, startDate: null, endDate: null, dayCount: 3,
+      },
+    });
+    expect(screen.getByText('Not scheduled · 3 days')).toBeInTheDocument();
   });
 });

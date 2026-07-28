@@ -5,6 +5,8 @@ const qs = (obj) => new URLSearchParams(obj).toString();
 export const list = () => apiFetch('/api/itineraries');
 export const get = (id) => apiFetch(`/api/itineraries/${id}`);
 export const create = (body) => apiFetch('/api/itineraries', { method: 'POST', body });
+// Body also takes `groupId` (group id, or null for personal) to move scope, and either
+// startDate/endDate or dayCount — sending one clears the other server-side.
 export const update = (id, body) => apiFetch(`/api/itineraries/${id}`, { method: 'PATCH', body });
 export const remove = (id) => apiFetch(`/api/itineraries/${id}`, { method: 'DELETE' });
 
