@@ -205,7 +205,7 @@ function ItineraryPlan({ itinerary }) {
         <div className="calendar-toolbar__label-group">
           <span className="calendar-toolbar__label">{label}</span>
           <button type="button" className="calendar-toolbar__today" onClick={() => setFocusDate(itinerary.startDate || new Date())}>
-            Trip start
+            {itinerary.startDate ? 'Trip start' : 'Today'}
           </button>
         </div>
         <button type="button" className="calendar-toolbar__nav" onClick={handleNext} disabled={navNextDisabled} aria-label="Next">›</button>

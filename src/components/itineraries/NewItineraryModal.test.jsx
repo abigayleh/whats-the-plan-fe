@@ -51,6 +51,50 @@ describe('NewItineraryModal', () => {
     expect(onCreate).not.toHaveBeenCalled();
   });
 
+  it('sends a day count instead of dates when not scheduled yet', async () => {
+    const { onCreate } = setup();
+    const user = userEvent.setup();
+    await user.click(screen.getByRole('button', { name: 'Not scheduled yet' }));
+    fireEvent.change(screen.getByLabelText('Expected length (days)'), { target: { value: '4' } });
+    await user.click(screen.getByRole('button', { name: 'Create' }));
+    await waitFor(() => expect(onCreate).toHaveBeenCalled());
+    const payload = onCreate.mock.calls[0][0];
+    expect(payload.dayCount).toBe(4);
+    expect(payload.startDate).toBeUndefined();
+    expect(payload.endDate).toBeUndefined();
+  });
+
+  it('falls back to a single day when the count is left blank', async () => {
+    const { onCreate } = setup();
+    const user = userEvent.setup();
+    await user.click(screen.getByRole('button', { name: 'Not scheduled yet' }));
+    fireEvent.change(screen.getByLabelText('Expected length (days)'), { target: { value: '' } });
+    await user.click(screen.getByRole('button', { name: 'Create' }));
+    await waitFor(() => expect(onCreate).toHaveBeenCalled());
+    expect(onCreate.mock.calls[0][0].dayCount).toBe(1);
+  });
+
+  it('rejects a day count below 1 with the field\'s own minimum', async () => {
+    const { onCreate } = setup();
+    const user = userEvent.setup();
+    await user.click(screen.getByRole('button', { name: 'Not scheduled yet' }));
+    const days = screen.getByLabelText('Expected length (days)');
+    fireEvent.change(days, { target: { value: '0' } });
+    expect(days).toBeInvalid();
+    await user.click(screen.getByRole('button', { name: 'Create' }));
+    expect(onCreate).not.toHaveBeenCalled();
+  });
+
+  it('offers emoji as well as the icon set', async () => {
+    const { onCreate } = setup();
+    const user = userEvent.setup();
+    await user.type(screen.getByLabelText('Use a custom emoji'), '🦕');
+    await user.click(screen.getByRole('button', { name: 'Use' }));
+    await user.click(screen.getByRole('button', { name: 'Create' }));
+    await waitFor(() => expect(onCreate).toHaveBeenCalled());
+    expect(onCreate.mock.calls[0][0].icon).toBe('🦕');
+  });
+
   it('closes on Cancel', async () => {
     const { onClose } = setup();
     const user = userEvent.setup();

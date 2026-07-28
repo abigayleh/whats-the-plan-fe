@@ -200,18 +200,37 @@
   }
 }
 
-// Inline start/end date pickers shown while editing the range.
+// Inline schedule editor: the dated/unplanned switch on its own row, fields underneath.
 .itinerary-dates-edit {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: $spacing-xs;
 
   .modal__input {
     width: auto;
   }
+
+  // The dated/unplanned switch takes a row of its own, above the fields.
+  .pill-picker {
+    flex-basis: 100%;
+  }
 }
 
 .itinerary-dates-edit__sep {
+  color: $color-text-muted;
+}
+
+.itinerary-detail__scope {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: $spacing-sm;
+  margin-top: $spacing-sm;
+}
+
+.itinerary-detail__scope-label {
+  font-size: $font-size-sm;
   color: $color-text-muted;
 }
 
