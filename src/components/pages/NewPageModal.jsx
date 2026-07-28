@@ -1,7 +1,8 @@
 import { useState } from 'react';
-import { CloseIcon } from '../layout/icons';
 import Modal from '../common/Modal';
-import { TASK_ICONS } from '../../constants/taskIcons';
+import IconOptions from '../common/IconOptions';
+import PillPicker from '../common/PillPicker';
+import { scopeOptions } from '../../utils/scope';
 
 // Create a top-level page. Scope is chosen here and is fixed once the page exists.
 function NewPageModal({
@@ -28,78 +29,43 @@ function NewPageModal({
   return (
     <Modal title="New Page" onClose={onClose}>
       <form className="modal__form" onSubmit={handleSubmit}>
-          {error && <p className="auth-card__error">{error}</p>}
+        {error && <p className="auth-card__error">{error}</p>}
 
-          <label className="modal__field">
-            <span className="modal__label">Title</span>
-            <input
-              type="text"
-              className="modal__input"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder="Untitled"
-              autoFocus
-            />
-          </label>
+        <label className="modal__field">
+          <span className="modal__label">Title</span>
+          <input
+            type="text"
+            className="modal__input"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            placeholder="Untitled"
+            autoFocus
+          />
+        </label>
 
-          <div className="modal__field">
-            <span className="modal__label">Scope</span>
-            <div className="scope-picker">
-              <button
-                type="button"
-                className={`scope-picker__option${groupId === null ? ' scope-picker__option--active' : ''}`}
-                onClick={() => setGroupId(null)}
-              >
-                {personalSpace.name}
-              </button>
-              {groups.map((group) => (
-                <button
-                  key={group.id}
-                  type="button"
-                  className={`scope-picker__option${groupId === group.id ? ' scope-picker__option--active' : ''}`}
-                  onClick={() => setGroupId(group.id)}
-                >
-                  {group.name}
-                </button>
-              ))}
-            </div>
-          </div>
+        <div className="modal__field">
+          <span className="modal__label">Scope</span>
+          <PillPicker
+            options={scopeOptions(personalSpace, groups)}
+            value={groupId}
+            onChange={setGroupId}
+            ariaLabel="Scope"
+          />
+        </div>
 
-          <div className="modal__field">
-            <span className="modal__label">Icon</span>
-            <div className="icon-picker">
-              <button
-                type="button"
-                className={`icon-picker__option${icon === null ? ' icon-picker__option--active' : ''}`}
-                onClick={() => setIcon(null)}
-                aria-label="No icon"
-                aria-pressed={icon === null}
-              >
-                <CloseIcon width={14} height={14} />
-              </button>
-              {TASK_ICONS.map(({ key, label, Icon }) => (
-                <button
-                  key={key}
-                  type="button"
-                  className={`icon-picker__option${icon === key ? ' icon-picker__option--active' : ''}`}
-                  onClick={() => setIcon(key)}
-                  aria-label={label}
-                  aria-pressed={icon === key}
-                >
-                  <Icon />
-                </button>
-              ))}
-            </div>
-          </div>
+        <div className="modal__field">
+          <span className="modal__label">Icon</span>
+          <IconOptions icon={icon} onSelect={setIcon} />
+        </div>
 
-          <div className="modal__footer">
-            <div className="modal__footer-spacer" />
-            <button type="button" className="button button--ghost" onClick={onClose}>Cancel</button>
-            <button type="submit" className="button button--primary" disabled={saving}>
-              {saving ? 'Creating…' : 'Create'}
-            </button>
-          </div>
-        </form>
+        <div className="modal__footer">
+          <div className="modal__footer-spacer" />
+          <button type="button" className="button button--ghost" onClick={onClose}>Cancel</button>
+          <button type="submit" className="button button--primary" disabled={saving}>
+            {saving ? 'Creating…' : 'Create'}
+          </button>
+        </div>
+      </form>
     </Modal>
   );
 }

@@ -203,7 +203,8 @@
   font-style: normal;
 }
 
-.scope-picker {
+// A row of mutually-exclusive pill options — scope, schedule mode, and the like.
+.pill-picker {
   display: flex;
   flex-wrap: wrap;
   gap: $spacing-xs;

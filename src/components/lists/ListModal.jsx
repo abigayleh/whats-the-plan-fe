@@ -1,7 +1,9 @@
 import { useState } from 'react';
 import { CloseIcon } from '../layout/icons';
 import Modal from '../common/Modal';
-import { TASK_ICONS } from '../../constants/taskIcons';
+import IconOptions from '../common/IconOptions';
+import PillPicker from '../common/PillPicker';
+import { scopeOptions } from '../../utils/scope';
 import { ACCENT_KEYS } from '../../constants/colors';
 import useAppData from '../../hooks/useAppData';
 
@@ -54,55 +56,19 @@ function ListModal({ list, groups, onClose, onSave }) {
 
           <div className="modal__field">
             <span className="modal__label">Scope</span>
-            <div className="scope-picker">
-              <button
-                type="button"
-                className={`scope-picker__option${groupId === null ? ' scope-picker__option--active' : ''}`}
-                onClick={() => setGroupId(null)}
-                disabled={isEdit}
-              >
-                {personalSpace.name}
-              </button>
-              {groups.map((group) => (
-                <button
-                  key={group.id}
-                  type="button"
-                  className={`scope-picker__option${groupId === group.id ? ' scope-picker__option--active' : ''}`}
-                  onClick={() => setGroupId(group.id)}
-                  disabled={isEdit}
-                >
-                  {group.name}
-                </button>
-              ))}
-            </div>
+            <PillPicker
+              options={scopeOptions(personalSpace, groups)}
+              value={groupId}
+              onChange={setGroupId}
+              disabled={isEdit}
+              ariaLabel="Scope"
+            />
             {isEdit && <p className="modal__hint">A list stays in the space it was created in.</p>}
           </div>
 
           <div className="modal__field">
             <span className="modal__label">Icon</span>
-            <div className="icon-picker">
-              <button
-                type="button"
-                className={`icon-picker__option${icon === null ? ' icon-picker__option--active' : ''}`}
-                onClick={() => setIcon(null)}
-                aria-label="No icon"
-                aria-pressed={icon === null}
-              >
-                <CloseIcon width={14} height={14} />
-              </button>
-              {TASK_ICONS.map(({ key, label, Icon }) => (
-                <button
-                  key={key}
-                  type="button"
-                  className={`icon-picker__option${icon === key ? ' icon-picker__option--active' : ''}`}
-                  onClick={() => setIcon(key)}
-                  aria-label={label}
-                  aria-pressed={icon === key}
-                >
-                  <Icon />
-                </button>
-              ))}
-            </div>
+            <IconOptions icon={icon} onSelect={setIcon} />
           </div>
 
           <div className="modal__field">
