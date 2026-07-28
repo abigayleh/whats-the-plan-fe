@@ -35,17 +35,17 @@ describe('reorderWithinSection', () => {
 
 describe('itineraryMeta', () => {
   it('shows the expected length of an unplanned trip', () => {
-    expect(itineraryMeta(unplanned, false)).toBe('5 days');
-    expect(itineraryMeta({ startDate: null, dayCount: 1 }, false)).toBe('1 day');
+    expect(itineraryMeta(unplanned)).toBe('5 days');
+    expect(itineraryMeta({ startDate: null, dayCount: 1 })).toBe('1 day');
   });
 
-  it('shows nothing for a planned trip or an unplanned one with no day count', () => {
-    expect(itineraryMeta(planned, false)).toBeNull();
-    expect(itineraryMeta({ startDate: null, dayCount: null }, false)).toBeNull();
+  it('shows nothing when a trip has neither dates nor a day count', () => {
+    expect(itineraryMeta({ startDate: null, dayCount: null })).toBeNull();
+    expect(itineraryMeta({ startDate: null, endDate: null })).toBeNull();
   });
 
-  it('shows the end year of a completed trip, and nothing when it has no dates', () => {
-    expect(itineraryMeta(done, true)).toBe('2025');
-    expect(itineraryMeta({ startDate: null, endDate: null }, true)).toBeNull();
+  it('shows the year in brackets for any dated trip, planned or completed', () => {
+    expect(itineraryMeta(planned)).toBe(`(${planned.startDate.getFullYear()})`);
+    expect(itineraryMeta(done)).toBe('(2025)');
   });
 });

@@ -24,13 +24,11 @@ export function reorderWithinSection(itineraries, sectionIds, activeId, overId) 
   return itineraries.map((it) => (inSection.has(it.id) ? moved[next++] : it.id));
 }
 
-// The trailing hint on a row: an unplanned trip shows its expected length, a completed
-// one the year it ended. Anything else (no dates, no day count) shows nothing.
-export function itineraryMeta(itinerary, completed) {
-  if (completed) {
-    const ended = itinerary.endDate ?? itinerary.startDate;
-    return ended ? String(ended.getFullYear()) : null;
-  }
-  if (itinerary.startDate || !itinerary.dayCount) return null;
+// The trailing hint on a row: a dated trip shows the year it runs, an unplanned one its
+// expected length. Anything else (no dates, no day count) shows nothing.
+export function itineraryMeta(itinerary) {
+  const dated = itinerary.endDate ?? itinerary.startDate;
+  if (dated) return `(${dated.getFullYear()})`;
+  if (!itinerary.dayCount) return null;
   return `${itinerary.dayCount} day${itinerary.dayCount === 1 ? '' : 's'}`;
 }
