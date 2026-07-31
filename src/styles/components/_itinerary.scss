@@ -153,6 +153,11 @@
   margin: 0 auto;
   padding: $spacing-lg $spacing-xl $spacing-xl;
 
+  // A phone has no width to spare on gutters — the shell already provides the page margin.
+  @include respond-below(tablet) {
+    padding: $spacing-md 0 $spacing-lg;
+  }
+
   &--empty {
     color: $color-text-muted;
   }
@@ -378,6 +383,9 @@
 
   @include respond-below(tablet) {
     flex-direction: column;
+    // flex-start would size the stacked timeline and map to their content instead of the
+    // screen, leaving the day view floating in a narrow column.
+    align-items: stretch;
   }
 }
 
