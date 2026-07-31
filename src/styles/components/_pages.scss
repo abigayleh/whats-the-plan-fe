@@ -606,11 +606,22 @@
   .ProseMirror {
     outline: none;
     font-size: $font-size-base;
-    line-height: 1.6;
+    line-height: 1.5;
     color: $color-text;
 
+    // Consecutive paragraphs read as prose, not as a gap-separated list of one-liners;
+    // only a change of block (a heading, a quote, a table) is worth real separation.
     > * + * {
-      margin-top: $spacing-sm;
+      margin-top: $spacing-xs;
+    }
+
+    > * + h1,
+    > * + h2,
+    > * + h3,
+    > * + blockquote,
+    > * + pre,
+    > * + table {
+      margin-top: $spacing-md;
     }
 
     h1 { font-size: 1.6rem; font-weight: 700; }
