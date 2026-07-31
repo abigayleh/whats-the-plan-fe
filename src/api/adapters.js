@@ -71,6 +71,8 @@ export function adaptItem(raw, origin) {
     scheduledStart: toDate(raw.scheduledStart ?? raw.startAt),
     scheduledEnd: toDate(raw.scheduledEnd ?? raw.endAt),
     recurrenceRule: raw.recurrenceRule || null,
+    // Which days of a recurring series are ticked off — its only record of completion.
+    completedDates: isEvent ? [] : (raw.completedDates || []),
     subtasks: raw.subtasks || [],
     assignedToId: isEvent ? null : (raw.assignedToId ?? null),
     assignedTo: isEvent ? null : (raw.assignee?.name || null),

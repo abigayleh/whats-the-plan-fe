@@ -1,7 +1,7 @@
 import {
   describe, it, expect, vi, beforeEach,
 } from 'vitest';
-import { render, screen } from '../../test/utils';
+import { render, screen, userEvent } from '../../test/utils';
 import DayTodoPanel from './DayTodoPanel';
 import useAppData from '../../hooks/useAppData';
 
@@ -13,7 +13,7 @@ beforeEach(() => {
 
 const noop = () => {};
 const handlers = {
-  onToggle: noop, onOpenOverdue: noop, onOpenToday: noop, onOpenUnscheduled: noop,
+  onToggle: noop, onToggleOverdue: noop, onOpenOverdue: noop, onOpenToday: noop, onOpenUnscheduled: noop,
 };
 
 describe('DayTodoPanel', () => {
@@ -42,6 +42,28 @@ describe('DayTodoPanel', () => {
     );
     expect(screen.getByRole('heading', { name: 'Overdue' })).toBeInTheDocument();
     expect(screen.getByText('Late task')).toBeInTheDocument();
+  });
+
+  // Overdue rows stand for a missed day, so they tick off through their own handler.
+  it('routes an overdue row’s checkbox to onToggleOverdue', async () => {
+    const onToggleOverdue = vi.fn();
+    const onToggle = vi.fn();
+    const overdue = [{ id: 'o1', title: 'Late task', status: 'todo', colorKey: 'coral', listId: 'l1' }];
+    render(
+      <DayTodoPanel
+        overdueTasks={overdue}
+        todayTasks={[]}
+        unscheduledTasks={[]}
+        lists={[]}
+        showUnscheduled={false}
+        {...handlers}
+        onToggle={onToggle}
+        onToggleOverdue={onToggleOverdue}
+      />,
+    );
+    await userEvent.click(screen.getByRole('checkbox'));
+    expect(onToggleOverdue).toHaveBeenCalledWith('o1');
+    expect(onToggle).not.toHaveBeenCalled();
   });
 
   it('gates the Unscheduled section behind showUnscheduled', () => {

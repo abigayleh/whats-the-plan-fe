@@ -17,8 +17,7 @@ beforeEach(() => {
     addTask: vi.fn().mockResolvedValue({ task: { id: 'task-new', origin: 'task', sourceId: 'task-new' } }),
     updateTask: vi.fn().mockResolvedValue({}),
     deleteTask: vi.fn().mockResolvedValue({}),
-    toggleTaskStatus: vi.fn().mockResolvedValue({}),
-    toggleTaskOccurrence: vi.fn().mockResolvedValue({}),
+    toggleTask: vi.fn().mockResolvedValue({}),
   };
   useAppData.mockReturnValue(store);
   eventsApi.create.mockResolvedValue({ id: 'ev-new', title: 'E' });
@@ -85,24 +84,21 @@ describe('usePlanItems.deleteItem', () => {
 describe('usePlanItems.toggleStatus', () => {
   it('is a no-op for events', async () => {
     await setup().current.toggleStatus({ origin: 'event', sourceId: 'e1' });
-    expect(store.toggleTaskStatus).not.toHaveBeenCalled();
-    expect(store.toggleTaskOccurrence).not.toHaveBeenCalled();
+    expect(store.toggleTask).not.toHaveBeenCalled();
   });
 
-  it('toggles a plain to-do status', async () => {
+  it('toggles a plain to-do without naming a day', async () => {
     await setup().current.toggleStatus({ origin: 'task', sourceId: 't1', isRecurring: false });
-    expect(store.toggleTaskStatus).toHaveBeenCalledWith('t1');
+    expect(store.toggleTask).toHaveBeenCalledWith('t1', undefined);
   });
 
-  it('toggles a single occurrence for a recurring to-do', async () => {
+  it('toggles a recurring to-do on the occurrence\u2019s own day', async () => {
     const due = new Date('2026-01-10T00:00:00Z');
-    // The whole occurrence goes through: only it knows this day's status, which the
-    // series row doesn't carry.
     const item = {
       origin: 'task', sourceId: 't1', isRecurring: true, dueDate: due, status: 'todo',
     };
     await setup().current.toggleStatus(item);
-    expect(store.toggleTaskOccurrence).toHaveBeenCalledWith(item, due);
+    expect(store.toggleTask).toHaveBeenCalledWith('t1', due);
   });
 });
 

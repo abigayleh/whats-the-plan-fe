@@ -16,13 +16,16 @@ import useAppData from '../hooks/useAppData';
 import usePlanItems from '../hooks/usePlanItems';
 import useLocalStorageState from '../hooks/useLocalStorageState';
 import {
-  getListColorKey, getTaskColorKey, getTaskIconKey, isTaskOnDay, isTaskOverdue,
+  getListColorKey, getOverdueDay, getTaskColorKey, getTaskIconKey,
+  isTaskDoneOnDay, isTaskOnDay, isTaskOverdue,
 } from '../utils/tasks';
+import useDocumentTitle from '../hooks/useDocumentTitle';
 
 function ListsPage() {
+  useDocumentTitle('Lists');
   const {
     groups, lists, tasks, currentUser, personalSpace,
-    addList, updateList, deleteList, arrangeLists, toggleTaskStatus,
+    addList, updateList, deleteList, arrangeLists, toggleTask,
   } = useAppData();
   const { saveItem, deleteItem } = usePlanItems();
   const [listModal, setListModal] = useState(null); // null | { mode:'new' } | { mode:'edit', list }
@@ -64,10 +67,16 @@ function ListsPage() {
     return list.ownerId === currentUser.id || groups.find((g) => g.id === list.groupId)?.role === 'ADMIN';
   }
 
+  // Which day of a recurring series a row in this list is about — the same day ticking it off
+  // applies to, so the checkbox and the write can't disagree.
+  const dayShownFor = (list, task) => (
+    list.id === 'l-overdue' ? getOverdueDay(task) ?? new Date() : new Date()
+  );
+
   function tasksForList(list) {
     let matching;
     if (list.id === 'l-overdue') {
-      matching = tasks.filter(isTaskOverdue);
+      matching = tasks.filter((task) => isTaskOverdue(task));
     } else if (list.id === 'l-due-today') {
       matching = tasks.filter((task) => isTaskOnDay(task, new Date()));
     } else if (list.isSystem) {
@@ -77,6 +86,9 @@ function ListsPage() {
     }
     return matching.map((task) => ({
       ...task,
+      // A series row's own status never says "done today" — show the day this row stands for
+      // (the missed one under Overdue, today everywhere else), matching what ticking it does.
+      status: task.recurrenceRule && isTaskDoneOnDay(task, dayShownFor(list, task)) ? 'done' : task.status,
       colorKey: getTaskColorKey(task, lists, groups, personalSpace),
       icon: getTaskIconKey(task, lists),
     }));
@@ -124,6 +136,13 @@ function ListsPage() {
     setEditingTask(null);
   }
 
+  // An Overdue row stands for the day that was missed, not today — a recurring to-do must tick
+  // off that occurrence, or the row it's shown in could never be cleared.
+  function toggleOverdueTask(taskId) {
+    const task = tasks.find((t) => t.id === taskId);
+    if (task) toggleTask(taskId, getOverdueDay(task));
+  }
+
   // Same props for every list card, whether pinned or draggable (key is set at the call site).
   const sectionProps = (list) => ({
     list,
@@ -131,7 +150,7 @@ function ListsPage() {
     allLists: lists,
     showCompleted,
     hideScheduled: list.id === 'l-overdue' ? false : hideScheduled,
-    onToggleTask: toggleTaskStatus,
+    onToggleTask: list.id === 'l-overdue' ? toggleOverdueTask : toggleTask,
     onEditTask: handleEditTask,
     onAddTask: handleAddTask,
     onEditList: canManageList(list) ? (l) => setListModal({ mode: 'edit', list: l }) : null,

@@ -8,7 +8,10 @@ import {
   getTaskColorKey,
   getTaskIconKey,
   isItemRecurring,
+  isTaskDoneOnDay,
   isTaskOverdue,
+  getOverdueDay,
+  tickDayFor,
   combineDateAndTime,
   toDateInputValue,
   toTimeInputValue,
@@ -189,6 +192,94 @@ describe('isTaskOverdue', () => {
 
   it('is false for a task with no day', () => {
     expect(isTaskOverdue({ status: 'todo' })).toBe(false);
+  });
+
+  // A series' own status never says "done today", so overdue is judged per occurrence.
+  const daily = (completedDates = []) => ({
+    status: 'todo',
+    dueDate: new Date(2026, 6, 1),
+    recurrenceRule: { frequency: 'daily', interval: 1 },
+    completedDates,
+  });
+
+  it('is true for a recurring to-do whose last occurrence was missed', () => {
+    expect(isTaskOverdue(daily())).toBe(true);
+    expect(getOverdueDay(daily())).toEqual(new Date(2026, 6, 25));
+  });
+
+  it('is false once that occurrence is ticked off, whatever the series status says', () => {
+    expect(isTaskOverdue(daily([new Date(2026, 6, 25, 9).toISOString()]))).toBe(false);
+  });
+
+  it('ignores completions on other days', () => {
+    expect(isTaskOverdue(daily([new Date(2026, 6, 24, 9).toISOString()]))).toBe(true);
+  });
+
+  it('is false for a weekly series whose last occurrence was done', () => {
+    // Recurs on Wednesdays; today is Sunday the 26th, so the last one was the 22nd.
+    expect(isTaskOverdue({
+      status: 'todo',
+      dueDate: new Date(2026, 6, 1),
+      recurrenceRule: { frequency: 'weekly', interval: 1, daysOfWeek: [3] },
+      completedDates: [new Date(2026, 6, 22, 9).toISOString()],
+    })).toBe(false);
+  });
+
+  it('is false for a series that starts in the future', () => {
+    expect(isTaskOverdue({
+      status: 'todo',
+      dueDate: new Date(2026, 6, 30),
+      recurrenceRule: { frequency: 'daily', interval: 1 },
+    })).toBe(false);
+  });
+});
+
+describe('isTaskDoneOnDay', () => {
+  const day = new Date(2026, 6, 25);
+
+  it('reads a plain to-do’s own status', () => {
+    expect(isTaskDoneOnDay({ status: 'done' }, day)).toBe(true);
+    expect(isTaskDoneOnDay({ status: 'todo' }, day)).toBe(false);
+  });
+
+  it('reads a series by the day, not by its status', () => {
+    const task = {
+      status: 'todo',
+      recurrenceRule: { frequency: 'daily', interval: 1 },
+      completedDates: [new Date(2026, 6, 25, 9).toISOString()],
+    };
+    expect(isTaskDoneOnDay(task, day)).toBe(true);
+    expect(isTaskDoneOnDay(task, new Date(2026, 6, 26))).toBe(false);
+  });
+});
+
+describe('tickDayFor', () => {
+  const today = new Date(2026, 6, 26, 12);
+  const daily = {
+    status: 'todo',
+    dueDate: new Date(2026, 6, 1),
+    recurrenceRule: { frequency: 'daily', interval: 1 },
+    completedDates: [],
+  };
+
+  it('is null for a to-do that does not recur', () => {
+    expect(tickDayFor({ status: 'todo', dueDate: today }, today)).toBeNull();
+  });
+
+  it('is today when the series recurs today', () => {
+    expect(tickDayFor(daily, today)).toBe(today);
+  });
+
+  it('falls back to the missed day when it does not recur today', () => {
+    expect(tickDayFor({
+      ...daily,
+      recurrenceRule: { frequency: 'weekly', interval: 1, daysOfWeek: [3] },
+    }, today)).toEqual(new Date(2026, 6, 22));
+  });
+
+  it('is the first occurrence for a series that has not started', () => {
+    const future = new Date(2026, 6, 30);
+    expect(tickDayFor({ ...daily, dueDate: future }, today)).toBe(future);
   });
 });
 

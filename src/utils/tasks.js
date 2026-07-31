@@ -1,4 +1,6 @@
-import { isSameDay, startOfDay, startOfWeek } from './date';
+import {
+  addDays, isSameDay, startOfDay, startOfWeek,
+} from './date';
 
 const DAY_MS = 86400000;
 
@@ -80,11 +82,59 @@ export function isItemRecurring(item) {
   return Boolean(item?.recurrenceRule || item?.rule || item?.isRecurring);
 }
 
-export function isTaskOverdue(task) {
-  if (task.status === 'done') return false;
+// A recurring series never completes as a whole — each day it recurs is ticked on its own and
+// stored in completedDates. Anything else (including an already-expanded calendar occurrence,
+// whose rule is nulled and whose status the server resolved per day) uses its own status.
+export function isTaskDoneOnDay(task, day) {
+  if (!task.recurrenceRule) return task.status === 'done';
+  return (task.completedDates || []).some((date) => isSameDay(new Date(date), day));
+}
+
+// Longest gap a rule can leave between occurrences, so the walk below has a bound.
+// Only weekly reads `interval` — isTaskOnDay ignores it for the other frequencies.
+const MAX_GAP_DAYS = {
+  daily: 1, weekly: 7, monthly: 31, yearly: 366,
+};
+
+// The latest day this series recurs on, strictly before `day` — null if there isn't one.
+export function lastOccurrenceBefore(task, day) {
+  const frequency = task.recurrenceRule?.frequency;
+  if (!MAX_GAP_DAYS[frequency]) return null;
+  const span = MAX_GAP_DAYS[frequency] * (frequency === 'weekly' ? (task.recurrenceRule.interval || 1) : 1);
+  for (let back = 1; back <= span; back += 1) {
+    const candidate = addDays(startOfDay(day), -back);
+    if (isTaskOnDay(task, candidate)) return candidate;
+  }
+  return null;
+}
+
+// The day a to-do is overdue for, or null when it isn't. A series is judged on its most recent
+// past occurrence only: one Overdue row for the last day missed, not one per day since it began.
+export function getOverdueDay(task, today = new Date()) {
   const day = getTaskDay(task);
-  if (!day) return false;
-  return startOfDay(day) < startOfDay(new Date());
+  if (!day) return null;
+  if (task.recurrenceRule) {
+    const missed = lastOccurrenceBefore(task, today);
+    return missed && !isTaskDoneOnDay(task, missed) ? missed : null;
+  }
+  if (task.status === 'done') return null;
+  return startOfDay(day) < startOfDay(today) ? day : null;
+}
+
+export function isTaskOverdue(task, today) {
+  return getOverdueDay(task, today) !== null;
+}
+
+// Which day a bare "tick this off" applies to for a series: today when it recurs today, else
+// the missed day Overdue is showing, else its first occurrence if it hasn't started yet.
+// null when the series has no day to tick, and for a to-do that doesn't recur.
+export function tickDayFor(task, today = new Date()) {
+  if (!task.recurrenceRule) return null;
+  if (isTaskOnDay(task, today)) return today;
+  const missed = getOverdueDay(task, today);
+  if (missed) return missed;
+  const day = getTaskDay(task);
+  return day && startOfDay(day) > startOfDay(today) ? day : null;
 }
 
 export function combineDateAndTime(dateStr, timeStr) {

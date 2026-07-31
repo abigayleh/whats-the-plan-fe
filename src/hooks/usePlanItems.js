@@ -10,7 +10,7 @@ import { startOfDay } from '../utils/date';
 // `origin`/`sourceId` (see api/adapters.js for what those mean).
 export default function usePlanItems() {
   const {
-    tasks, addTask, updateTask, deleteTask, toggleTaskStatus, toggleTaskOccurrence,
+    tasks, addTask, updateTask, deleteTask, toggleTask,
   } = useAppData();
 
   // Creates a fresh event or to-do from a payload; returns `{ item, attachmentError? }` — the
@@ -68,14 +68,9 @@ export default function usePlanItems() {
   // Events have no completion concept — a no-op keeps callers origin-agnostic.
   async function toggleStatus(item) {
     if (item.origin === 'event') return;
-    // A recurring occurrence toggles only its own day; the series keeps recurring. A plain
-    // to-do flips its whole status.
-    if (item.isRecurring) {
-      // The occurrence carries this day's own status; the series row's doesn't.
-      await toggleTaskOccurrence(item, item.scheduledStart ?? item.dueDate);
-      return;
-    }
-    await toggleTaskStatus(item.sourceId);
+    // A calendar occurrence names the day it stands for; a raw to-do row doesn't, and letting
+    // it pass its own date would tick the day the series started rather than the one on screen.
+    await toggleTask(item.sourceId, item.isRecurring ? (item.scheduledStart ?? item.dueDate) : undefined);
   }
 
   // Dragging preserves an item's kind: an event always stays timed (dropping it on the

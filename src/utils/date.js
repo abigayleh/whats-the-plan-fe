@@ -29,6 +29,13 @@ export function startOfDay(date) {
   return d;
 }
 
+// Midday, so a date that only means "this day" stays on it through any timezone shift.
+export function noonOf(date) {
+  const d = new Date(date);
+  d.setHours(12, 0, 0, 0);
+  return d;
+}
+
 export function isSameDay(a, b) {
   return (
     a.getFullYear() === b.getFullYear() &&

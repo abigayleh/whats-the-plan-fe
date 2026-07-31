@@ -5,7 +5,7 @@ import TaskRowGroup from './TaskRowGroup';
 // The "Unscheduled" section honors the page's "Show unscheduled to-dos" toggle.
 function DayTodoPanel({
   overdueTasks, todayTasks, unscheduledTasks, lists,
-  onToggle, onOpenOverdue, onOpenToday, onOpenUnscheduled, showUnscheduled,
+  onToggle, onToggleOverdue, onOpenOverdue, onOpenToday, onOpenUnscheduled, showUnscheduled,
 }) {
   return (
     <div className="day-todo-panel">
@@ -14,7 +14,7 @@ function DayTodoPanel({
           title="Overdue"
           tasks={overdueTasks}
           lists={lists}
-          onToggle={onToggle}
+          onToggle={onToggleOverdue}
           onOpen={onOpenOverdue}
           emptyLabel="Nothing overdue."
         />

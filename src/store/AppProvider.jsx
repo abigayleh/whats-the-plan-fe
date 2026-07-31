@@ -9,9 +9,12 @@ import * as attachmentsApi from '../api/attachments';
 import {
   adaptGroup, adaptList, adaptTask, toBeTask,
 } from '../api/adapters';
-import { socket } from '../socket/socketClient';
+import useSocketEvents from '../hooks/useSocketEvents';
 import { DEFAULT_PERSONAL_SPACE } from '../mocks/groups';
-import { isTaskOnDay } from '../utils/tasks';
+import {
+  getTaskDay, isTaskDoneOnDay, isTaskOnDay, tickDayFor,
+} from '../utils/tasks';
+import { isSameDay, noonOf } from '../utils/date';
 
 // Read-only views over tasks the user can already see, so they're derived here
 // rather than fetched — no second source of truth to keep in sync.
@@ -26,6 +29,8 @@ const SYSTEM_LISTS = [
     id: 'l-due-today', name: 'Due Today', groupId: null, icon: null, isSystem: true,
   },
 ];
+
+const GROUP_EVENTS = ['group:member-joined', 'group:member-left', 'group:deleted'];
 
 // An itinerary owns a list, and moving the trip between spaces moves that list with it.
 const LIST_EVENTS = [
@@ -58,23 +63,12 @@ function AppProvider({ children }) {
     }
   }, []);
 
-  // Load groups on login and keep them fresh on membership/socket changes.
+  // Load groups on login, and drop them on logout.
   useEffect(() => {
-    if (!authUser) {
-      setGroups([]);
-      return undefined;
-    }
-    refreshGroups();
-    const onChange = () => refreshGroups();
-    socket.on('group:member-joined', onChange);
-    socket.on('group:member-left', onChange);
-    socket.on('group:deleted', onChange);
-    return () => {
-      socket.off('group:member-joined', onChange);
-      socket.off('group:member-left', onChange);
-      socket.off('group:deleted', onChange);
-    };
+    if (authUser) refreshGroups();
+    else setGroups([]);
   }, [authUser, refreshGroups]);
+  useSocketEvents(GROUP_EVENTS, authUser ? refreshGroups : null);
 
   // There's no all-tasks endpoint, so tasks are gathered per visible list. Every mutation
   // refreshes twice (its own await + the socket echo), so results are ticketed to stop a
@@ -108,35 +102,31 @@ function AppProvider({ children }) {
   }, []);
 
   useEffect(() => {
-    if (!authUser) {
-      setLists([]);
-      setTasks([]);
-      return undefined;
+    if (authUser) {
+      refreshLists();
+      return;
     }
-    refreshLists();
-    const onChange = () => refreshLists();
-    LIST_EVENTS.forEach((e) => socket.on(e, onChange));
-    return () => LIST_EVENTS.forEach((e) => socket.off(e, onChange));
+    setLists([]);
+    setTasks([]);
   }, [authUser, refreshLists]);
+  useSocketEvents(LIST_EVENTS, authUser ? refreshLists : null);
 
   // A task's list is the only place its scope lives, so mutations look it up here.
   const listIdOf = useCallback((taskId) => tasks.find((t) => t.id === taskId)?.listId, [tasks]);
 
   // Confetti fires once when a completion is the LAST of today's assigned incomplete to-dos.
   // Checked against pre-update `tasks` (exactly one task changes per call), so there's no
-  // need to diff before/after snapshots once refreshLists() resolves.
-  const checkDayComplete = useCallback((task, nextStatus) => {
-    if (nextStatus !== 'done' || task.status === 'done') return;
+  // need to diff before/after snapshots once refreshLists() resolves. `day` is the day being
+  // ticked: a recurring to-do is only ever done for a day, never as a whole, and ticking a
+  // missed day off the Overdue list says nothing about today.
+  const checkDayComplete = useCallback((task, day) => {
+    const today = new Date();
+    if (!day || !isSameDay(day, today) || !isTaskOnDay(task, today)) return;
     // "Mine" = assigned to me, or any personal (non-group) to-do — those are always mine.
     const isMine = (t) => t.assignedToId === currentUser.id || t.groupId == null;
-    if (!isMine(task) || !isTaskOnDay(task, new Date())) return;
+    if (!isMine(task)) return;
     const others = tasks.some((t) => (
-      t.sourceId !== task.sourceId && isMine(t) && t.status !== 'done'
-      // A series row's status is the series', not this day's — per-day completion lives on
-      // the expanded occurrence, which `tasks` doesn't carry. Counting the row would leave
-      // any recurring to-do blocking confetti on every day it recurs, forever.
-      && !t.recurrenceRule
-      && isTaskOnDay(t, new Date())
+      t.id !== task.id && isMine(t) && isTaskOnDay(t, today) && !isTaskDoneOnDay(t, today)
     ));
     if (!others) setConfettiKey((k) => k + 1);
   }, [tasks, currentUser]);
@@ -277,22 +267,21 @@ function AppProvider({ children }) {
       await listsApi.removeTask(listId, taskId);
       await refreshLists();
     },
-    async toggleTaskStatus(taskId) {
+    // Ticks a to-do off for one day. A recurring series marks that day's occurrence only, so it
+    // keeps recurring; anything else flips its own status and `day` is ignored. `day` defaults
+    // to whichever day a bare tick means for the series (today, or the day Overdue is showing).
+    // The date is sent at midday and the server snaps it to the real occurrence — the client
+    // can't reproduce the expansion's time-of-day across timezones.
+    async toggleTask(taskId, day) {
       const task = tasks.find((t) => t.id === taskId);
       if (!task) return;
-      const nextStatus = task.status === 'done' ? 'todo' : 'done';
-      checkDayComplete(task, nextStatus);
-      await listsApi.updateTask(task.listId, taskId, { status: nextStatus === 'done' ? 'DONE' : 'TODO' });
-      await refreshLists();
-    },
-    // Marks one day of a recurring series done/undone without touching the series itself.
-    // Takes the occurrence, not an id: only it knows this day's status, which the series row
-    // doesn't carry — and confetti has to know whether this toggle completes or reopens.
-    async toggleTaskOccurrence(occurrence, date) {
-      const task = tasks.find((t) => t.id === occurrence.sourceId);
-      if (!task || !date) return;
-      checkDayComplete(occurrence, occurrence.status === 'done' ? 'todo' : 'done');
-      await listsApi.updateTask(task.listId, task.id, { occurrenceDate: new Date(date).toISOString() });
+      const occurrenceDay = task.recurrenceRule ? (day ?? tickDayFor(task)) : null;
+      if (task.recurrenceRule && !occurrenceDay) return;
+      const wasDone = occurrenceDay ? isTaskDoneOnDay(task, occurrenceDay) : task.status === 'done';
+      if (!wasDone) checkDayComplete(task, occurrenceDay ?? getTaskDay(task) ?? new Date());
+      await listsApi.updateTask(task.listId, task.id, occurrenceDay
+        ? { occurrenceDate: noonOf(occurrenceDay).toISOString() }
+        : { status: wasDone ? 'TODO' : 'DONE' });
       await refreshLists();
     },
 
