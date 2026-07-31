@@ -33,7 +33,9 @@ function PageEditor() {
   const [staleRemote, setStaleRemote] = useState(false);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
+  const [editing, setEditing] = useState(false); // the caret is in the title or the document
   const lastSave = useRef(0); // timestamp of our last write, to ignore our own socket echo
+  const unsaved = useRef(false); // an edit of ours the server hasn't accepted yet
 
   useEffect(() => {
     let active = true;
@@ -50,16 +52,19 @@ function PageEditor() {
     return () => { active = false; };
   }, [pageId, reloadKey]);
 
-  // Nudge (don't clobber) when this page is edited elsewhere; skip our own save echo.
+  // An edit elsewhere loads straight in — unless it would land under the caret or overwrite an
+  // edit of ours that hasn't been accepted yet, which is the one case still worth a nudge.
+  // Our own save echo is skipped either way.
   useEffect(() => {
     const onUpdated = (payload) => {
       if (payload?.id !== pageId) return;
       if (Date.now() - lastSave.current < 2500) return;
-      setStaleRemote(true);
+      if (editing || unsaved.current) setStaleRemote(true);
+      else setReloadKey((k) => k + 1);
     };
     socket.on('page:updated', onUpdated);
     return () => socket.off('page:updated', onUpdated);
-  }, [pageId]);
+  }, [pageId, editing]);
 
   const editable = page ? canManagePage(page) : false;
 
@@ -70,9 +75,12 @@ function PageEditor() {
   );
   const trail = useMemo(() => ancestorsOf(pageId, pages), [pageId, pages]);
 
-  const [saveTitle, flushTitle] = useDebouncedCallback((id, value) => {
+  const [saveTitle, flushTitle] = useDebouncedCallback(async (id, value) => {
     lastSave.current = Date.now();
-    updatePage(id, { title: value.trim() || 'Untitled' });
+    try {
+      await updatePage(id, { title: value.trim() || 'Untitled' });
+      unsaved.current = false;
+    } catch { /* still unsaved — a remote update must not overwrite it */ }
   }, 800);
 
   const [persist, flushPersist] = useDebouncedCallback(async (id, content) => {
@@ -82,6 +90,7 @@ function PageEditor() {
     lastSave.current = Date.now();
     try {
       await saveContent(id, content);
+      unsaved.current = false;
       setSaveState('saved');
     } catch {
       // Falling back to 'idle' here read as "nothing to save" — which is how a rejected
@@ -93,7 +102,13 @@ function PageEditor() {
   // Flush pending title + content saves before switching pages, so nothing lags mid-edit.
   useEffect(() => () => { flushPersist(); flushTitle(); }, [pageId, flushPersist, flushTitle]);
 
+  function handleContent(content) {
+    unsaved.current = true;
+    persist(pageId, content);
+  }
+
   function handleTitle(e) {
+    unsaved.current = true;
     setTitle(e.target.value);
     saveTitle(pageId, e.target.value);
   }
@@ -164,7 +179,8 @@ function PageEditor() {
         className="page-editor__title"
         value={title}
         onChange={handleTitle}
-        onBlur={() => flushTitle()}
+        onFocus={() => setEditing(true)}
+        onBlur={() => { setEditing(false); flushTitle(); }}
         placeholder="Untitled"
         disabled={!editable}
       />
@@ -174,7 +190,8 @@ function PageEditor() {
         pageId={pageId}
         content={page.content}
         editable={editable}
-        onChange={(content) => persist(pageId, content)}
+        onChange={handleContent}
+        onFocusChange={setEditing}
         pages={pages}
         scopePages={scopePages}
       />

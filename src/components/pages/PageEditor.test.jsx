@@ -80,9 +80,22 @@ describe('PageEditor', () => {
     expect(screen.getByText('Delete this page? Its subpages move up a level.')).toBeInTheDocument();
   });
 
-  it('surfaces a "changed elsewhere" nudge from a socket update', async () => {
+  it('loads an edit made elsewhere straight in when nothing is being typed', async () => {
     renderEditor();
     await screen.findByDisplayValue('Child');
+    pagesApi.get.mockResolvedValue({
+      id: 'p1', title: 'Renamed elsewhere', content: null, icon: null, groupId: null, parentId: 'p0',
+    });
+    const handler = socket.on.mock.calls.find(([evt]) => evt === 'page:updated')[1];
+    act(() => handler({ id: 'p1' }));
+    expect(await screen.findByDisplayValue('Renamed elsewhere')).toBeInTheDocument();
+    expect(screen.queryByText(/changed elsewhere/)).not.toBeInTheDocument();
+  });
+
+  it('nudges instead of reloading when the edit would land under the caret', async () => {
+    const user = userEvent.setup();
+    renderEditor();
+    await user.type(await screen.findByDisplayValue('Child'), '!');
     const handler = socket.on.mock.calls.find(([evt]) => evt === 'page:updated')[1];
     act(() => handler({ id: 'p1' }));
     expect(await screen.findByText(/changed elsewhere/)).toBeInTheDocument();

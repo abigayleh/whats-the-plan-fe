@@ -46,7 +46,7 @@ function insertImages(view, dataTransfer, pageId) {
 // The TipTap document. Keyed by pageId upstream, so it remounts per page with fresh content.
 // `pages` resolves link-chip titles; `scopePages` feeds the @-mention picker (same scope only).
 function PageDocument({
-  pageId, content, editable, onChange, pages, scopePages,
+  pageId, content, editable, onChange, onFocusChange, pages, scopePages,
 }) {
   // A ref keeps the mention picker reading the latest same-scope pages without rebuilding the editor.
   const scopeRef = useRef(scopePages);
@@ -82,6 +82,10 @@ function PageDocument({
       handleDrop: (view, event) => insertImages(view, event.dataTransfer, pageId),
     },
     onUpdate: ({ editor: ed }) => onChange(ed.getJSON()),
+    // Lets the page tell whether the caret is in here, so a remote edit knows not to reload
+    // the document out from under it.
+    onFocus: () => onFocusChange?.(true),
+    onBlur: () => onFocusChange?.(false),
   });
 
   useEffect(() => { editor?.setEditable(editable); }, [editor, editable]);
