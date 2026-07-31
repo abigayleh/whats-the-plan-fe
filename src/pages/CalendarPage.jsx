@@ -13,17 +13,18 @@ import PlanItemModal from '../components/items/PlanItemModal';
 import useAppData from '../hooks/useAppData';
 import usePlanItems from '../hooks/usePlanItems';
 import useLocalStorageState from '../hooks/useLocalStorageState';
-import useLocalStorageDate from '../hooks/useLocalStorageDate';
 import useLocalStorageSet from '../hooks/useLocalStorageSet';
 import useCalendarItems from '../hooks/useCalendarItems';
 import useResizableSplit from '../hooks/useResizableSplit';
 import {
-  getListColorKey, getTaskColorKey, getTaskIconKey, getTaskDay, isTaskOnDay, isTaskTimed, isTaskOverdue,
+  getListColorKey, getOverdueDay, getTaskColorKey, getTaskIconKey, getTaskDay,
+  isTaskOnDay, isTaskTimed, isTaskOverdue,
 } from '../utils/tasks';
 import {
   addDays, addMonths, startOfDay, getMonthGrid, getWeekDays,
   formatFullDate, formatMonthYear, formatWeekRange,
 } from '../utils/date';
+import useDocumentTitle from '../hooks/useDocumentTitle';
 
 const DAY_MS = 86400000;
 // Pre-redefinition stored values ('events'/'tasks') migrate to their closest new meaning:
@@ -31,8 +32,9 @@ const DAY_MS = 86400000;
 const LEGACY_CONTENT_FILTER = { events: 'calendar', tasks: 'todos' };
 
 function CalendarPage() {
+  useDocumentTitle('Calendar');
   const {
-    groups, lists, tasks, currentUser, personalSpace,
+    groups, lists, tasks, currentUser, personalSpace, toggleTask,
   } = useAppData();
   const { saveItem, deleteItem, moveItem, toggleStatus } = usePlanItems();
   const [view, setView] = useLocalStorageState('calendar-view', 'month');
@@ -41,7 +43,9 @@ function CalendarPage() {
   const [onlyMine, setOnlyMine] = useLocalStorageState('calendar-only-mine', false);
   const [showCompleted, setShowCompleted] = useLocalStorageState('calendar-show-completed', true);
   const [showUnscheduledTray, setShowUnscheduledTray] = useLocalStorageState('calendar-show-unscheduled', false);
-  const [focusDate, setFocusDate] = useLocalStorageDate('calendar-focus-date', new Date());
+  // Deliberately not persisted: opening the calendar always lands on today, whatever day was
+  // last browsed. Only the view mode is remembered.
+  const [focusDate, setFocusDate] = useState(() => new Date());
   const [hiddenGroupIds, setHiddenGroupIds] = useLocalStorageSet('calendar-hidden-groups');
   const [hiddenListIds, setHiddenListIds] = useLocalStorageSet('calendar-hidden-lists');
   // null | { mode:'new', seed, defaultOrigin } | { mode:'edit', item }
@@ -214,6 +218,17 @@ function CalendarPage() {
     if (!item) return;
     try {
       await toggleStatus(item);
+      refetch();
+    } catch { /* ignore */ }
+  }
+
+  // An Overdue row stands for the day that was missed, not today — a recurring to-do has to
+  // tick that occurrence off, or the row it's shown in could never be cleared.
+  async function toggleOverdueTask(id) {
+    const task = tasks.find((t) => t.id === id);
+    if (!task) return;
+    try {
+      await toggleTask(id, getOverdueDay(task));
       refetch();
     } catch { /* ignore */ }
   }
@@ -447,6 +462,7 @@ function CalendarPage() {
               unscheduledTasks={unscheduledTasks}
               lists={lists}
               onToggle={toggleItemStatus}
+              onToggleOverdue={toggleOverdueTask}
               onOpenOverdue={openTaskById}
               onOpenToday={openItem}
               onOpenUnscheduled={openTaskById}
