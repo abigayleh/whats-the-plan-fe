@@ -51,6 +51,20 @@ describe('PagesPage', () => {
     expect(screen.getByText('Select a page, or create a new one.')).toBeInTheDocument();
   });
 
+  // The pane a phone shows is driven by this class, so it is the contract the mobile
+  // stylesheet hangs off. Desktop ignores it and shows both panes regardless.
+  it('marks the detail pane as active only when a page is open', () => {
+    const { unmount } = renderWithRouter(<PagesPage />, { route: '/pages' });
+    expect(document.querySelector('.pages')).not.toHaveClass('pages--detail');
+    expect(screen.queryByRole('link', { name: 'Pages' })).not.toBeInTheDocument();
+    unmount();
+
+    renderWithRouter(<PagesPage />, { route: '/pages/p1' });
+    expect(document.querySelector('.pages')).toHaveClass('pages--detail');
+    // The back link only exists in the detail pane, and returns to the tree.
+    expect(screen.getByRole('link', { name: 'Pages' })).toHaveAttribute('href', '/pages');
+  });
+
   it('collapses and re-expands the sidebar', async () => {
     const user = userEvent.setup();
     renderWithRouter(<PagesPage />, { route: '/pages' });

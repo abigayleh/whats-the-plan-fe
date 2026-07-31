@@ -45,6 +45,17 @@ describe('ItineraryPage', () => {
     expect(screen.getByText('Select an itinerary, or plan a new one.')).toBeInTheDocument();
   });
 
+  // Drives which pane a phone shows; desktop keeps both regardless.
+  it('marks the detail pane as active only when an itinerary is open', () => {
+    const { unmount } = renderWithRouter(<ItineraryPage />, { route: '/itinerary' });
+    expect(document.querySelector('.pages')).not.toHaveClass('pages--detail');
+    unmount();
+
+    renderWithRouter(<ItineraryPage />, { route: '/itinerary/i1' });
+    expect(document.querySelector('.pages')).toHaveClass('pages--detail');
+    expect(screen.getByRole('link', { name: 'Itineraries' })).toHaveAttribute('href', '/itinerary');
+  });
+
   it('collapses and re-expands the sidebar', async () => {
     const user = userEvent.setup();
     renderWithRouter(<ItineraryPage />, { route: '/itinerary' });

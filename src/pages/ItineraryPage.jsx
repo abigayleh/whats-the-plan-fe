@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import {
-  Outlet, useLocation, useNavigate, useParams,
+  Link, Outlet, useLocation, useNavigate, useParams,
 } from 'react-router-dom';
 import {
   TravelIcon, PlusIcon, ChevronIcon, MenuIcon,
@@ -66,7 +66,7 @@ function ItineraryPage() {
   };
 
   return (
-    <div className="pages">
+    <div className={`pages${atRoot ? '' : ' pages--detail'}`}>
       {collapsed ? (
         <button
           type="button"
@@ -120,7 +120,13 @@ function ItineraryPage() {
             <p>Select an itinerary, or plan a new one.</p>
           </div>
         ) : (
-          <Outlet context={context} />
+          <>
+            <Link to="/itinerary" className="pane-back">
+              <ChevronIcon width={16} height={16} />
+              Itineraries
+            </Link>
+            <Outlet context={context} />
+          </>
         )}
       </section>
 

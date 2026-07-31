@@ -14,6 +14,42 @@
   @include respond-below(tablet) {
     flex-direction: column;
     height: auto;
+    border: none;
+    border-radius: 0;
+    background: none;
+  }
+}
+
+// Push navigation on phones: the list is the screen until you open something, then the
+// detail replaces it. Both panes stay mounted, so route state and scroll are untouched.
+@include respond-below(tablet) {
+  .pages--detail .pages__sidebar,
+  .pages--detail .pages__expand {
+    display: none;
+  }
+
+  .pages:not(.pages--detail) .pages__content {
+    display: none;
+  }
+}
+
+// Back out of a detail pane. Desktop shows both panes at once, so it has nothing to do there.
+.pane-back {
+  display: none;
+
+  @include respond-below(tablet) {
+    display: inline-flex;
+    align-items: center;
+    gap: $spacing-xs;
+    min-height: 2.75rem;
+    padding-right: $spacing-sm;
+    color: $color-text-muted;
+    font-size: $font-size-sm;
+    text-decoration: none;
+
+    svg {
+      transform: rotate(180deg);
+    }
   }
 }
 

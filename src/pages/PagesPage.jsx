@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import {
-  Outlet, useLocation, useNavigate, useParams,
+  Link, Outlet, useLocation, useNavigate, useParams,
 } from 'react-router-dom';
 import {
   PagesIcon, PlusIcon, ChevronIcon, MenuIcon, SearchIcon, CloseIcon,
@@ -58,8 +58,9 @@ function PagesPage() {
     pages, currentUser, groups, personalSpace, canManagePage, saveContent, updatePage, deletePage, createPage,
   };
 
+  // Phones show one pane at a time: the tree, or the page you opened from it.
   return (
-    <div className="pages">
+    <div className={`pages${atRoot ? '' : ' pages--detail'}`}>
       {collapsed ? (
         <button
           type="button"
@@ -138,7 +139,13 @@ function PagesPage() {
             <p>Select a page, or create a new one.</p>
           </div>
         ) : (
-          <Outlet context={context} />
+          <>
+            <Link to="/pages" className="pane-back">
+              <ChevronIcon width={16} height={16} />
+              Pages
+            </Link>
+            <Outlet context={context} />
+          </>
         )}
       </section>
 
