@@ -243,6 +243,21 @@
   height: 1.4rem;
   flex-shrink: 0;
   margin-right: $spacing-xs;
+
+  // Touchscreens have no hover, so the action stays visible and grows to a real target.
+  @include respond-below(tablet) {
+    opacity: 1;
+    width: 2.75rem;
+    height: 2.75rem;
+  }
+}
+
+// The row is long-press draggable on touch, so the browser must keep owning vertical
+// scroll — without this the tree cannot be scrolled at all.
+@include respond-below(tablet) {
+  .page-tree__row {
+    touch-action: pan-y;
+  }
 }
 
 // Drag-and-drop feedback. The two outcomes have to look different at a glance, not just

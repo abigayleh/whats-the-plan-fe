@@ -136,6 +136,13 @@
   width: 1.4rem;
   height: 1.4rem;
   flex-shrink: 0;
+
+  // Touchscreens have no hover, so the actions stay visible and grow to a real target.
+  @include respond-below(tablet) {
+    opacity: 1;
+    width: 2.75rem;
+    height: 2.75rem;
+  }
 }
 
 // --- Right pane: itinerary hub ---
