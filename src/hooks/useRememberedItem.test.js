@@ -26,10 +26,16 @@ function render(props) {
   }), { wrapper });
 }
 
+let matchMediaMatches = false;
+
 describe('useRememberedItem', () => {
   beforeEach(() => {
     localStorage.clear();
     navigate.mockClear();
+    matchMediaMatches = false;
+    window.matchMedia = vi.fn().mockImplementation(() => ({
+      matches: matchMediaMatches, addEventListener: vi.fn(), removeEventListener: vi.fn(),
+    }));
   });
 
   it('persists the current item id', () => {
@@ -62,6 +68,15 @@ describe('useRememberedItem', () => {
   });
 
   it('does not navigate when nothing is remembered', () => {
+    render({ atRoot: true, items: [{ id: 'p1' }] });
+    expect(navigate).not.toHaveBeenCalled();
+  });
+
+  // On a phone the root is the list screen. Reopening the last item there fires the moment
+  // the user taps back, trapping them in the detail with no route to the list.
+  it('does not reopen the remembered item on a phone', () => {
+    matchMediaMatches = true;
+    localStorage.setItem('remembered', JSON.stringify('p1'));
     render({ atRoot: true, items: [{ id: 'p1' }] });
     expect(navigate).not.toHaveBeenCalled();
   });

@@ -10,6 +10,12 @@ const emptyRect = () => ({
 Range.prototype.getClientRects = () => [];
 Range.prototype.getBoundingClientRect = emptyRect;
 
+// jsdom ships no matchMedia, and anything using useMediaQuery calls it on first render.
+// Defaults to the desktop answer; tests that care about phone behaviour override it.
+window.matchMedia = window.matchMedia || (() => ({
+  matches: false, addEventListener: () => {}, removeEventListener: () => {},
+}));
+
 // Unmount and clear the DOM between tests so they stay isolated.
 afterEach(() => {
   cleanup();

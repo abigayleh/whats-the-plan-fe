@@ -5,6 +5,7 @@ import {
 import useAppData from '../../hooks/useAppData';
 import useLocalStorageState from '../../hooks/useLocalStorageState';
 import useMediaQuery from '../../hooks/useMediaQuery';
+import { MOBILE_QUERY } from '../../constants/breakpoints';
 
 const NAV_ITEMS = [
   { to: '/', label: 'Calendar', end: true, Icon: CalendarIcon },
@@ -19,7 +20,7 @@ const NAV_ITEMS = [
 function SideNav({ open = false }) {
   const { currentUser, personalSpace, groups } = useAppData();
   const [collapsedPref, setCollapsed] = useLocalStorageState('sidenav-collapsed', false);
-  const isMobile = useMediaQuery('(max-width: 767.98px)');
+  const isMobile = useMediaQuery(MOBILE_QUERY);
   // The mobile drawer always shows the full nav; collapse is a desktop-only convenience.
   const collapsed = collapsedPref && !isMobile;
   const spaces = [personalSpace, ...groups];
