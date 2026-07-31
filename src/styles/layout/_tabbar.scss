@@ -1,0 +1,44 @@
+@use '../abstracts/variables' as *;
+@use '../abstracts/mixins' as *;
+
+// Phone-only primary nav, pinned to the bottom. Hidden entirely on tablet and up,
+// where the side nav does this job.
+.tab-bar {
+  display: none;
+
+  @include respond-below(tablet) {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    position: fixed;
+    inset: auto 0 0;
+    z-index: 38;
+    background: $color-surface;
+    border-top: 1px solid $color-border;
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  &__tab {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    // Tall enough to clear the 44px touch target on its own.
+    min-height: 52px;
+    background: none;
+    border: none;
+    color: $color-text-muted;
+    font-size: $font-size-xs;
+    text-decoration: none;
+
+    &--active {
+      color: $color-primary;
+      font-weight: 600;
+    }
+
+    svg {
+      width: 20px;
+      height: 20px;
+    }
+  }
+}

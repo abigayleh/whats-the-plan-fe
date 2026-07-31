@@ -2,7 +2,9 @@
 @use '../abstracts/mixins' as *;
 
 .app-shell {
+  // dvh tracks the viewport as mobile browser chrome hides/shows; vh is the fallback.
   min-height: 100vh;
+  min-height: 100dvh;
   background: $color-bg;
   display: flex;
 
@@ -12,6 +14,7 @@
     display: flex;
     flex-direction: column;
     min-height: 100vh;
+    min-height: 100dvh;
   }
 
   // Dims the content while the mobile nav drawer is open; tap to close.
@@ -39,8 +42,10 @@
       max-width: none;
     }
 
+    // Clears the fixed tab bar (52px + its safe-area padding) so the last row of any
+    // list stays reachable above it.
     @include respond-below(tablet) {
-      padding: 0 $spacing-md $spacing-lg;
+      padding: 0 $spacing-md calc(52px + #{$spacing-lg} + env(safe-area-inset-bottom));
     }
   }
 }

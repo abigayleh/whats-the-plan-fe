@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
 import Header from './Header';
 import SideNav from './SideNav';
+import TabBar from './TabBar';
 import Confetti from '../common/Confetti';
 import useAppData from '../../hooks/useAppData';
 
@@ -35,6 +36,7 @@ function AppShell() {
           <Outlet />
         </main>
       </div>
+      <TabBar onOpenNav={() => setNavOpen(true)} />
     </div>
   );
 }
