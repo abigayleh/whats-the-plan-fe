@@ -17,6 +17,12 @@
     padding-bottom: env(safe-area-inset-bottom);
   }
 
+  // The editor's docked formatting bar claims the bottom edge while text is selected, and
+  // a keyboard-shortened viewport has no room for both.
+  body.is-formatting & {
+    display: none;
+  }
+
   &__tab {
     display: flex;
     flex-direction: column;

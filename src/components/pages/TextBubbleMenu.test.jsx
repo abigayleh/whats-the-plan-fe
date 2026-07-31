@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import {
-  describe, it, expect, vi,
+  describe, it, expect, vi, afterEach,
 } from 'vitest';
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
@@ -53,6 +53,48 @@ async function setup() {
 }
 
 const colours = () => screen.queryByRole('group', { name: 'Text colour' });
+
+const setViewport = (mobile) => {
+  window.matchMedia = vi.fn().mockImplementation(() => ({
+    matches: mobile, addEventListener: vi.fn(), removeEventListener: vi.fn(),
+  }));
+};
+
+describe('TextBubbleMenu on a phone', () => {
+  afterEach(() => {
+    setViewport(false);
+    document.body.classList.remove('is-formatting');
+  });
+
+  it('docks the controls to the bottom edge instead of floating them', async () => {
+    setViewport(true);
+    const { highlight } = await setup();
+    await highlight();
+    expect(document.querySelector('.page-doc__bubble--docked')).toBeInTheDocument();
+    expect(screen.getByRole('toolbar', { name: 'Formatting' })).toBeInTheDocument();
+  });
+
+  // The docked bar and the tab bar both own the bottom edge, so they cannot coexist.
+  it('yields the bottom edge by the tab bar only while text is selected', async () => {
+    setViewport(true);
+    const { select, highlight } = await setup();
+    expect(document.body).not.toHaveClass('is-formatting');
+
+    await highlight();
+    expect(document.body).toHaveClass('is-formatting');
+
+    await select(1, 1);
+    await waitFor(() => expect(document.body).not.toHaveClass('is-formatting'));
+  });
+
+  it('still floats beside the selection on desktop', async () => {
+    setViewport(false);
+    const { highlight } = await setup();
+    await highlight();
+    expect(document.querySelector('.page-doc__bubble--docked')).toBeNull();
+    expect(document.body).not.toHaveClass('is-formatting');
+  });
+});
 
 describe('TextBubbleMenu', () => {
   it('stays hidden until text is selected, and hides again when the selection collapses', async () => {

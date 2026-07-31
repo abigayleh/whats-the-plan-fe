@@ -562,6 +562,21 @@
   border: 1px solid $color-border;
   border-radius: $radius-sm;
   background: $color-surface;
+
+  // Phones dock the bar to the bottom edge instead of floating it beside the selection,
+  // where on touch it lands under the finger or the OS selection handles. It rides above
+  // the keyboard because the keyboard shortens the visual viewport under it.
+  &--docked {
+    position: fixed;
+    inset: auto 0 0;
+    z-index: 39;
+    border-radius: 0;
+    border-inline: none;
+    border-bottom: none;
+    padding-bottom: calc(#{$spacing-xs} + env(safe-area-inset-bottom));
+    // More controls than a phone's width holds — scroll them rather than wrap to two rows.
+    overflow-x: auto;
+  }
 }
 
 .page-doc__bubble-group {
