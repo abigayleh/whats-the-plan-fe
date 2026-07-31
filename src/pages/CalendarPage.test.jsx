@@ -31,6 +31,37 @@ beforeEach(() => {
   useCalendarItems.mockReturnValue({ items: [], refetch: vi.fn() });
 });
 
+describe('CalendarPage month view', () => {
+  const setViewport = (mobile) => {
+    window.matchMedia = vi.fn().mockImplementation(() => ({
+      matches: mobile, addEventListener: vi.fn(), removeEventListener: vi.fn(),
+    }));
+  };
+
+  // On a phone the grid only shows dots, so tapping a day has to explain it in place
+  // rather than navigating away.
+  it('fills the day panel instead of leaving the month on a phone', async () => {
+    setViewport(true);
+    const user = userEvent.setup();
+    renderWithRouter(<CalendarPage />);
+    const dayCell = document.querySelectorAll('.calendar-month__day')[10];
+    await user.click(dayCell);
+    expect(document.querySelector('.month-day-panel')).toBeInTheDocument();
+    // Still on the month: the grid is present and the day timeline is not.
+    expect(document.querySelector('.calendar-month__grid')).toBeInTheDocument();
+    expect(document.querySelector('.calendar-day')).toBeNull();
+  });
+
+  it('jumps straight to the day view on desktop and shows no panel', async () => {
+    setViewport(false);
+    const user = userEvent.setup();
+    renderWithRouter(<CalendarPage />);
+    expect(document.querySelector('.month-day-panel')).toBeNull();
+    await user.click(document.querySelectorAll('.calendar-month__day')[10]);
+    expect(document.querySelector('.calendar-month__grid')).toBeNull();
+  });
+});
+
 describe('CalendarPage', () => {
   it('renders the calendar heading and view switcher', () => {
     renderWithRouter(<CalendarPage />);

@@ -46,6 +46,12 @@
       background: $color-primary-soft;
     }
 
+    // Phone-only: which day the panel below the grid is describing.
+    &--selected {
+      outline: 2px solid $color-primary;
+      outline-offset: -2px;
+    }
+
     &:hover {
       background: $color-border;
     }
@@ -349,6 +355,30 @@ $timeline-allday-height: 2.75rem;
 
 // --- Mobile ---
 @include respond-below(tablet) {
+  // Seven columns across ~390px: the card's own padding is the difference between a 41px
+  // cell and a 44px one, so give it back to the grid.
+  .calendar-month {
+    padding: $spacing-sm;
+  }
+
+  .month-day-panel {
+    margin-top: $spacing-md;
+
+    &__header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: $spacing-sm;
+      margin-bottom: $spacing-sm;
+    }
+
+    &__title {
+      margin: 0;
+      font-size: $font-size-base;
+      font-weight: 600;
+    }
+  }
+
   // Day view: stack the panels; the drag-resizer is meaningless stacked. To-dos go on top
   // (order:-1) so they're the first thing seen, with the timeline below.
   .calendar-day-split {

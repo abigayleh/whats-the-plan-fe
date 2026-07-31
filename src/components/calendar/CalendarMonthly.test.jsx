@@ -12,6 +12,26 @@ describe('CalendarMonthly', () => {
     });
   });
 
+  // The phone's month panel describes one day; the grid has to show which.
+  it('marks the selected day when one is given', () => {
+    render(
+      <CalendarMonthly
+        focusDate={focusDate}
+        tasks={[]}
+        selectedDay={new Date(2026, 6, 15)}
+        onSelectDay={() => {}}
+      />,
+    );
+    const selected = document.querySelectorAll('.calendar-month__day--selected');
+    expect(selected).toHaveLength(1);
+    expect(selected[0]).toHaveTextContent('15');
+  });
+
+  it('marks nothing selected on desktop, where no day is passed', () => {
+    render(<CalendarMonthly focusDate={focusDate} tasks={[]} onSelectDay={() => {}} />);
+    expect(document.querySelector('.calendar-month__day--selected')).toBeNull();
+  });
+
   it('calls onSelectDay with the clicked day', async () => {
     const onSelectDay = vi.fn();
     render(<CalendarMonthly focusDate={focusDate} tasks={[]} onSelectDay={onSelectDay} />);

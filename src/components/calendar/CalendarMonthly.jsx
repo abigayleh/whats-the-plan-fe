@@ -1,8 +1,8 @@
-import { WEEKDAY_LABELS, getMonthGrid, isToday } from '../../utils/date';
+import { WEEKDAY_LABELS, getMonthGrid, isToday, isSameDay } from '../../utils/date';
 import { isTaskOnDay, isTaskTimed } from '../../utils/tasks';
 
 function CalendarMonthly({
-  focusDate, tasks, onSelectDay,
+  focusDate, tasks, selectedDay = null, onSelectDay,
 }) {
   const days = getMonthGrid(focusDate);
   const month = focusDate.getMonth();
@@ -28,7 +28,8 @@ function CalendarMonthly({
             <button
               key={day.toISOString()}
               type="button"
-              className={`calendar-month__day${outside ? ' calendar-month__day--outside' : ''}${isToday(day) ? ' calendar-month__day--today' : ''}`}
+              className={`calendar-month__day${outside ? ' calendar-month__day--outside' : ''}${isToday(day) ? ' calendar-month__day--today' : ''}${selectedDay && isSameDay(day, selectedDay) ? ' calendar-month__day--selected' : ''}`}
+              aria-pressed={selectedDay ? isSameDay(day, selectedDay) : undefined}
               onClick={() => onSelectDay(day)}
             >
               <span className="calendar-month__day-number">{day.getDate()}</span>

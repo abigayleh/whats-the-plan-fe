@@ -10,12 +10,15 @@ import UnscheduledPanel from '../components/calendar/UnscheduledPanel';
 import DayTodoPanel from '../components/calendar/DayTodoPanel';
 import WeekTodosView from '../components/calendar/WeekTodosView';
 import PlanItemModal from '../components/items/PlanItemModal';
+import MonthDayPanel from '../components/calendar/MonthDayPanel';
 import useAppData from '../hooks/useAppData';
 import usePlanItems from '../hooks/usePlanItems';
 import useLocalStorageState from '../hooks/useLocalStorageState';
 import useLocalStorageSet from '../hooks/useLocalStorageSet';
 import useCalendarItems from '../hooks/useCalendarItems';
 import useResizableSplit from '../hooks/useResizableSplit';
+import useMediaQuery from '../hooks/useMediaQuery';
+import { MOBILE_QUERY } from '../constants/breakpoints';
 import {
   getListColorKey, getOverdueDay, getTaskColorKey, getTaskIconKey, getTaskDay,
   isTaskOnDay, isTaskTimed, isTaskOverdue,
@@ -51,6 +54,10 @@ function CalendarPage() {
   // null | { mode:'new', seed, defaultOrigin } | { mode:'edit', item }
   const [planItemModal, setPlanItemModal] = useState(null);
   const dayPanel = useResizableSplit('calendar-day-panel-width', 384);
+  const isMobile = useMediaQuery(MOBILE_QUERY);
+  // Which day the phone's month panel is describing. Starts on the focused day so the
+  // panel is never empty on arrival.
+  const [selectedDay, setSelectedDay] = useState(() => new Date());
 
   const range = useMemo(() => {
     let days;
@@ -208,7 +215,13 @@ function CalendarPage() {
     else setFocusDate((d) => addDays(d, 1));
   }
 
+  // On a phone the month grid only shows dots, so tapping a day fills the panel below it
+  // rather than leaving the month outright. Desktop keeps jumping straight to Day view.
   function handleSelectDay(day) {
+    if (isMobile && view === 'month') {
+      setSelectedDay(day);
+      return;
+    }
     setFocusDate(day);
     setView('day');
   }
@@ -423,7 +436,24 @@ function CalendarPage() {
           </button>
         )}
         {view === 'month' && (
-          <CalendarMonthly focusDate={focusDate} tasks={baseVisibleItems} onSelectDay={handleSelectDay} />
+          <>
+            <CalendarMonthly
+              focusDate={focusDate}
+              tasks={baseVisibleItems}
+              selectedDay={isMobile ? selectedDay : null}
+              onSelectDay={handleSelectDay}
+            />
+            {isMobile && (
+              <MonthDayPanel
+                day={selectedDay}
+                tasks={baseVisibleItems.filter((it) => isTaskOnDay(it, selectedDay))}
+                lists={lists}
+                onToggle={toggleItemStatus}
+                onOpen={openItem}
+                onOpenDay={() => { setFocusDate(selectedDay); setView('day'); }}
+              />
+            )}
+          </>
         )}
         {view === 'week' && (
           contentFilter === 'todos' ? weekTodosView : (
