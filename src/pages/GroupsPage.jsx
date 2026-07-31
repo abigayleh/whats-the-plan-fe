@@ -5,8 +5,10 @@ import GroupCreateModal from '../components/groups/GroupCreateModal';
 import JoinGroupModal from '../components/groups/JoinGroupModal';
 import PersonalSpaceModal from '../components/groups/PersonalSpaceModal';
 import useAppData from '../hooks/useAppData';
+import useDocumentTitle from '../hooks/useDocumentTitle';
 
 function GroupsPage() {
+  useDocumentTitle('Groups');
   const {
     groups, personalSpace, addGroup, joinGroup, updatePersonalSpace,
   } = useAppData();

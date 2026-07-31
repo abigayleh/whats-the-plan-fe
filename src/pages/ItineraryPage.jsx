@@ -12,6 +12,7 @@ import useAppData from '../hooks/useAppData';
 import useItineraries from '../hooks/useItineraries';
 import useLocalStorageState from '../hooks/useLocalStorageState';
 import useRememberedItem from '../hooks/useRememberedItem';
+import useDocumentTitle from '../hooks/useDocumentTitle';
 
 // Two-pane layout mirroring Pages: the itinerary list on the left, the selected
 // itinerary's hub on the right (rendered through the nested :itineraryId route).
@@ -28,6 +29,10 @@ function ItineraryPage() {
   const { pathname } = useLocation();
   const { itineraryId } = useParams();
   const atRoot = pathname === '/itinerary' || pathname === '/itinerary/';
+
+  // Set here rather than in ItineraryDetail, for the same reason as PagesPage: a nested
+  // route's effect runs before its parent's, so the parent's title would win anyway.
+  useDocumentTitle(itineraries.find((i) => i.id === itineraryId)?.title || 'Itineraries');
 
   // Reopen the last itinerary viewed when landing on /itinerary, instead of the empty state.
   useRememberedItem({

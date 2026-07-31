@@ -1,10 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import useAuth from '../hooks/useAuth';
+import useDocumentTitle from '../hooks/useDocumentTitle';
 
 // The portfolio entry point: /demo signs the visitor into the shared demo account and drops
 // them on the calendar. There's nothing to click — the link itself is the whole flow.
 function DemoPage() {
+  useDocumentTitle('Demo');
   const { demoLogin } = useAuth();
   const navigate = useNavigate();
   const [failed, setFailed] = useState(false);

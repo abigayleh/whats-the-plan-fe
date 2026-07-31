@@ -1,10 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { verifyEmail } from '../api/auth';
+import useDocumentTitle from '../hooks/useDocumentTitle';
 
 // Landing page for the emailed verification link. Calls the API with the token, then bounces
 // to login on success. Verification is idempotent, so a re-run (e.g. StrictMode) is harmless.
 function VerifyPage() {
+  useDocumentTitle('Verify email');
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const [status, setStatus] = useState('verifying'); // verifying | success | error

@@ -11,6 +11,7 @@ import useAppData from '../hooks/useAppData';
 import usePages from '../hooks/usePages';
 import useLocalStorageState from '../hooks/useLocalStorageState';
 import useRememberedItem from '../hooks/useRememberedItem';
+import useDocumentTitle from '../hooks/useDocumentTitle';
 
 // Two-pane Notion-style layout: a scoped page tree on the left, the selected page on
 // the right (rendered through the nested :pageId route via Outlet context).
@@ -26,6 +27,10 @@ function PagesPage() {
   const { pathname } = useLocation();
   const { pageId } = useParams();
   const atRoot = pathname === '/pages' || pathname === '/pages/';
+
+  // Set here rather than in PageEditor: a nested route's effect runs before its parent's,
+  // so a title set there would be overwritten by this one.
+  useDocumentTitle(pages.find((p) => p.id === pageId)?.title || 'Pages');
 
   // Reopen the last page viewed when landing on /pages, instead of the empty state.
   useRememberedItem({

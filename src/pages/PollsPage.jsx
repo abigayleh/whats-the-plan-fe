@@ -7,8 +7,10 @@ import ConfirmModal from '../components/common/ConfirmModal';
 import useAppData from '../hooks/useAppData';
 import usePolls from '../hooks/usePolls';
 import * as pollsApi from '../api/polls';
+import useDocumentTitle from '../hooks/useDocumentTitle';
 
 function PollsPage() {
+  useDocumentTitle('Polls');
   const { groups, currentUser } = useAppData();
   const { polls, refetch } = usePolls(groups);
   const [hiddenGroupIds, setHiddenGroupIds] = useState(() => new Set());

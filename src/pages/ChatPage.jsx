@@ -1,6 +1,8 @@
 import { ChatIcon } from '../components/layout/icons';
+import useDocumentTitle from '../hooks/useDocumentTitle';
 
 function ChatPage() {
+  useDocumentTitle('Chat');
   return (
     <section className="page">
       <div className="page__header">

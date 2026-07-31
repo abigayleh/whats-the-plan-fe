@@ -5,8 +5,10 @@ import useAuth from '../hooks/useAuth';
 import * as usersApi from '../api/users';
 import { setTokens } from '../api/client';
 import DeleteAccountModal from '../components/profile/DeleteAccountModal';
+import useDocumentTitle from '../hooks/useDocumentTitle';
 
 function ProfilePage() {
+  useDocumentTitle('Profile');
   const { user, updateUser, deleteAccount } = useAuth();
   const navigate = useNavigate();
 

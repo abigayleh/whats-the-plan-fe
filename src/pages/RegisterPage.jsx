@@ -2,8 +2,10 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import useAuth from '../hooks/useAuth';
 import { resendVerification } from '../api/auth';
+import useDocumentTitle from '../hooks/useDocumentTitle';
 
 function RegisterPage() {
+  useDocumentTitle('Sign up');
   const { register } = useAuth();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');

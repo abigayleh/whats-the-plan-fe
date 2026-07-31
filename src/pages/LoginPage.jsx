@@ -2,8 +2,10 @@ import { useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import useAuth from '../hooks/useAuth';
 import { resendVerification } from '../api/auth';
+import useDocumentTitle from '../hooks/useDocumentTitle';
 
 function LoginPage() {
+  useDocumentTitle('Log in');
   const { login } = useAuth();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
