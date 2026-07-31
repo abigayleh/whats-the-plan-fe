@@ -3,7 +3,7 @@ import {
 } from 'react';
 import * as pollsApi from '../api/polls';
 import { adaptPoll } from '../api/adapters';
-import { socket } from '../socket/socketClient';
+import useSocketEvents from './useSocketEvents';
 
 const EVENTS = ['poll:created', 'poll:vote', 'poll:deleted'];
 
@@ -34,12 +34,7 @@ export default function usePolls(groups) {
   }, [groupKey]);
 
   useEffect(() => { refetch(); }, [refetch]);
-
-  useEffect(() => {
-    const on = () => refetch();
-    EVENTS.forEach((e) => socket.on(e, on));
-    return () => EVENTS.forEach((e) => socket.off(e, on));
-  }, [refetch]);
+  useSocketEvents(EVENTS, refetch);
 
   return { polls, refetch };
 }

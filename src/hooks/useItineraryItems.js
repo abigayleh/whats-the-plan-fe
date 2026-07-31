@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import * as itinerariesApi from '../api/itineraries';
-import { socket } from '../socket/socketClient';
+import useSocketEvents from './useSocketEvents';
 import { adaptCalendarTask } from '../api/adapters';
 
 const EVENTS = ['task:created', 'task:updated', 'task:deleted'];
@@ -21,12 +21,7 @@ export default function useItineraryItems(itineraryId, startISO, endISO) {
   }, [itineraryId, startISO, endISO]);
 
   useEffect(() => { refetch(); }, [refetch]);
-
-  useEffect(() => {
-    const on = () => refetch();
-    EVENTS.forEach((e) => socket.on(e, on));
-    return () => EVENTS.forEach((e) => socket.off(e, on));
-  }, [refetch]);
+  useSocketEvents(EVENTS, refetch);
 
   return { items, refetch };
 }

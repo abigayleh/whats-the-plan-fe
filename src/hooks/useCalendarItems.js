@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import * as eventsApi from '../api/events';
 import * as tasksApi from '../api/tasks';
-import { socket } from '../socket/socketClient';
+import useSocketEvents from './useSocketEvents';
 import { adaptEvent, adaptCalendarTask } from '../api/adapters';
 
 const EVENTS = ['event:created', 'event:updated', 'event:deleted', 'task:created', 'task:updated', 'task:deleted'];
@@ -24,12 +24,7 @@ export default function useCalendarItems(startISO, endISO) {
   }, [startISO, endISO]);
 
   useEffect(() => { refetch(); }, [refetch]);
-
-  useEffect(() => {
-    const on = () => refetch();
-    EVENTS.forEach((e) => socket.on(e, on));
-    return () => EVENTS.forEach((e) => socket.off(e, on));
-  }, [refetch]);
+  useSocketEvents(EVENTS, refetch);
 
   return { items, refetch };
 }

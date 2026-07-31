@@ -3,7 +3,7 @@ import {
 } from 'react';
 import * as itinerariesApi from '../api/itineraries';
 import { adaptItinerary } from '../api/adapters';
-import { socket } from '../socket/socketClient';
+import useSocketEvents from './useSocketEvents';
 
 const EVENTS = ['itinerary:created', 'itinerary:updated', 'itinerary:deleted'];
 
@@ -37,12 +37,7 @@ export default function useItineraries() {
   }, []);
 
   useEffect(() => { refresh(); }, [refresh]);
-
-  useEffect(() => {
-    const on = () => refresh();
-    EVENTS.forEach((e) => socket.on(e, on));
-    return () => EVENTS.forEach((e) => socket.off(e, on));
-  }, [refresh]);
+  useSocketEvents(EVENTS, refresh);
 
   const addItinerary = useCallback(async (body) => {
     const created = await itinerariesApi.create(body);

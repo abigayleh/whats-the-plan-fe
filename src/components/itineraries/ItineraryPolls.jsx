@@ -4,11 +4,11 @@ import {
 import * as itinerariesApi from '../../api/itineraries';
 import * as pollsApi from '../../api/polls';
 import { adaptPoll } from '../../api/adapters';
-import { socket } from '../../socket/socketClient';
 import PollCard from '../polls/PollCard';
 import PollCreateModal from '../polls/PollCreateModal';
 import ConfirmModal from '../common/ConfirmModal';
 import { PlusIcon } from '../layout/icons';
+import useSocketEvents from '../../hooks/useSocketEvents';
 
 const EVENTS = ['poll:created', 'poll:vote', 'poll:deleted'];
 
@@ -29,12 +29,7 @@ function ItineraryPolls({ itinerary, group, currentUser }) {
   }, [itinerary.id]);
 
   useEffect(() => { refetch(); }, [refetch]);
-  useEffect(() => {
-    const on = () => refetch();
-    EVENTS.forEach((e) => socket.on(e, on));
-    return () => EVENTS.forEach((e) => socket.off(e, on));
-  }, [refetch]);
-
+  useSocketEvents(EVENTS, refetch);
   const canDelete = (poll) => poll.createdById === currentUser.id || group?.role === 'ADMIN';
 
   async function handleVote(pollId, optionId) {

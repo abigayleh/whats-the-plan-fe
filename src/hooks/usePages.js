@@ -3,7 +3,7 @@ import {
 } from 'react';
 import * as pagesApi from '../api/pages';
 import { adaptPage } from '../api/adapters';
-import { socket } from '../socket/socketClient';
+import useSocketEvents from './useSocketEvents';
 
 const EVENTS = ['page:created', 'page:updated', 'page:deleted'];
 
@@ -34,12 +34,7 @@ export default function usePages() {
   }, []);
 
   useEffect(() => { refresh(); }, [refresh]);
-
-  useEffect(() => {
-    const on = () => refresh();
-    EVENTS.forEach((e) => socket.on(e, on));
-    return () => EVENTS.forEach((e) => socket.off(e, on));
-  }, [refresh]);
+  useSocketEvents(EVENTS, refresh);
 
   const addPage = useCallback(async (body) => {
     const created = await pagesApi.create(body);

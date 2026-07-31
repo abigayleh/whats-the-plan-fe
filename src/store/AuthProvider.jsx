@@ -75,23 +75,25 @@ export default function AuthProvider({ children }) {
   }, []);
 
   // Recover the realtime socket after idle. Browsers drop the connection when the tab sleeps,
-  // and socket.io's own reconnect sends the now-expired token, which the server rejects for good
-  // (connect_error with socket.active === false, no further retries). So live updates silently
-  // die until a refresh. Here we mint a fresh token first, then reconnect — on tab focus and on a
-  // rejected reconnect — so rooms re-subscribe without a manual page reload.
+  // and socket.io's own reconnect sends the now-expired token, which the server rejects. It
+  // keeps retrying with that same dead token — so minting a fresh one is the only thing that
+  // breaks the loop, and it has to happen whether or not socket.io has given up (socket.active).
+  // Waiting for it to give up left live updates silently dead until a manual page reload.
   useEffect(() => {
     if (status !== 'authed') return undefined;
+    let lastAttempt = 0;
     const revive = async () => {
-      if (socket.connected) return;
+      // Retries arrive in bursts; one refresh every few seconds is enough to unstick them.
+      if (socket.connected || Date.now() - lastAttempt < 5000) return;
+      lastAttempt = Date.now();
       if (await ensureFreshToken()) connectSocket();
     };
     const onVisible = () => { if (document.visibilityState === 'visible') revive(); };
-    const onConnectError = () => { if (!socket.active) revive(); };
     document.addEventListener('visibilitychange', onVisible);
-    socket.on('connect_error', onConnectError);
+    socket.on('connect_error', revive);
     return () => {
       document.removeEventListener('visibilitychange', onVisible);
-      socket.off('connect_error', onConnectError);
+      socket.off('connect_error', revive);
     };
   }, [status]);
 

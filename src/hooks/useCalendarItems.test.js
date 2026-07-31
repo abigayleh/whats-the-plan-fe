@@ -51,6 +51,14 @@ describe('useCalendarItems', () => {
     expect(eventsApi.list).toHaveBeenCalledTimes(1);
   });
 
+  it('refetches on reconnect, since anything broadcast while it was down is lost', async () => {
+    const { result } = renderHook(() => useCalendarItems(START, END));
+    await waitFor(() => expect(result.current.items).toHaveLength(2));
+    eventsApi.list.mockClear();
+    await act(async () => { socket.__emit('connect'); });
+    expect(eventsApi.list).toHaveBeenCalledTimes(1);
+  });
+
   it('keeps the last items when a refetch fails', async () => {
     const { result } = renderHook(() => useCalendarItems(START, END));
     await waitFor(() => expect(result.current.items).toHaveLength(2));

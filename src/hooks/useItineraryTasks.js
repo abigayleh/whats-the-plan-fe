@@ -6,7 +6,7 @@ import * as attachmentsApi from '../api/attachments';
 import { adaptTask, toBeTask } from '../api/adapters';
 import { isTaskTimed } from '../utils/tasks';
 import { startOfDay } from '../utils/date';
-import { socket } from '../socket/socketClient';
+import useSocketEvents from './useSocketEvents';
 
 const EVENTS = ['task:created', 'task:updated', 'task:deleted'];
 
@@ -28,12 +28,7 @@ export default function useItineraryTasks(listId) {
   }, [listId]);
 
   useEffect(() => { refresh(); }, [refresh]);
-
-  useEffect(() => {
-    const on = () => refresh();
-    EVENTS.forEach((e) => socket.on(e, on));
-    return () => EVENTS.forEach((e) => socket.off(e, on));
-  }, [refresh]);
+  useSocketEvents(EVENTS, refresh);
 
   // Create returns { item, attachmentError? } so PlanItemModal can re-route later saves.
   const create = useCallback(async (payload) => {

@@ -6,8 +6,12 @@ import { GroupsIcon } from '../components/layout/icons';
 import ConfirmModal from '../components/common/ConfirmModal';
 import { ACCENT_KEYS } from '../constants/colors';
 import useAppData from '../hooks/useAppData';
+import useSocketEvents from '../hooks/useSocketEvents';
+import useDocumentTitle from '../hooks/useDocumentTitle';
 import * as groupsApi from '../api/groups';
 import { socket } from '../socket/socketClient';
+
+const MEMBER_EVENTS = ['group:member-joined', 'group:member-left'];
 
 function GroupSettingsPage() {
   const { groupId } = useParams();
@@ -19,6 +23,7 @@ function GroupSettingsPage() {
   const [status, setStatus] = useState('loading'); // loading | ready | notfound
   const [showLeaveWarning, setShowLeaveWarning] = useState(false);
   const [error, setError] = useState(null);
+  useDocumentTitle(group ? `${group.name} settings` : 'Group settings');
 
   const reload = useCallback(async () => {
     try {
@@ -31,19 +36,19 @@ function GroupSettingsPage() {
 
   useEffect(() => { reload(); }, [reload]);
 
-  // Keep this page in sync with membership/deletion events for this group.
+  // Keep this page in sync with membership changes — and with whatever was missed while the
+  // socket was down, which arrives as a payload-less 'connect' (see useSocketEvents).
+  const onMemberChange = useCallback(
+    (payload) => { if (!payload || payload.groupId === groupId) reload(); },
+    [groupId, reload],
+  );
+  useSocketEvents(MEMBER_EVENTS, onMemberChange);
+
   useEffect(() => {
     const onDeleted = ({ groupId: gid }) => { if (gid === groupId) navigate('/groups'); };
-    const onChange = ({ groupId: gid }) => { if (gid === groupId) reload(); };
     socket.on('group:deleted', onDeleted);
-    socket.on('group:member-joined', onChange);
-    socket.on('group:member-left', onChange);
-    return () => {
-      socket.off('group:deleted', onDeleted);
-      socket.off('group:member-joined', onChange);
-      socket.off('group:member-left', onChange);
-    };
-  }, [groupId, navigate, reload]);
+    return () => socket.off('group:deleted', onDeleted);
+  }, [groupId, navigate]);
 
   if (status === 'loading') return <section className="page"><p>Loading…</p></section>;
 
