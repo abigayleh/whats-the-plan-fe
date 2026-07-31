@@ -32,7 +32,7 @@ describe('AppShell', () => {
       { route: '/' },
     );
     expect(screen.getByText('Page body')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Open menu' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'More' })).toBeInTheDocument();
     // Brand from the side nav proves the shell mounted around the outlet.
     expect(screen.getByText("What's the Plan?")).toBeInTheDocument();
   });

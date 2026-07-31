@@ -1,7 +1,20 @@
+@use '../abstracts/mixins' as *;
+
 * {
   box-sizing: border-box;
 }
 
 body {
   margin: 0;
+}
+
+// iOS Safari zooms the whole page when a focused field is under 16px, and never zooms
+// back out. One global floor is the only reliable fix — per-component sizes would each
+// have to remember it.
+@include respond-below(tablet) {
+  input,
+  textarea,
+  select {
+    font-size: 1rem;
+  }
 }

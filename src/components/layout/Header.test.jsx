@@ -16,20 +16,19 @@ describe('Header', () => {
   });
 
   it('shows a greeting and the current user name and avatar initial', () => {
-    renderWithRouter(<Header onOpenNav={vi.fn()} />);
+    renderWithRouter(<Header />);
     expect(screen.getByText('Ada')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Open profile menu' })).toHaveTextContent('A');
   });
 
-  it('calls onOpenNav from the menu toggle', async () => {
-    const onOpenNav = vi.fn();
-    renderWithRouter(<Header onOpenNav={onOpenNav} />);
-    await userEvent.click(screen.getByRole('button', { name: 'Open menu' }));
-    expect(onOpenNav).toHaveBeenCalledTimes(1);
+  // The drawer is opened from the tab bar's More on mobile; the header no longer duplicates it.
+  it('has no menu toggle', () => {
+    renderWithRouter(<Header />);
+    expect(screen.queryByRole('button', { name: 'Open menu' })).not.toBeInTheDocument();
   });
 
   it('toggles the profile menu open', async () => {
-    renderWithRouter(<Header onOpenNav={vi.fn()} />);
+    renderWithRouter(<Header />);
     expect(screen.queryByText('Profile settings')).not.toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: 'Open profile menu' }));
     expect(screen.getByText('Profile settings')).toBeInTheDocument();

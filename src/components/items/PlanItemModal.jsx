@@ -287,7 +287,7 @@ function PlanItemModal({
     : (isEdit ? 'Edit Task' : 'New Task');
 
   return (
-    <Modal title={modalTitle} onClose={onClose}>
+    <Modal title={modalTitle} onClose={onClose} variant="full">
       <form className="modal__form" onSubmit={(e) => { e.preventDefault(); handleDone(); }}>
           {error && <p className="auth-card__error">{error}</p>}
 

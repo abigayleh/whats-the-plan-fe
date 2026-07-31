@@ -38,7 +38,7 @@ function ListModal({ list, groups, onClose, onSave }) {
   }
 
   return (
-    <Modal title={isEdit ? 'Edit List' : 'New List'} onClose={onClose}>
+    <Modal title={isEdit ? 'Edit List' : 'New List'} onClose={onClose} variant="full">
       <form className="modal__form" onSubmit={handleSubmit}>
           {error && <p className="auth-card__error">{error}</p>}
 

@@ -45,4 +45,18 @@ describe('Modal', () => {
     await userEvent.click(document.querySelector('.modal-overlay'));
     expect(onClose).not.toHaveBeenCalled();
   });
+
+  // The variant only changes styling below the tablet breakpoint, so the class is the
+  // contract — it is what the mobile stylesheet hangs off.
+  it('renders as a sheet by default', () => {
+    render(<Modal title="T" onClose={vi.fn()}>x</Modal>);
+    expect(document.querySelector('.modal')).toHaveClass('modal--sheet');
+    expect(document.querySelector('.modal-overlay')).toHaveClass('modal-overlay--sheet');
+  });
+
+  it('renders full-screen when asked', () => {
+    render(<Modal title="T" onClose={vi.fn()} variant="full">x</Modal>);
+    expect(document.querySelector('.modal')).toHaveClass('modal--full');
+    expect(document.querySelector('.modal')).not.toHaveClass('modal--sheet');
+  });
 });

@@ -27,7 +27,7 @@ function NewPageModal({
   }
 
   return (
-    <Modal title="New Page" onClose={onClose}>
+    <Modal title="New Page" onClose={onClose} variant="full">
       <form className="modal__form" onSubmit={handleSubmit}>
         {error && <p className="auth-card__error">{error}</p>}
 

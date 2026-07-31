@@ -11,8 +11,13 @@
   background: rgba(36, 31, 51, 0.4);
   z-index: 100;
 
+  // Phones anchor dialogs to an edge instead of floating them in the middle.
   @include respond-below(tablet) {
-    padding: $spacing-md;
+    padding: 0;
+
+    &--sheet {
+      align-items: flex-end;
+    }
   }
 }
 
@@ -25,6 +30,35 @@
   border-radius: $radius-lg;
   box-shadow: $shadow-md;
   padding: $spacing-lg;
+
+  @include respond-below(tablet) {
+    // A sheet rises from the bottom edge; the grabber marks it as dismissible.
+    &--sheet {
+      max-width: none;
+      max-height: 85dvh;
+      border-radius: $radius-lg $radius-lg 0 0;
+      padding-bottom: calc(#{$spacing-lg} + env(safe-area-inset-bottom));
+
+      &::before {
+        content: '';
+        display: block;
+        width: 2.25rem;
+        height: 0.25rem;
+        margin: -#{$spacing-sm} auto $spacing-sm;
+        border-radius: $radius-sm;
+        background: $color-border;
+      }
+    }
+
+    // A form long enough to cover the screen should just be the screen.
+    &--full {
+      max-width: none;
+      max-height: none;
+      min-height: 100dvh;
+      border-radius: 0;
+      padding-bottom: calc(#{$spacing-lg} + env(safe-area-inset-bottom));
+    }
+  }
 
   &__header {
     display: flex;

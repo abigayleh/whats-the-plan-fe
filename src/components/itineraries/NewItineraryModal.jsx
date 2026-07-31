@@ -44,7 +44,7 @@ function NewItineraryModal({
   }
 
   return (
-    <Modal title="New Itinerary" onClose={onClose}>
+    <Modal title="New Itinerary" onClose={onClose} variant="full">
       <form className="modal__form" onSubmit={handleSubmit}>
         {error && <p className="auth-card__error">{error}</p>}
 

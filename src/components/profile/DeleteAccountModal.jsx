@@ -23,7 +23,7 @@ function DeleteAccountModal({ email, onCancel, onConfirm }) {
   }
 
   return (
-    <Modal title="Delete account?" onClose={onCancel} showClose={false} closeDisabled={busy}>
+    <Modal title="Delete account?" onClose={onCancel} showClose={false} closeDisabled={busy} variant="full">
       <p className="group-settings__warning-text">
         This permanently deletes your account and all personal data. This cannot be undone.
         Type <strong>{email}</strong> to confirm.

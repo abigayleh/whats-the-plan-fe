@@ -5,8 +5,10 @@ import { CloseIcon } from '../layout/icons';
 // and the standard header + a11y roles. Callers supply the body (form, fields, footer) as
 // children. `closeDisabled` blocks close during async work — overlay click and Escape both
 // no-op — and `showClose` hides the header X for confirm-style dialogs.
+// `variant` only bites below the tablet breakpoint: 'sheet' rises from the bottom edge,
+// 'full' takes the whole screen for forms too long to peek at. Desktop centres both.
 function Modal({
-  title, onClose, children, showClose = true, closeDisabled = false,
+  title, onClose, children, showClose = true, closeDisabled = false, variant = 'sheet',
 }) {
   const titleId = useId();
   const previouslyFocused = useRef(null);
@@ -23,9 +25,9 @@ function Modal({
   }, [onClose, closeDisabled]);
 
   return (
-    <div className="modal-overlay" onClick={closeDisabled ? undefined : onClose}>
+    <div className={`modal-overlay modal-overlay--${variant}`} onClick={closeDisabled ? undefined : onClose}>
       <div
-        className="modal"
+        className={`modal modal--${variant}`}
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}

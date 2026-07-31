@@ -31,7 +31,7 @@ function AppShell() {
         />
       )}
       <div className="app-shell__main">
-        <Header onOpenNav={() => setNavOpen(true)} />
+        <Header />
         <main className={`app-shell__content${isFullWidth ? ' app-shell__content--full' : ''}`}>
           <Outlet />
         </main>
