@@ -50,11 +50,13 @@
       }
     }
 
-    // A form long enough to cover the screen should just be the screen.
+    // A form long enough to cover the screen should just be the screen. Height is pinned to
+    // the viewport, not the content: sized to its content it grew past the fixed overlay,
+    // which clipped the overflow instead of scrolling it.
     &--full {
       max-width: none;
-      max-height: none;
-      min-height: 100dvh;
+      height: 100dvh;
+      max-height: 100dvh;
       border-radius: 0;
       padding-bottom: calc(#{$spacing-lg} + env(safe-area-inset-bottom));
     }
