@@ -1,12 +1,12 @@
 import {
-  DndContext, closestCenter, PointerSensor, TouchSensor, KeyboardSensor, useSensor, useSensors,
+  DndContext, closestCenter, MouseSensor, TouchSensor, KeyboardSensor, useSensor, useSensors,
 } from '@dnd-kit/core';
 import {
   SortableContext, verticalListSortingStrategy, sortableKeyboardCoordinates,
 } from '@dnd-kit/sortable';
 import { ChevronIcon } from '../layout/icons';
 import SortableItineraryRow from './SortableItineraryRow';
-import { POINTER_ACTIVATION, TOUCH_ACTIVATION } from '../../constants/dragSensors';
+import { MOUSE_ACTIVATION, TOUCH_ACTIVATION } from '../../constants/dragSensors';
 
 // One collapsible sidebar section. Each section owns its DndContext, so a drag can never
 // leave it — which would silently change an itinerary's planned/completed state.
@@ -15,7 +15,7 @@ function ItinerarySection({
   onToggle, onSetCompleted, onDelete, onReorder,
 }) {
   const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: POINTER_ACTIVATION }),
+    useSensor(MouseSensor, { activationConstraint: MOUSE_ACTIVATION }),
     useSensor(TouchSensor, { activationConstraint: TOUCH_ACTIVATION }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
   );

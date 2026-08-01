@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import {
-  DndContext, closestCenter, PointerSensor, TouchSensor, KeyboardSensor, useSensor, useSensors,
+  DndContext, closestCenter, MouseSensor, TouchSensor, KeyboardSensor, useSensor, useSensors,
 } from '@dnd-kit/core';
 import {
   SortableContext, verticalListSortingStrategy, arrayMove, sortableKeyboardCoordinates,
@@ -10,7 +10,7 @@ import ListSection from '../components/lists/ListSection';
 import SortableListSection from '../components/lists/SortableListSection';
 import PlanItemModal from '../components/items/PlanItemModal';
 import ListModal from '../components/lists/ListModal';
-import { POINTER_ACTIVATION, TOUCH_ACTIVATION } from '../constants/dragSensors';
+import { MOUSE_ACTIVATION, TOUCH_ACTIVATION } from '../constants/dragSensors';
 import ConfirmModal from '../components/common/ConfirmModal';
 import useAppData from '../hooks/useAppData';
 import usePlanItems from '../hooks/usePlanItems';
@@ -47,7 +47,7 @@ function ListsPage() {
   const systemLists = lists.filter((l) => l.isSystem && l.id !== 'l-overdue').map(withColor);
 
   const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: POINTER_ACTIVATION }),
+    useSensor(MouseSensor, { activationConstraint: MOUSE_ACTIVATION }),
     useSensor(TouchSensor, { activationConstraint: TOUCH_ACTIVATION }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
   );

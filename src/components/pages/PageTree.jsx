@@ -1,11 +1,11 @@
 import { useState } from 'react';
 import {
-  DndContext, closestCenter, PointerSensor, TouchSensor, useSensor, useSensors,
+  DndContext, closestCenter, MouseSensor, TouchSensor, useSensor, useSensors,
 } from '@dnd-kit/core';
 import useLocalStorageSet from '../../hooks/useLocalStorageSet';
 import { descendantIds, resolveDrop, filterPagesByTitle } from '../../utils/pageTree';
 import PageTreeNode from './PageTreeNode';
-import { POINTER_ACTIVATION, TOUCH_ACTIVATION } from '../../constants/dragSensors';
+import { MOUSE_ACTIVATION, TOUCH_ACTIVATION } from '../../constants/dragSensors';
 
 // Turns a flat, single-scope page list into a parent→children forest (roots first),
 // siblings in manual order (position, then title as a stable tiebreak).
@@ -53,7 +53,7 @@ function PageTree({
   });
 
   const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: POINTER_ACTIVATION }),
+    useSensor(MouseSensor, { activationConstraint: MOUSE_ACTIVATION }),
     useSensor(TouchSensor, { activationConstraint: TOUCH_ACTIVATION }),
   );
 
