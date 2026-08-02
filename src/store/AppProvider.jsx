@@ -253,7 +253,11 @@ function AppProvider({ children }) {
     async updateTask(taskId, { attachments, ...patch }) {
       const task = tasks.find((t) => t.id === taskId);
       if (!task) return;
-      if (patch.status) checkDayComplete(task, patch.status);
+      // checkDayComplete takes the day being completed, not the new status — a status string
+      // reached isSameDay and threw. Only a todo -> done edit can finish off a day.
+      if (patch.status === 'done' && task.status !== 'done') {
+        checkDayComplete(task, getTaskDay(task) ?? new Date());
+      }
       try {
         if (Object.keys(patch).length) await listsApi.updateTask(task.listId, taskId, toBeTask(patch));
         if (attachments) await attachmentsApi.sync(taskId, attachments, task.attachments);
