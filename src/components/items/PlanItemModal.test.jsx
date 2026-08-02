@@ -36,6 +36,49 @@ beforeEach(() => {
   }
 });
 
+describe('PlanItemModal recurrence', () => {
+  const item = {
+    id: 't1',
+    sourceId: 't1',
+    origin: 'task',
+    title: 'Water plants',
+    status: 'todo',
+    listId: 'l1',
+    dueDate: new Date(2026, 7, 14),
+  };
+
+  it('offers Repeat once the to-do has a date', () => {
+    renderModal({ item });
+    expect(screen.getByLabelText('Repeat')).toBeInTheDocument();
+  });
+
+  it('saves a weekly rule, defaulting to the due date weekday', async () => {
+    const { props } = renderModal({ item });
+    await userEvent.selectOptions(screen.getByLabelText('Repeat'), 'weekly');
+    await waitFor(() => expect(props.onSave).toHaveBeenCalled());
+    const [payload] = props.onSave.mock.calls.at(-1);
+    // 14 Aug 2026 is a Friday, so the picker seeds day 5.
+    expect(payload.recurrenceRule).toEqual({ frequency: 'weekly', interval: 1, daysOfWeek: [5] });
+  });
+
+  it('maps bi-weekly onto a weekly rule with interval 2', async () => {
+    const { props } = renderModal({ item });
+    await userEvent.selectOptions(screen.getByLabelText('Repeat'), 'biweekly');
+    await waitFor(() => expect(props.onSave).toHaveBeenCalled());
+    const [payload] = props.onSave.mock.calls.at(-1);
+    expect(payload.recurrenceRule).toMatchObject({ frequency: 'weekly', interval: 2 });
+  });
+
+  it('clears the rule when set back to Does not repeat', async () => {
+    const repeating = { ...item, recurrenceRule: { frequency: 'daily', interval: 1 } };
+    const { props } = renderModal({ item: repeating });
+    await userEvent.selectOptions(screen.getByLabelText('Repeat'), '');
+    await waitFor(() => expect(props.onSave).toHaveBeenCalled());
+    const [payload] = props.onSave.mock.calls.at(-1);
+    expect(payload.recurrenceRule).toBeNull();
+  });
+});
+
 describe('PlanItemModal', () => {
   it('renders as a New Task when a list is selected', () => {
     renderModal();
