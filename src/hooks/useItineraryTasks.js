@@ -5,7 +5,7 @@ import * as listsApi from '../api/lists';
 import * as attachmentsApi from '../api/attachments';
 import { adaptTask, toBeTask } from '../api/adapters';
 import { isTaskTimed } from '../utils/tasks';
-import { startOfDay } from '../utils/date';
+import { startOfDay, noonOf } from '../utils/date';
 import useSocketEvents from './useSocketEvents';
 
 const EVENTS = ['task:created', 'task:updated', 'task:deleted'];
@@ -65,6 +65,14 @@ export default function useItineraryTasks(listId) {
     await refresh();
   }, [listId, refresh]);
 
+  // One day of a repeating to-do, removed without touching the series.
+  const skipOccurrence = useCallback(async (item, day) => {
+    const when = day ?? item.scheduledStart ?? item.dueDate;
+    if (!when) return;
+    await listsApi.updateTask(listId, item.sourceId, { skipDate: noonOf(when).toISOString() });
+    await refresh();
+  }, [listId, refresh]);
+
   const toggleStatus = useCallback(async (item) => {
     // A recurring occurrence toggles only its own day; a plain to-do flips its whole status.
     if (item.isRecurring) {
@@ -107,6 +115,6 @@ export default function useItineraryTasks(listId) {
   }, [listId, listTasks, refresh]);
 
   return {
-    listTasks, refresh, saveItem, deleteItem, toggleStatus, moveItem,
+    listTasks, refresh, saveItem, deleteItem, skipOccurrence, toggleStatus, moveItem,
   };
 }

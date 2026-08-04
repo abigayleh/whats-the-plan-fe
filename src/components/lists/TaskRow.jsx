@@ -1,32 +1,38 @@
 import { useEffect, useState } from 'react';
 import { CheckIcon, RepeatIcon } from '../layout/icons';
 import { formatDateShort, formatTime } from '../../utils/date';
-import { getTaskDay, isTaskOverdue, isTaskTimed } from '../../utils/tasks';
+import {
+  getTaskDay, isTaskOverdue, isTaskTimed, isTaskDoneOnDay,
+} from '../../utils/tasks';
 import TaskActionButtons from '../tasks/TaskActionButtons';
 import Linkify from '../common/Linkify';
 import EntityIcon from '../common/EntityIcon';
 
 function TaskRow({
-  task, lists, onToggle, onClick, draggable = false, plain = false,
+  task, lists, onToggle, onClick, draggable = false, plain = false, day = null,
 }) {
+  // A whole recurring series (list view) has a live recurrenceRule; a single calendar
+  // occurrence does not. `day` names the day this row stands for — an Overdue row, or a
+  // day on the calendar — which is what makes a series row tickable for that day alone.
+  const seriesRow = Boolean(task.recurrenceRule) && !day;
+  const dayDone = day && task.recurrenceRule ? isTaskDoneOnDay(task, day) : null;
+
   // Optimistic check: show the tick the instant it's clicked, then let the server-confirmed
   // status take over (and the row re-sort/disappear) once the refetch lands.
   const [pendingDone, setPendingDone] = useState(null);
-  useEffect(() => { setPendingDone(null); }, [task.status]);
-  const done = pendingDone ?? (task.status === 'done');
+  useEffect(() => { setPendingDone(null); }, [task.status, task.completedDates]);
+  const done = pendingDone ?? (dayDone ?? (task.status === 'done'));
 
   function handleToggle() {
     setPendingDone(!done);
-    onToggle(task.id);
+    if (day) onToggle(task.id, day);
+    else onToggle(task.id);
   }
   const overdue = isTaskOverdue(task);
-  const day = getTaskDay(task);
+  const shownDay = getTaskDay(task);
   const timed = isTaskTimed(task);
   const subtaskCount = task.subtasks?.length ?? 0;
   const subtaskDone = task.subtasks?.filter((s) => s.done).length ?? 0;
-  // A whole recurring series (list view) has a live recurrenceRule; a single calendar occurrence
-  // does not. The series can't be checked done as a whole — completion is per day on the calendar.
-  const seriesRow = Boolean(task.recurrenceRule);
 
   return (
     <div
@@ -49,7 +55,7 @@ function TaskRow({
         aria-checked={done}
         aria-disabled={seriesRow || undefined}
         tabIndex={seriesRow ? -1 : 0}
-        title={seriesRow ? 'Recurring to-dos are completed per day on the calendar' : undefined}
+        title={seriesRow ? 'Repeating to-dos are completed a day at a time' : undefined}
         onClick={seriesRow ? undefined : (e) => {
           e.stopPropagation();
           handleToggle();
@@ -70,11 +76,11 @@ function TaskRow({
           <Linkify text={task.title} />
           {task.recurrenceRule && <RepeatIcon className="task-row__repeat-icon" />}
         </span>
-        {!plain && (day || task.assignedTo || subtaskCount > 0) && (
+        {!plain && (shownDay || task.assignedTo || subtaskCount > 0) && (
           <span className="task-row__meta">
-            {day && (
+            {shownDay && (
               <span className={`task-row__due${overdue ? ' task-row__due--overdue' : ''}`}>
-                {formatDateShort(day)}
+                {formatDateShort(shownDay)}
                 {timed && ` · ${formatTime(task.scheduledStart)}`}
               </span>
             )}

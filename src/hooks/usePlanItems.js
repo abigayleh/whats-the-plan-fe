@@ -10,7 +10,7 @@ import { startOfDay } from '../utils/date';
 // `origin`/`sourceId` (see api/adapters.js for what those mean).
 export default function usePlanItems() {
   const {
-    tasks, addTask, updateTask, deleteTask, toggleTask,
+    tasks, addTask, updateTask, deleteTask, toggleTask, skipTaskDay,
   } = useAppData();
 
   // Creates a fresh event or to-do from a payload; returns `{ item, attachmentError? }` — the
@@ -55,6 +55,12 @@ export default function usePlanItems() {
       }
     }
     return created;
+  }
+
+  // A recurring occurrence is never deleted from the calendar — its day is skipped instead.
+  async function skipOccurrence(item, day) {
+    if (item.origin === 'event') return;
+    await skipTaskDay(item.sourceId, day ?? item.scheduledStart ?? item.dueDate);
   }
 
   async function deleteItem(item) {
@@ -117,6 +123,6 @@ export default function usePlanItems() {
   }
 
   return {
-    saveItem, deleteItem, toggleStatus, moveItem,
+    saveItem, deleteItem, skipOccurrence, toggleStatus, moveItem,
   };
 }

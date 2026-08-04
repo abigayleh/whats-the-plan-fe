@@ -1,5 +1,7 @@
 import { describe, it, expect } from 'vitest';
-import { isTaskOnDay, isTaskDoneOnDay, isTaskSkippedOnDay } from './tasks';
+import {
+  isTaskOnDay, isTaskDoneOnDay, isTaskSkippedOnDay, getOverdueDay,
+} from './tasks';
 
 // Spec for refined recurring to-dos: one series row whose occurrences behave independently.
 // Completing or removing one day must never touch another day, or the series itself.
@@ -65,5 +67,19 @@ describe('a series with no per-day state', () => {
     delete legacy.skippedDates;
     expect(isTaskSkippedOnDay(legacy, day(4))).toBe(false);
     expect(isTaskOnDay(legacy, day(4))).toBe(true);
+  });
+});
+describe('overdue, once a day has been removed', () => {
+  const today = day(6);
+
+  it('falls back to the most recent day still in the series', () => {
+    // 5 Aug removed, so the last missed occurrence is 4 Aug.
+    const task = { ...series, skippedDates: [iso(5)] };
+    expect(getOverdueDay(task, today)).toEqual(day(4));
+  });
+
+  it('is not overdue for a day that was removed', () => {
+    const task = { ...series, dueDate: day(5), skippedDates: [iso(5)] };
+    expect(getOverdueDay(task, today)).not.toEqual(day(5));
   });
 });

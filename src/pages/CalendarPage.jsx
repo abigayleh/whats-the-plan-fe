@@ -39,7 +39,9 @@ function CalendarPage() {
   const {
     groups, lists, tasks, currentUser, personalSpace, toggleTask,
   } = useAppData();
-  const { saveItem, deleteItem, moveItem, toggleStatus } = usePlanItems();
+  const {
+    saveItem, deleteItem, skipOccurrence, moveItem, toggleStatus,
+  } = usePlanItems();
   const [view, setView] = useLocalStorageState('calendar-view', 'month');
   const [contentFilterRaw, setContentFilter] = useLocalStorageState('calendar-content-filter', 'all');
   const contentFilter = LEGACY_CONTENT_FILTER[contentFilterRaw] ?? contentFilterRaw;
@@ -300,6 +302,12 @@ function CalendarPage() {
     refetch();
   }
 
+  async function handleSkipOccurrence(item, day) {
+    await skipOccurrence(item, day);
+    setPlanItemModal(null);
+    refetch();
+  }
+
   // Shifts a single item forward one day, keeping its clock time (if any). Callers must
   // guard recurring items — a single-occurrence shift would otherwise rewrite the whole series.
   async function handlePushToTomorrow(item) {
@@ -541,6 +549,7 @@ function CalendarPage() {
           onClose={() => setPlanItemModal(null)}
           onSave={handleItemSubmit}
           onDelete={handleItemDelete}
+          onSkipOccurrence={handleSkipOccurrence}
         />
       )}
     </section>

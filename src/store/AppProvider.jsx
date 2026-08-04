@@ -265,6 +265,14 @@ function AppProvider({ children }) {
         await refreshLists(); // a partial write must not leave stale attachments behind for a retry
       }
     },
+    // Removes one day from a repeating to-do. The series keeps recurring; only that date
+    // stops. Deleting the series itself is a separate, list-only action.
+    async skipTaskDay(taskId, day) {
+      const task = tasks.find((t) => t.id === taskId);
+      if (!task || !day) return;
+      await listsApi.updateTask(task.listId, task.id, { skipDate: noonOf(day).toISOString() });
+      await refreshLists();
+    },
     async deleteTask(taskId) {
       const listId = listIdOf(taskId);
       if (!listId) return;

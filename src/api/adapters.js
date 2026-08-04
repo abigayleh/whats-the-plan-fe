@@ -73,6 +73,8 @@ export function adaptItem(raw, origin) {
     recurrenceRule: raw.recurrenceRule || null,
     // Which days of a recurring series are ticked off — its only record of completion.
     completedDates: isEvent ? [] : (raw.completedDates || []),
+    // Days removed from the series; they stop recurring without touching the rest.
+    skippedDates: isEvent ? [] : (raw.skippedDates || []),
     subtasks: raw.subtasks || [],
     assignedToId: isEvent ? null : (raw.assignedToId ?? null),
     assignedTo: isEvent ? null : (raw.assignee?.name || null),

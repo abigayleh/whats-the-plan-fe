@@ -89,6 +89,8 @@ function ListsPage() {
       // A series row's own status never says "done today" — show the day this row stands for
       // (the missed one under Overdue, today everywhere else), matching what ticking it does.
       status: task.recurrenceRule && isTaskDoneOnDay(task, dayShownFor(list, task)) ? 'done' : task.status,
+      // The day this row stands for, so a repeating to-do can be ticked off for it.
+      shownDay: task.recurrenceRule ? dayShownFor(list, task) : null,
       colorKey: getTaskColorKey(task, lists, groups, personalSpace),
       icon: getTaskIconKey(task, lists),
     }));

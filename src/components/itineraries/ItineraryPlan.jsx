@@ -61,7 +61,7 @@ function ItineraryPlan({ itinerary }) {
 
   const { items, refetch } = useItineraryItems(itinerary.id, range.startISO, range.endISO);
   const {
-    listTasks, saveItem, deleteItem, toggleStatus, moveItem,
+    listTasks, saveItem, deleteItem, skipOccurrence, toggleStatus, moveItem,
   } = useItineraryTasks(itinerary.listId);
 
   const colorKey = itinerary.colorLabel || 'primary';
@@ -144,6 +144,12 @@ function ItineraryPlan({ itinerary }) {
 
   async function handleItemDelete(item) {
     await deleteItem(item);
+    setPlanItemModal(null);
+    refetch();
+  }
+
+  async function handleSkipOccurrence(item, day) {
+    await skipOccurrence(item, day);
     setPlanItemModal(null);
     refetch();
   }
@@ -286,6 +292,7 @@ function ItineraryPlan({ itinerary }) {
           onClose={() => setPlanItemModal(null)}
           onSave={handleItemSubmit}
           onDelete={handleItemDelete}
+          onSkipOccurrence={handleSkipOccurrence}
         />
       )}
     </div>

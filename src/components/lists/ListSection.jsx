@@ -139,10 +139,24 @@ function ListSection({
         <div className="list-section__task-list">
           {sorted.length === 0 && <p className="page__placeholder">No tasks yet.</p>}
           {todoTasks.map((task) => (
-            <TaskRow key={task.id} task={task} lists={allLists} onToggle={onToggleTask} onClick={onEditTask} />
+            <TaskRow
+              key={task.id}
+              task={task}
+              lists={allLists}
+              day={task.shownDay}
+              onToggle={onToggleTask}
+              onClick={onEditTask}
+            />
           ))}
           {showCompleted && doneTasks.map((task) => (
-            <TaskRow key={task.id} task={task} lists={allLists} onToggle={onToggleTask} onClick={onEditTask} />
+            <TaskRow
+              key={task.id}
+              task={task}
+              lists={allLists}
+              day={task.shownDay}
+              onToggle={onToggleTask}
+              onClick={onEditTask}
+            />
           ))}
           {!list.isSystem && (
             <div className="list-section__quick-add">

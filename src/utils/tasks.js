@@ -14,11 +14,18 @@ export function getTaskDay(task) {
   return null;
 }
 
+// A day the user removed from a series. Skipping is per-occurrence: the series keeps
+// recurring, that one day just stops existing.
+export function isTaskSkippedOnDay(task, day) {
+  return (task.skippedDates || []).some((date) => isSameDay(new Date(date), day));
+}
+
 // Recurring tasks are expanded on read: rather than storing every future occurrence,
 // a day just checks itself against the original task day + the recurrence rule.
 export function isTaskOnDay(task, day) {
   const taskDay = getTaskDay(task);
   if (!taskDay) return false;
+  if (isTaskSkippedOnDay(task, day)) return false;
   if (isSameDay(taskDay, day)) return true;
 
   const frequency = task.recurrenceRule?.frequency;
@@ -100,7 +107,10 @@ const MAX_GAP_DAYS = {
 export function lastOccurrenceBefore(task, day) {
   const frequency = task.recurrenceRule?.frequency;
   if (!MAX_GAP_DAYS[frequency]) return null;
-  const span = MAX_GAP_DAYS[frequency] * (frequency === 'weekly' ? (task.recurrenceRule.interval || 1) : 1);
+  const gap = MAX_GAP_DAYS[frequency] * (frequency === 'weekly' ? (task.recurrenceRule.interval || 1) : 1);
+  // Removed days widen the gap the rule alone would leave, so the walk has to reach past
+  // them — otherwise skipping yesterday hides an older missed day entirely.
+  const span = gap + (task.skippedDates?.length || 0);
   for (let back = 1; back <= span; back += 1) {
     const candidate = addDays(startOfDay(day), -back);
     if (isTaskOnDay(task, candidate)) return candidate;

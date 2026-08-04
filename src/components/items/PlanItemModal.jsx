@@ -25,7 +25,7 @@ import {
 // session, so the origin (task vs. event) can't be silently flipped out from under a save.
 function PlanItemModal({
   lists, groups, personalSpace, defaultListId, defaultOrigin = 'task', defaultSchedule,
-  item, onClose, onSave, onDelete,
+  item, onClose, onSave, onDelete, onSkipOccurrence,
 }) {
   const isEdit = Boolean(item);
   const writableLists = lists.filter((l) => !l.isSystem);
@@ -544,12 +544,33 @@ function PlanItemModal({
             </label>
           )}
 
-          {isCalendarItem && isEdit && item.isRecurring && (
-            <p className="modal__hint">Editing applies to the whole series.</p>
+          {isEdit && item?.isRecurring && (
+            <p className="modal__hint">
+              Editing applies to the whole series. Removing a day only affects that day —
+              delete the whole to-do from its list.
+            </p>
           )}
 
           <div className="modal__footer">
-            {isEdit && (
+            {/* One occurrence of a series is removed, never deleted: the whole to-do can only
+                be deleted from its list, so the calendar can't wipe out a series by accident. */}
+            {isEdit && item?.isRecurring && (
+              <button
+                type="button"
+                className="button button--danger"
+                onClick={async () => {
+                  try {
+                    await onSkipOccurrence(savedItemRef.current ?? item, getTaskDay(item));
+                    onClose();
+                  } catch (err) {
+                    setError(err.message || 'Could not remove this day');
+                  }
+                }}
+              >
+                Remove this day
+              </button>
+            )}
+            {isEdit && !item?.isRecurring && (
               <button
                 type="button"
                 className="button button--danger"
