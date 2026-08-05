@@ -15,13 +15,15 @@ function TaskRow({
   // occurrence does not. `day` names the day this row stands for — an Overdue row, or a
   // day on the calendar — which is what makes a series row tickable for that day alone.
   const seriesRow = Boolean(task.recurrenceRule) && !day;
-  const dayDone = day && task.recurrenceRule ? isTaskDoneOnDay(task, day) : null;
 
   // Optimistic check: show the tick the instant it's clicked, then let the server-confirmed
   // status take over (and the row re-sort/disappear) once the refetch lands.
   const [pendingDone, setPendingDone] = useState(null);
   useEffect(() => { setPendingDone(null); }, [task.status, task.completedDates]);
-  const done = pendingDone ?? (dayDone ?? (task.status === 'done'));
+  // A series is done per day, never as a whole — its own `status` says nothing about this row,
+  // so a series that was ticked off before it started repeating can't show through as done.
+  const done = pendingDone
+    ?? (task.recurrenceRule ? Boolean(day && isTaskDoneOnDay(task, day)) : task.status === 'done');
 
   function handleToggle() {
     setPendingDone(!done);

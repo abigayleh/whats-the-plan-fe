@@ -10,7 +10,15 @@ function TaskRowGroup({
       {title && <h3 className="task-row-group__title">{title}</h3>}
       {tasks.length === 0 && <p className="task-row-group__empty">{emptyLabel}</p>}
       {tasks.map((task) => (
-        <TaskRow key={task.id} task={task} lists={lists} onToggle={onToggle} onClick={onOpen} draggable />
+        <TaskRow
+          key={task.id}
+          task={task}
+          lists={lists}
+          day={task.shownDay}
+          onToggle={onToggle}
+          onClick={onOpen}
+          draggable
+        />
       ))}
     </section>
   );

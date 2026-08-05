@@ -179,9 +179,11 @@ function CalendarPage() {
 
   // Past-due, incomplete to-dos surfaced above Today in the day panel (and above Scheduled in
   // Todos-list mode). Read from all tasks (they may be due before the fetched range).
+  // These are whole series, not calendar occurrences, so each row is told the day it missed —
+  // the same day ticking it off applies to, so the checkbox and the write can't disagree.
   const overdueTasks = useMemo(() => tasks
     .filter((task) => isTaskOverdue(task) && isTaskVisible(task))
-    .map(decorateTask),
+    .map((task) => ({ ...decorateTask(task), shownDay: getOverdueDay(task) })),
   [tasks, isTaskVisible, decorateTask]);
 
   // Falls back to a raw (unscheduled) task when dragging it in from UnscheduledPanel, since
