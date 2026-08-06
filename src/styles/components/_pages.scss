@@ -2,18 +2,23 @@
 @use '../abstracts/variables' as *;
 @use '../abstracts/mixins' as *;
 
+// Fills the shell's content box exactly, so the tree and editor panes are the only
+// things that scroll — never the surrounding page as well.
 .pages {
   display: flex;
-  height: calc(100vh - #{$header-height} - #{$spacing-xl});
+  flex-grow: 1;
+  flex-basis: 0;
   min-height: 0;
   border: 1px solid $color-border;
   border-radius: $radius-md;
   overflow: hidden;
   background: $color-surface;
 
+  // Phones stack the panes and scroll them as one column with the rest of the content.
   @include respond-below(tablet) {
     flex-direction: column;
-    height: auto;
+    flex-grow: 0;
+    flex-basis: auto;
     border: none;
     border-radius: 0;
     background: none;

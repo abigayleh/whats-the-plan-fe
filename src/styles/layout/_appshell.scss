@@ -1,20 +1,22 @@
 @use '../abstracts/variables' as *;
 @use '../abstracts/mixins' as *;
 
+// The window itself never scrolls: the shell is pinned to the viewport and
+// `__content` is the app's only scroll context, so no page can show two scrollbars.
 .app-shell {
   // dvh tracks the viewport as mobile browser chrome hides/shows; vh is the fallback.
-  min-height: 100vh;
-  min-height: 100dvh;
+  height: 100vh;
+  height: 100dvh;
+  overflow: hidden;
   background: $color-bg;
   display: flex;
 
   &__main {
     flex: 1;
     min-width: 0;
+    min-height: 0;
     display: flex;
     flex-direction: column;
-    min-height: 100vh;
-    min-height: 100dvh;
   }
 
   // Dims the content while the mobile nav drawer is open; tap to close.
@@ -33,10 +35,20 @@
 
   &__content {
     flex: 1;
+    min-height: 0;
+    overflow-y: auto;
     width: 100%;
     max-width: $content-max-width;
     margin: 0 auto;
     padding: 0 $spacing-xl $spacing-xl;
+    display: flex;
+    flex-direction: column;
+
+    // Pages keep their natural height and scroll here. A page that instead fills the
+    // viewport and scrolls its own panes opts in with `flex-grow: 1` (see `.pages`).
+    > * {
+      flex-shrink: 0;
+    }
 
     &--full {
       max-width: none;
