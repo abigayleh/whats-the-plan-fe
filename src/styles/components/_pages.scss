@@ -568,6 +568,12 @@
   border-radius: $radius-sm;
   background: $color-surface;
 
+  // Belt-and-braces: a bubble holding no controls is chrome with nothing to frame, and
+  // paints as a blank white pill over the page wherever it was last positioned.
+  &:empty {
+    display: none;
+  }
+
   // Phones dock the bar to the bottom edge instead of floating it beside the selection,
   // where on touch it lands under the finger or the OS selection handles. It rides above
   // the keyboard because the keyboard shortens the visual viewport under it.

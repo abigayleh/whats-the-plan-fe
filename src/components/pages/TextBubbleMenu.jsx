@@ -17,9 +17,9 @@ const SIZES = [null, ...TEXT_SIZES];
 
 const hasTextSelection = (editor) => Boolean(editor) && !editor.state.selection.empty;
 
-// Formatting controls that follow the text selection. BubbleMenu keeps its portal
-// mounted and only toggles visibility, so the controls are gated on the same predicate
-// to keep them out of the DOM (and the tab order) when nothing is selected.
+// Formatting controls that follow the text selection. BubbleMenu keeps its portal mounted
+// and only toggles visibility, so an unselected editor unmounts the whole component —
+// merely emptying it leaves the bubble's own card chrome painted over the page.
 function TextBubbleMenu({ editor }) {
   const state = useEditorState({
     editor,
@@ -42,7 +42,7 @@ function TextBubbleMenu({ editor }) {
     return () => document.body.classList.remove('is-formatting');
   }, [docked]);
 
-  if (!editor) return null;
+  if (!editor || !state.open) return null;
 
   // preventDefault on mousedown keeps the selection alive while the button is pressed.
   const run = (event, apply) => {
@@ -109,7 +109,7 @@ function TextBubbleMenu({ editor }) {
       className="page-doc__bubble"
       shouldShow={({ editor: e }) => hasTextSelection(e)}
     >
-      {state.open && controls}
+      {controls}
     </BubbleMenu>
   );
 }

@@ -109,6 +109,18 @@ describe('TextBubbleMenu', () => {
     await waitFor(() => expect(colours()).not.toBeInTheDocument());
   });
 
+  // An emptied-but-mounted bubble still paints its border and background, which reads as a
+  // blank white pill floating over the page.
+  it('leaves no empty bubble card behind when the selection collapses', async () => {
+    const { select, highlight } = await setup();
+    expect(document.querySelector('.page-doc__bubble')).toBeNull();
+
+    await highlight();
+    await select(1, 1);
+
+    await waitFor(() => expect(document.querySelector('.page-doc__bubble')).toBeNull());
+  });
+
   it('applies a colour to the selection and keeps it in the saved document', async () => {
     const { press, marksOfFirstText } = await setup();
 
