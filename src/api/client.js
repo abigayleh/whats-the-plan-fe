@@ -1,6 +1,6 @@
 // Thin fetch wrapper: base URL, Bearer auth, and transparent one-shot token refresh on 401.
 const BASE = import.meta.env.VITE_API_URL || 'http://localhost:4000';
-const REFRESH_KEY = 'wtp_refresh';
+export const REFRESH_KEY = 'wtp_refresh';
 // A request that never settles (e.g. a connection gone stale over a long idle) would leave
 // autosave stuck on "Saving…" forever, so every request is bounded by this timeout.
 const REQUEST_TIMEOUT_MS = 20000;
@@ -68,6 +68,9 @@ function refreshTokens() {
         body: JSON.stringify({ refreshToken: rt }),
       });
       if (res.status === 401) {
+        // Another tab may have signed in while this request was in flight, replacing the token
+        // we just sent. Don't tear down a session that's since been renewed elsewhere.
+        if (getRefreshToken() !== rt) throw new Error('Refresh token superseded');
         clearTokens();
         if (onAuthFailure) onAuthFailure();
         throw new Error('Refresh token rejected');

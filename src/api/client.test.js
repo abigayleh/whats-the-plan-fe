@@ -157,6 +157,21 @@ describe('apiFetch 401 -> refresh -> retry', () => {
     expect(onFail).toHaveBeenCalledTimes(1);
     expect(getRefreshToken()).toBeNull();
   });
+
+  it('keeps the session when the rejected refresh token was replaced by another tab', async () => {
+    const onFail = vi.fn();
+    setOnAuthFailure(onFail);
+    setTokens({ accessToken: 'old', refreshToken: 'r1' });
+    fetch
+      .mockResolvedValueOnce(jsonRes(401)) // original
+      .mockImplementationOnce(() => {
+        localStorage.setItem('wtp_refresh', 'r2'); // another tab signed in mid-flight
+        return Promise.resolve(jsonRes(401));
+      });
+    await expect(apiFetch('/api/thing')).rejects.toThrow();
+    expect(onFail).not.toHaveBeenCalled();
+    expect(getRefreshToken()).toBe('r2');
+  });
 });
 
 describe('ensureFreshToken', () => {

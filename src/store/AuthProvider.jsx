@@ -3,7 +3,7 @@ import {
 } from 'react';
 import * as authApi from '../api/auth';
 import {
-  setTokens, clearTokens, getRefreshToken, setOnAuthFailure, ensureFreshToken,
+  setTokens, clearTokens, getRefreshToken, setOnAuthFailure, ensureFreshToken, REFRESH_KEY,
 } from '../api/client';
 import { socket, connectSocket, disconnectSocket } from '../socket/socketClient';
 
@@ -21,20 +21,22 @@ export default function AuthProvider({ children }) {
     connectSocket();
   }, []);
 
-  const signOut = useCallback(async () => {
-    await authApi.logout();
+  const dropSession = useCallback(() => {
     disconnectSocket();
     setUser(null);
     setStatus('anon');
   }, []);
 
+  const signOut = useCallback(async () => {
+    await authApi.logout();
+    dropSession();
+  }, [dropSession]);
+
   // Account is already gone server-side, so skip the best-effort /logout call.
   const deleteAccount = useCallback(() => {
     clearTokens();
-    disconnectSocket();
-    setUser(null);
-    setStatus('anon');
-  }, []);
+    dropSession();
+  }, [dropSession]);
 
   const updateUser = useCallback((patch) => {
     setUser((prev) => (prev ? { ...prev, ...patch } : prev));
@@ -43,12 +45,7 @@ export default function AuthProvider({ children }) {
   // Restore the session on load: a stored refresh token mints a fresh access token via /me.
   useEffect(() => {
     let active = true;
-    setOnAuthFailure(() => {
-      if (!active) return;
-      disconnectSocket();
-      setUser(null);
-      setStatus('anon');
-    });
+    setOnAuthFailure(() => { if (active) dropSession(); });
     (async () => {
       if (!getRefreshToken()) { setStatus('anon'); return; }
       // A backend that's cold after a long idle can make the first request(s) time out. Only a
@@ -72,7 +69,25 @@ export default function AuthProvider({ children }) {
       if (active) setStatus('anon');
     })();
     return () => { active = false; };
-  }, []);
+  }, [dropSession]);
+
+  // Tabs share one refresh token, so keep them in step: signing out in one tab signs the rest
+  // out, and signing in revives a tab that had dropped to anon rather than stranding it.
+  useEffect(() => {
+    const onStorage = async (e) => {
+      if (e.key !== REFRESH_KEY) return;
+      if (!e.newValue) { dropSession(); return; }
+      if (status !== 'anon') return; // already signed in, or the initial restore has it covered
+      try {
+        const { user: me } = await authApi.me();
+        setUser(me);
+        setStatus('authed');
+        connectSocket();
+      } catch { /* leave this tab anon; a reload can still recover it */ }
+    };
+    window.addEventListener('storage', onStorage);
+    return () => window.removeEventListener('storage', onStorage);
+  }, [status, dropSession]);
 
   // Recover the realtime socket after idle. Browsers drop the connection when the tab sleeps,
   // and socket.io's own reconnect sends the now-expired token, which the server rejects. It
