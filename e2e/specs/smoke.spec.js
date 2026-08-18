@@ -20,6 +20,7 @@ test('a seeded session lands straight on the calendar', async ({ page, user }) =
 test('the API factory can seed a group', async ({ page, user }) => {
   const group = await user.createGroup('Seeded Group');
   await page.goto('/groups');
-  await expect(page.getByRole('link', { name: /Seeded Group/ })).toBeVisible();
+  // Scoped to <main>: the SideNav "Spaces" list links to every group by name too.
+  await expect(page.getByRole('main').getByRole('link', { name: /Seeded Group/ })).toBeVisible();
   expect(group.id).toBeTruthy();
 });

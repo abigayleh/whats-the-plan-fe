@@ -1,6 +1,6 @@
 import { execFileSync } from 'node:child_process';
 import {
-  BE_PATH, COMPOSE_FILE, DB_URL, EXTERNAL_DB, backendEnv,
+  BE_PATH, COMPOSE_FILE, DB_URL, EXTERNAL_DB, assertDisposableDb, backendEnv,
 } from './config.js';
 
 const run = (cmd, args, opts = {}) => execFileSync(cmd, args, { stdio: 'inherit', ...opts });
@@ -20,6 +20,7 @@ function startDockerDb() {
 }
 
 export default async function globalSetup() {
+  assertDisposableDb();
   if (!EXTERNAL_DB) startDockerDb();
 
   run('npx', ['prisma', 'migrate', 'deploy'], {

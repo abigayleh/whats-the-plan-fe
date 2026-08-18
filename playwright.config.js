@@ -33,7 +33,7 @@ export default defineConfig({
       env: backendEnv,
     },
     {
-      command: 'npm run dev -- --port 5174 --strictPort',
+      command: 'npm run dev -- --port 5199 --strictPort',
       url: APP_URL,
       reuseExistingServer: false,
       timeout: 60_000,
