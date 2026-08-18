@@ -1,0 +1,20 @@
+# Throwaway Postgres for the E2E suite. Port 55432 so it never collides with a local server.
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: wtp-e2e-db
+    environment:
+      # Prisma must connect as a superuser: every table has RLS enabled with no policies,
+      # so a non-BYPASSRLS role would silently see zero rows.
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: wtp_e2e
+    ports:
+      - '55432:5432'
+    tmpfs:
+      - /var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U postgres -d wtp_e2e']
+      interval: 1s
+      timeout: 3s
+      retries: 30

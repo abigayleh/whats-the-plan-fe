@@ -40,6 +40,8 @@ export default defineConfig(({ command, isSsrBuild }) => {
       environment: 'jsdom',
       globals: true,
       setupFiles: './src/test/setup.js',
+      // e2e/ holds Playwright specs, which match Vitest's default include glob.
+      exclude: ['e2e/**', '**/node_modules/**', 'dist/**'],
       css: false,
       clearMocks: true,
       restoreMocks: true,
