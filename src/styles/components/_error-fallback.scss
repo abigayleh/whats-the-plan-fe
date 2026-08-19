@@ -1,0 +1,12 @@
+@use '../abstracts/variables' as *;
+
+.error-fallback {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: $spacing-md;
+  min-height: 100vh;
+  padding: $spacing-xl;
+  text-align: center;
+}

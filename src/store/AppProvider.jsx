@@ -15,6 +15,7 @@ import {
   getTaskDay, isTaskDoneOnDay, isTaskOnDay, tickDayFor,
 } from '../utils/tasks';
 import { isSameDay, noonOf } from '../utils/date';
+import { captureError } from '../utils/sentry';
 
 // Read-only views over tasks the user can already see, so they're derived here
 // rather than fetched — no second source of truth to keep in sync.
@@ -58,8 +59,10 @@ function AppProvider({ children }) {
   const refreshGroups = useCallback(async () => {
     try {
       setGroups((await groupsApi.list()).map(adaptGroup));
-    } catch {
-      // ignore — a failed refresh leaves the last known list in place
+    } catch (err) {
+      // The UI keeps the last known list; Sentry gets the error, since a socket-driven
+      // refresh fails outside render where no error boundary can see it.
+      captureError(err, 'refreshGroups');
     }
   }, []);
 
@@ -96,8 +99,9 @@ function AppProvider({ children }) {
       const perList = await Promise.all(adapted.map((l) => listsApi.tasks(l.id).catch(() => [])));
       if (ticket !== latestRefresh.current) return;
       setTasks(perList.flat().map(adaptTask));
-    } catch {
-      // ignore — a failed refresh leaves the last known lists in place
+    } catch (err) {
+      // Same as refreshGroups: swallowed for the UI, reported to Sentry.
+      captureError(err, 'refreshLists');
     }
   }, []);
 

@@ -649,4 +649,5 @@ src/
 - **SASS structure**: use the 7-1 pattern (`abstracts/`, `base/`, `components/`, `layout/`, `pages/`, `themes/`, `vendors/`) with a single `main.scss` entry point. Define design tokens (colors, spacing, breakpoints, typography) as SCSS variables in `abstracts/_variables.scss` so they're easy to retheme later.
 - **File storage swap**: change write/read logic in attachment service only — DB schema and API routes are unchanged.
 - **Poll scope**: polls are always group-scoped (no private polls — doesn't make sense to poll yourself).
+- **Sentry**: init lives in `src/utils/sentry.js`, gated on `VITE_SENTRY_DSN` (unset = SDK never starts, so dev and tests are untouched). The error boundary is in `main.jsx` *outside* `<App/>` so it also catches provider throws; failures outside render (socket-driven refreshes in `AppProvider`) call `captureError` explicitly. Source map upload runs only on the client build pass with `SENTRY_AUTH_TOKEN` set — never on the `--ssr` pass, where a second upload races the first one's cleanup.
 - **Sub-groups**: dropped for now. Can be reintroduced as member tags/labels without schema changes beyond a `Tag` join table.
