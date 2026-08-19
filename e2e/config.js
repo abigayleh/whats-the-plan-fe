@@ -27,7 +27,7 @@ export const backendEnv = {
   CORS_ORIGIN: APP_URL,
   JWT_ACCESS_SECRET: 'e2e-access-secret',
   JWT_REFRESH_SECRET: 'e2e-refresh-secret',
-  E2E_AUTO_VERIFY: '1',
+  E2E_EXPOSE_VERIFY_TOKEN: '1',
   RESEND_API_KEY: '', // empty → lib/email.js warns and sends nothing
   RESEND_FROM_EMAIL: 'e2e@example.test',
   ADMIN_NOTIFICATION_EMAIL: 'e2e@example.test',

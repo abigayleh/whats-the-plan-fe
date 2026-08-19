@@ -22,10 +22,20 @@ async function call(path, { method = 'GET', body, token } = {}) {
   return data;
 }
 
-/** Registers (auto-verified via E2E_AUTO_VERIFY) and logs in. Returns tokens + helpers. */
-export async function createUser({ name = 'E2E User', tag } = {}) {
+/** Registers a user, leaving them unverified. Returns the email and the real verify token. */
+export async function registerUser({ name = 'E2E User', tag } = {}) {
   const email = uniqueEmail(tag);
-  await call('/api/auth/register', { method: 'POST', body: { email, password: PASSWORD, name } });
+  const { verifyToken } = await call('/api/auth/register', {
+    method: 'POST',
+    body: { email, password: PASSWORD, name },
+  });
+  return { email, name, verifyToken };
+}
+
+/** Registers, verifies through the real endpoint, and logs in. Returns tokens + helpers. */
+export async function createUser({ name = 'E2E User', tag } = {}) {
+  const { email, verifyToken } = await registerUser({ name, tag });
+  await call('/api/auth/verify', { method: 'POST', body: { token: verifyToken } });
   const { user, accessToken, refreshToken } = await call('/api/auth/login', {
     method: 'POST',
     body: { email, password: PASSWORD },
