@@ -18,7 +18,11 @@ export default defineConfig({
     screenshot: 'only-on-failure',
   },
   projects: [
-    { name: 'desktop', use: { ...devices['Desktop Chrome'] } },
+    {
+      name: 'desktop',
+      use: { ...devices['Desktop Chrome'] },
+      testIgnore: /\.mobile\.spec\.js$/,
+    },
     // Mobile-only DOM: the TabBar, its More drawer, and the docked bubble menu.
     { name: 'mobile', use: { ...devices['Pixel 7'] }, testMatch: /\.mobile\.spec\.js$/ },
   ],
