@@ -1,5 +1,11 @@
 import { defineConfig, devices } from '@playwright/test';
-import { API_URL, APP_URL, BE_PATH, backendEnv } from './e2e/config.js';
+import {
+  API_URL, APP_URL, BE_PATH, assertDisposableDb, backendEnv,
+} from './e2e/config.js';
+
+// Checked here, at config load, rather than in globalSetup: Playwright starts webServer first,
+// so a guard in globalSetup would run only after the backend had already connected.
+assertDisposableDb();
 
 export default defineConfig({
   testDir: './e2e/specs',

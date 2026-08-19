@@ -1,0 +1,73 @@
+name: E2E
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    services:
+      postgres:
+        # Prisma must connect as a superuser: every table has RLS enabled with no policies.
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: wtp_e2e
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      # Set, so global-setup skips Docker and uses the service container above.
+      WTP_DB_URL: postgresql://postgres:postgres@localhost:5432/wtp_e2e
+      WTP_BE_PATH: ${{ github.workspace }}/backend
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check out the backend
+        uses: actions/checkout@v4
+        with:
+          repository: abigayleh/whats-the-plan-be
+          path: backend
+          token: ${{ secrets.BE_REPO_TOKEN || github.token }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install frontend
+        run: npm ci
+
+      - name: Install backend
+        run: npm ci
+        working-directory: backend
+
+      - name: Generate the Prisma client
+        # Required even though no test touches the database directly: the backend builds a
+        # PrismaClient at module load.
+        run: npx prisma generate
+        working-directory: backend
+
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Run the suite
+        run: npm run e2e
+
+      - uses: actions/upload-artifact@v4
+        if: ${{ !cancelled() }}
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 7
