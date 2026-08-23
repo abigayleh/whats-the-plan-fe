@@ -5,7 +5,7 @@ Two suites, and they answer different questions.
 | Suite | Command | Size | Proves |
 |---|---|---|---|
 | Vitest + Testing Library | `npm run test:run` | 761 tests | Components and units behave, against a mocked API and socket |
-| Playwright E2E | `npm run e2e` | 118 tests | The real app works against the real backend, database and socket |
+| Playwright E2E | `npm run e2e` | 122 tests | The real app works against the real backend, database and socket |
 
 ## Commands
 
@@ -71,6 +71,7 @@ stack can run at the same time.
 - `e2e/global-setup.js` — Docker, migrations
 - `e2e/fixtures/api.js` — seeds users, groups, lists, tasks, polls, itineraries over HTTP
 - `e2e/fixtures/index.js` — the `user`, `secondUser`, `anonPage` fixtures
+- `e2e/helpers/pages.js` — page-tree and editor locators shared by the page specs
 - `e2e/specs/*.spec.js` — one file per feature area
 
 **Writing them**
@@ -90,6 +91,11 @@ stack can run at the same time.
   into four buttons. Scope to a `.list-section` rather than matching a bare name.
 - Map tiles and OSRM routing are blocked for every test, so nothing depends on
   third-party uptime.
+- **Asserting an image renders needs `naturalWidth`, not visibility.** A broken
+  image and a working one have identical DOM, so `toBeVisible()` passes either
+  way. See `images.spec.js`, which also shows how to drop a real file onto the
+  editor — ProseMirror resolves the drop from the event's coordinates and never
+  calls `handleDrop` if they default to 0,0.
 
 **Not covered** — drag-and-drop reordering is exercised only where dnd-kit's
 `KeyboardSensor` makes it deterministic. The page tree is pointer-only and the

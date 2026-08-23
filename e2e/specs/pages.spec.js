@@ -1,19 +1,8 @@
 import { test, expect } from '../fixtures/index.js';
+import { newPage, tree } from '../helpers/pages.js';
 
-// The sidebar is an <aside>, not a <nav>, so there is no navigation role to query.
-const tree = (page) => page.locator('.page-tree');
 const doc = (page) => page.locator('.page-doc');
-// Both the create modal and the open editor use placeholder "Untitled", so always scope.
-const modalTitle = (page) => page.getByRole('dialog').getByLabel('Title');
 const editorTitle = (page) => page.getByRole('main').getByPlaceholder('Untitled');
-
-async function newPage(page, title) {
-  await page.getByRole('button', { name: 'New page' }).click();
-  await modalTitle(page).fill(title);
-  await page.getByRole('dialog').getByRole('button', { name: 'Create' }).click();
-  await expect(page.getByRole('dialog')).toHaveCount(0);
-  await expect(tree(page).getByText(title)).toBeVisible();
-}
 
 /** Types into the editor and waits for the save to actually land. */
 async function typeAndSave(page, text) {
