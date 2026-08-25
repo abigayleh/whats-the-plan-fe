@@ -31,7 +31,6 @@ blob-report
 *.sln
 *.sw?
 
-# Claude Code: the merge-to-base marker is shared; everything else here is machine-local.
+# Claude Code: the marker files and agent memory are shared; the rest is machine-local.
 .claude/settings.local.json
 .claude/worktrees/
-.claude/agent-memory/
