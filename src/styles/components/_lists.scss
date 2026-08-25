@@ -183,11 +183,24 @@
     flex: 1;
     font-size: $font-size-base;
     color: $color-text;
+    cursor: text;
 
     &--done {
       text-decoration: line-through;
       color: $color-text-muted;
     }
+  }
+
+  // Takes the place of the title mid-row, so it has to match its metrics or the row jumps.
+  &__item-input {
+    flex: 1;
+    min-width: 0;
+    padding: 0;
+    font-size: $font-size-base;
+    color: $color-text;
+    background: transparent;
+    border: none;
+    border-bottom: 1px solid $color-primary;
   }
 
   &__remove-button {

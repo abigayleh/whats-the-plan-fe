@@ -74,6 +74,8 @@ function PlanItemModal({
   const [assignedToId, setAssignedToId] = useState(item?.assignedToId ?? '');
   const [subtasks, setSubtasks] = useState(item?.subtasks ?? []);
   const [newSubtask, setNewSubtask] = useState('');
+  const [editingSubtaskId, setEditingSubtaskId] = useState(null);
+  const [subtaskDraft, setSubtaskDraft] = useState('');
   const [attachments, setAttachments] = useState(item?.attachments ?? []);
   const [location, setLocation] = useState(item?.location ?? null);
   const [error, setError] = useState(null);
@@ -147,6 +149,24 @@ function PlanItemModal({
 
   function removeSubtask(subtaskId) {
     const nextSubtasks = subtasks.filter((s) => s.id !== subtaskId);
+    setSubtasks(nextSubtasks);
+    commitChange({ subtasks: nextSubtasks });
+  }
+
+  function startEditSubtask(subtask) {
+    setEditingSubtaskId(subtask.id);
+    setSubtaskDraft(subtask.title);
+  }
+
+  // Commits an in-place title edit. Emptying the title reverts instead of deleting: the ×
+  // is what removes a sub-to-do, and a stray blur shouldn't quietly destroy one.
+  function commitSubtaskEdit() {
+    const value = subtaskDraft.trim();
+    const current = subtasks.find((s) => s.id === editingSubtaskId);
+    setEditingSubtaskId(null);
+    if (!current || !value || value === current.title) return;
+    const nextSubtasks = subtasks.map((s) => (
+      s.id === current.id ? { ...s, title: value } : s));
     setSubtasks(nextSubtasks);
     commitChange({ subtasks: nextSubtasks });
   }
@@ -383,9 +403,38 @@ function PlanItemModal({
                   >
                     {subtask.done && <CheckIcon />}
                   </button>
-                  <span className={`subtask-editor__item-title${subtask.done ? ' subtask-editor__item-title--done' : ''}`}>
-                    <Linkify text={subtask.title} />
-                  </span>
+                  {editingSubtaskId === subtask.id ? (
+                    <input
+                      type="text"
+                      className="subtask-editor__item-input"
+                      value={subtaskDraft}
+                      onChange={(e) => setSubtaskDraft(e.target.value)}
+                      onBlur={commitSubtaskEdit}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') { e.preventDefault(); commitSubtaskEdit(); }
+                        if (e.key === 'Escape') { e.preventDefault(); setEditingSubtaskId(null); }
+                      }}
+                      aria-label={`Edit ${subtask.title}`}
+                      // eslint-disable-next-line jsx-a11y/no-autofocus
+                      autoFocus
+                    />
+                  ) : (
+                    // Linkify stops propagation on its anchors, so a URL in the title stays
+                    // clickable and only the surrounding text opens the editor.
+                    <span
+                      role="button"
+                      tabIndex={0}
+                      className={`subtask-editor__item-title${subtask.done ? ' subtask-editor__item-title--done' : ''}`}
+                      onClick={() => startEditSubtask(subtask)}
+                      onKeyDown={(e) => {
+                        if (e.key !== 'Enter' && e.key !== ' ') return;
+                        e.preventDefault();
+                        startEditSubtask(subtask);
+                      }}
+                    >
+                      <Linkify text={subtask.title} />
+                    </span>
+                  )}
                   <button
                     type="button"
                     className="subtask-editor__remove-button"

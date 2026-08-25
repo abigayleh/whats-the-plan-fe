@@ -136,6 +136,65 @@ describe('PlanItemModal', () => {
     expect(screen.queryByText('Pack bags')).not.toBeInTheDocument();
   });
 
+  it('renames a sub-to-do in place', async () => {
+    // A saved, titled item: buildPayload deliberately never autosaves an untitled new one.
+    const { props } = renderModal({
+      item: {
+        id: 't1',
+        sourceId: 't1',
+        origin: 'task',
+        title: 'Trip',
+        status: 'todo',
+        listId: 'l1',
+        subtasks: [{ id: 's1', title: 'Pack bag', done: false }],
+      },
+    });
+
+    await userEvent.click(screen.getByText('Pack bag'));
+    const editor = screen.getByLabelText('Edit Pack bag');
+    await userEvent.clear(editor);
+    await userEvent.type(editor, 'Pack bags{Enter}');
+
+    expect(screen.getByText('Pack bags')).toBeInTheDocument();
+    await waitFor(() => {
+      const saved = props.onSave.mock.calls.at(-1)[0];
+      expect(saved.subtasks.map((s) => s.title)).toEqual(['Pack bags']);
+    });
+  });
+
+  it('abandons a rename on Escape', async () => {
+    renderModal();
+    await userEvent.type(screen.getByPlaceholderText('Add a sub-to-do'), 'Pack bag{Enter}');
+
+    await userEvent.click(screen.getByText('Pack bag'));
+    await userEvent.clear(screen.getByLabelText('Edit Pack bag'));
+    await userEvent.type(screen.getByLabelText('Edit Pack bag'), 'Throw away{Escape}');
+
+    expect(screen.getByText('Pack bag')).toBeInTheDocument();
+    expect(screen.queryByText('Throw away')).not.toBeInTheDocument();
+  });
+
+  // The x is what deletes a sub-to-do; blurring an emptied field must not.
+  it('keeps the old title when the rename is left empty', async () => {
+    renderModal();
+    await userEvent.type(screen.getByPlaceholderText('Add a sub-to-do'), 'Pack bag{Enter}');
+
+    await userEvent.click(screen.getByText('Pack bag'));
+    await userEvent.clear(screen.getByLabelText('Edit Pack bag'));
+    await userEvent.tab();
+
+    expect(screen.getByText('Pack bag')).toBeInTheDocument();
+  });
+
+  it('leaves a link in a sub-to-do clickable instead of opening the editor', async () => {
+    renderModal();
+    const input = screen.getByPlaceholderText('Add a sub-to-do');
+    await userEvent.type(input, 'See https://example.com{Enter}');
+
+    await userEvent.click(screen.getByRole('link', { name: 'https://example.com' }));
+    expect(screen.queryByLabelText(/^Edit /)).not.toBeInTheDocument();
+  });
+
   it('autosaves the title and closes on Done', async () => {
     const { props } = renderModal();
     await userEvent.type(screen.getByLabelText('Title'), 'Buy milk');
