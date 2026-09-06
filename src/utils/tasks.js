@@ -26,10 +26,14 @@ export function isTaskOnDay(task, day) {
   const taskDay = getTaskDay(task);
   if (!taskDay) return false;
   if (isTaskSkippedOnDay(task, day)) return false;
-  if (isSameDay(taskDay, day)) return true;
 
   const frequency = task.recurrenceRule?.frequency;
-  if (!frequency || startOfDay(day) < startOfDay(taskDay)) return false;
+  // A one-off falls on its own day and nowhere else. A series does NOT get its start date for
+  // free: a to-do due on a Saturday that repeats Mon/Wed/Fri recurs on those days only, which
+  // is what the server expands. Treating the anchor as an occurrence made the two disagree,
+  // so ticking it wrote to a day the client wasn't asking about.
+  if (!frequency) return isSameDay(taskDay, day);
+  if (startOfDay(day) < startOfDay(taskDay)) return false;
 
   switch (frequency) {
     case 'daily':

@@ -161,3 +161,75 @@ describe('changing the days while the series is overdue', () => {
     expect(getOverdueDay(series({ recurrenceRule: null, status: 'done' }), today)).toBeNull();
   });
 });
+
+// The reported failure: due date on a Saturday, repeating Mon/Wed/Fri. The client used to
+// treat the anchor day as an occurrence while the server did not, so a tick on the Saturday
+// snapped forward to the next Monday and the row could never clear.
+describe('a series whose start date is not one of its repeat days', () => {
+  const anchorSat = new Date(2026, 8, 5, 0, 0);   // Saturday 5 September 2026
+  const monWedFri = (over = {}) => ({
+    id: 'loki',
+    dueDate: anchorSat,
+    status: 'todo',
+    recurrenceRule: { frequency: 'weekly', interval: 1, daysOfWeek: [1, 3, 5] },
+    completedDates: [],
+    skippedDates: [],
+    ...over,
+  });
+
+  it('does not fall on its own start date', () => {
+    expect(isTaskOnDay(monWedFri(), new Date(2026, 8, 5))).toBe(false);
+  });
+
+  it('falls on the first selected weekday after it starts', () => {
+    expect(isTaskOnDay(monWedFri(), new Date(2026, 8, 7))).toBe(true);  // Mon
+    expect(isTaskOnDay(monWedFri(), new Date(2026, 8, 9))).toBe(true);  // Wed
+    expect(isTaskOnDay(monWedFri(), new Date(2026, 8, 11))).toBe(true); // Fri
+  });
+
+  it('never falls on a selected weekday before it starts', () => {
+    expect(isTaskOnDay(monWedFri(), new Date(2026, 8, 4))).toBe(false); // the Friday before
+  });
+
+  // Sunday 6 Sep: the only prior candidate is the anchor Saturday, which is not an occurrence.
+  it('is not overdue the day after it starts', () => {
+    expect(getOverdueDay(monWedFri(), new Date(2026, 8, 6))).toBeNull();
+    expect(isTaskOverdue(monWedFri(), new Date(2026, 8, 6))).toBe(false);
+  });
+
+  it('becomes overdue once a real occurrence is missed', () => {
+    expect(getOverdueDay(monWedFri(), new Date(2026, 8, 8)).toDateString())
+      .toBe('Mon Sep 07 2026');
+  });
+
+  it('clears once that occurrence is ticked', () => {
+    const done = monWedFri({ completedDates: [new Date(2026, 8, 7, 0, 0).toISOString()] });
+    expect(getOverdueDay(done, new Date(2026, 8, 8))).toBeNull();
+  });
+
+  it('ticks the day the row is actually showing', () => {
+    expect(tickDayFor(monWedFri(), new Date(2026, 8, 8)).toDateString())
+      .toBe('Mon Sep 07 2026');
+  });
+
+  // A weekly rule with no explicit days still means "the start date's own weekday".
+  it('still uses the start weekday when no days are chosen', () => {
+    const plain = monWedFri({ recurrenceRule: { frequency: 'weekly', interval: 1 } });
+    expect(isTaskOnDay(plain, new Date(2026, 8, 5))).toBe(true);   // Sat, the anchor
+    expect(isTaskOnDay(plain, new Date(2026, 8, 12))).toBe(true);  // next Sat
+    expect(isTaskOnDay(plain, new Date(2026, 8, 7))).toBe(false);  // Mon
+  });
+
+  it('leaves a one-off to-do falling on its own day', () => {
+    const oneOff = monWedFri({ recurrenceRule: null });
+    expect(isTaskOnDay(oneOff, new Date(2026, 8, 5))).toBe(true);
+    expect(isTaskOnDay(oneOff, new Date(2026, 8, 7))).toBe(false);
+  });
+
+  it('keeps the anchor day for daily, monthly and yearly rules', () => {
+    for (const frequency of ['daily', 'monthly', 'yearly']) {
+      const task = monWedFri({ recurrenceRule: { frequency, interval: 1 } });
+      expect(isTaskOnDay(task, new Date(2026, 8, 5)), frequency).toBe(true);
+    }
+  });
+});
