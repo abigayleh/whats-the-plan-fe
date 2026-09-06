@@ -14,7 +14,7 @@ import {
   tickDayFor,
   combineDateAndTime,
   toDateInputValue,
-  toTimeInputValue,
+  toTimeInputValue, shiftEndTime
 } from './tasks';
 
 describe('isTaskTimed', () => {
@@ -313,5 +313,34 @@ describe('toTimeInputValue', () => {
 
   it('returns an empty string for a null date', () => {
     expect(toTimeInputValue(null)).toBe('');
+  });
+});
+
+describe('shiftEndTime', () => {
+  it('keeps the existing length when the start moves', () => {
+    expect(shiftEndTime('09:00', '10:30', '14:00')).toBe('15:30');
+  });
+
+  it('moves the end backwards too', () => {
+    expect(shiftEndTime('14:00', '15:30', '09:00')).toBe('10:30');
+  });
+
+  it('defaults to an hour when there is no usable end', () => {
+    expect(shiftEndTime('09:00', '', '14:00')).toBe('15:00');
+    expect(shiftEndTime('', '', '14:00')).toBe('15:00');
+  });
+
+  // An end at or before the start gives no duration to preserve, so an hour it is.
+  it('defaults to an hour when the old end was not after the old start', () => {
+    expect(shiftEndTime('09:00', '09:00', '14:00')).toBe('15:00');
+    expect(shiftEndTime('10:00', '09:00', '14:00')).toBe('15:00');
+  });
+
+  it('wraps past midnight rather than producing an invalid time', () => {
+    expect(shiftEndTime('09:00', '10:30', '23:00')).toBe('00:30');
+  });
+
+  it('leaves the end alone when the new start is unusable', () => {
+    expect(shiftEndTime('09:00', '10:30', '')).toBe('10:30');
   });
 });

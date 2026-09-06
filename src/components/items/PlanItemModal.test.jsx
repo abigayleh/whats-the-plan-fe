@@ -195,6 +195,25 @@ describe('PlanItemModal', () => {
     expect(screen.queryByLabelText(/^Edit /)).not.toBeInTheDocument();
   });
 
+  it('carries the end time along when the start moves', async () => {
+    renderModal({
+      item: {
+        id: 'e1',
+        sourceId: 'e1',
+        origin: 'event',
+        title: 'Standup',
+        scheduledStart: new Date(2026, 8, 7, 9, 0),
+        scheduledEnd: new Date(2026, 8, 7, 10, 30),
+      },
+    });
+
+    const start = screen.getByLabelText('Start');
+    fireEvent.change(start, { target: { value: '14:00' } });
+
+    // The 90-minute length is preserved, not reset to an hour.
+    expect(screen.getByLabelText('End')).toHaveValue('15:30');
+  });
+
   it('autosaves the title and closes on Done', async () => {
     const { props } = renderModal();
     await userEvent.type(screen.getByLabelText('Title'), 'Buy milk');

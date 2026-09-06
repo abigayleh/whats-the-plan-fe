@@ -10,7 +10,7 @@ import LocationSearch from './LocationSearch';
 import Modal from '../common/Modal';
 import Linkify from '../common/Linkify';
 import {
-  combineDateAndTime, getTaskDay, isTaskTimed, toDateInputValue, toTimeInputValue,
+  combineDateAndTime, getTaskDay, isTaskTimed, shiftEndTime, toDateInputValue, toTimeInputValue,
 } from '../../utils/tasks';
 
 // Create/edit a PlanItem: a to-do (scoped by its list) or a bare calendar event (scoped by
@@ -115,6 +115,16 @@ function PlanItemModal({
   }
 
   // The assignee must belong to the new list's group, so a move that orphans them clears it.
+  // Moving the start carries the end with it, keeping however long the item already was —
+  // otherwise shifting a 09:00-10:30 meeting to 14:00 silently shortens it to nothing.
+  // Falls back to an hour when the existing pair doesn't give a usable length.
+  function handleStartTime(next) {
+    setStartTime(next);
+    const nextEnd = shiftEndTime(startTime, endTime, next);
+    if (nextEnd !== endTime) setEndTime(nextEnd);
+    commitChange({ startTime: next, endTime: nextEnd });
+  }
+
   function handleListChange(newListId) {
     setPickedListId(newListId);
     const newGroupId = newListId ? (writableLists.find((l) => l.id === newListId)?.groupId ?? null) : null;
@@ -558,7 +568,7 @@ function PlanItemModal({
                   type="time"
                   className="modal__input"
                   value={startTime}
-                  onChange={(e) => setStartTime(e.target.value)}
+                  onChange={(e) => handleStartTime(e.target.value)}
                   onBlur={() => commitChange()}
                   required={effectiveTimed}
                 />

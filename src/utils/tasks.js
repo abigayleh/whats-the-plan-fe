@@ -154,6 +154,27 @@ export function combineDateAndTime(dateStr, timeStr) {
   return new Date(year, month - 1, day, hour, minute, 0, 0);
 }
 
+// Moves the end time by however far the start moved, preserving the item's length. Falls back
+// to an hour when the old pair gives no usable duration (missing, or end before start).
+const HOUR_MINUTES = 60;
+const toMinutes = (time) => {
+  const [h, m] = String(time || '').split(':').map(Number);
+  return Number.isFinite(h) && Number.isFinite(m) ? h * 60 + m : null;
+};
+const toTimeString = (minutes) => {
+  const wrapped = ((minutes % 1440) + 1440) % 1440;
+  return `${String(Math.floor(wrapped / 60)).padStart(2, '0')}:${String(wrapped % 60).padStart(2, '0')}`;
+};
+
+export function shiftEndTime(prevStart, prevEnd, nextStart) {
+  const start = toMinutes(nextStart);
+  if (start === null) return prevEnd;
+  const before = toMinutes(prevStart);
+  const end = toMinutes(prevEnd);
+  const duration = before !== null && end !== null && end > before ? end - before : HOUR_MINUTES;
+  return toTimeString(start + duration);
+}
+
 export function toDateInputValue(date) {
   if (!date) return '';
   const d = new Date(date);
