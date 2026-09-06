@@ -17,7 +17,7 @@ import usePlanItems from '../hooks/usePlanItems';
 import useLocalStorageState from '../hooks/useLocalStorageState';
 import {
   getListColorKey, getOverdueDay, getTaskColorKey, getTaskIconKey,
-  isTaskDoneOnDay, isTaskOnDay, isTaskOverdue,
+  isTaskDoneOnDay, isTaskOnDay, isTaskOverdue, tickDayFor,
 } from '../utils/tasks';
 import useDocumentTitle from '../hooks/useDocumentTitle';
 
@@ -69,8 +69,12 @@ function ListsPage() {
 
   // Which day of a recurring series a row in this list is about — the same day ticking it off
   // applies to, so the checkbox and the write can't disagree.
+  // tickDayFor, not today: a series that recurs Mon/Tue shown on a Thursday would otherwise
+  // offer to tick a day it never recurs on, and the write would land nowhere.
   const dayShownFor = (list, task) => (
-    list.id === 'l-overdue' ? getOverdueDay(task) ?? new Date() : new Date()
+    list.id === 'l-overdue'
+      ? getOverdueDay(task) ?? tickDayFor(task) ?? new Date()
+      : tickDayFor(task) ?? new Date()
   );
 
   function tasksForList(list) {
