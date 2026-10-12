@@ -1,6 +1,9 @@
 import { useEffect, useState } from 'react';
 import { CheckIcon, RepeatIcon } from '../layout/icons';
-import { formatDateShort, formatTime } from '../../utils/date';
+import {
+  formatDateShort, formatDayShort, formatTime, startOfDay,
+} from '../../utils/date';
+import { formatRecurrence } from '../../constants/recurrence';
 import {
   getTaskDay, isTaskOverdue, isTaskTimed, isTaskDoneOnDay,
 } from '../../utils/tasks';
@@ -30,9 +33,16 @@ function TaskRow({
     if (day) onToggle(task.id, day);
     else onToggle(task.id);
   }
-  const overdue = isTaskOverdue(task);
   const shownDay = getTaskDay(task);
   const timed = isTaskTimed(task);
+  // A series' own date is only where it's anchored, so its row says how it repeats instead —
+  // or, on an Overdue row, which day was missed. Only that missed day counts as overdue.
+  const repeat = formatRecurrence(task.recurrenceRule, shownDay);
+  const overdue = repeat ? Boolean(task.missedDay) : isTaskOverdue(task);
+  const notStarted = repeat && startOfDay(shownDay) > startOfDay(new Date());
+  let when = shownDay && formatDateShort(shownDay);
+  if (repeat && task.missedDay) when = formatDayShort(task.missedDay);
+  else if (repeat) when = notStarted ? `${repeat} · from ${when}` : repeat;
   const subtaskCount = task.subtasks?.length ?? 0;
   const subtaskDone = task.subtasks?.filter((s) => s.done).length ?? 0;
 
@@ -78,11 +88,11 @@ function TaskRow({
           <Linkify text={task.title} />
           {task.recurrenceRule && <RepeatIcon className="task-row__repeat-icon" />}
         </span>
-        {!plain && (shownDay || task.assignedTo || subtaskCount > 0) && (
+        {!plain && (when || task.assignedTo || subtaskCount > 0) && (
           <span className="task-row__meta">
-            {shownDay && (
+            {when && (
               <span className={`task-row__due${overdue ? ' task-row__due--overdue' : ''}`}>
-                {formatDateShort(shownDay)}
+                {when}
                 {timed && ` · ${formatTime(task.scheduledStart)}`}
               </span>
             )}

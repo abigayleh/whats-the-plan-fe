@@ -1,7 +1,8 @@
 import { useState, useRef } from 'react';
 import { CheckIcon, CloseIcon } from '../layout/icons';
 import {
-  RECURRENCE_OPTIONS, WEEKDAY_LABELS, recurrenceRuleFor, recurrenceValueFor, recurrenceDaysOfWeekFor,
+  RECURRENCE_OPTIONS, WEEKDAY_LABELS, formatRecurrence, recurrenceRuleFor, recurrenceValueFor,
+  recurrenceDaysOfWeekFor,
 } from '../../constants/recurrence';
 import useGroupMembers from '../../hooks/useGroupMembers';
 import useAutoGrowTextarea from '../../hooks/useAutoGrowTextarea';
@@ -12,6 +13,7 @@ import Linkify from '../common/Linkify';
 import {
   combineDateAndTime, getTaskDay, isTaskTimed, shiftEndTime, toDateInputValue, toTimeInputValue,
 } from '../../utils/tasks';
+import { formatDayShort } from '../../utils/date';
 
 // Create/edit a PlanItem: a to-do (scoped by its list) or a bare calendar event (scoped by
 // a group picked directly). Which one this is is decided by whether a list is selected —
@@ -25,7 +27,7 @@ import {
 // session, so the origin (task vs. event) can't be silently flipped out from under a save.
 function PlanItemModal({
   lists, groups, personalSpace, defaultListId, defaultOrigin = 'task', defaultSchedule,
-  item, onClose, onSave, onDelete, onSkipOccurrence,
+  item, occurrenceDay, onClose, onSave, onDelete, onSkipOccurrence,
 }) {
   const isEdit = Boolean(item);
   const writableLists = lists.filter((l) => !l.isSystem);
@@ -99,6 +101,15 @@ function PlanItemModal({
   const effectiveTimed = isCalendarItem || timed;
   // A to-do with no date lives only in the to-do list (no calendar surface); events must be dated.
   const noDate = !isCalendarItem && !date;
+  // A repeating to-do's date is only where the series begins, so it's shown as that, next to
+  // when it actually falls. Events keep their plain date: theirs is the occurrence's, not the start.
+  const repeatSummary = !isCalendarItem && date
+    ? formatRecurrence(recurrenceRuleFor(recurrence, daysOfWeek), combineDateAndTime(date, '00:00'))
+    : null;
+  const dateLabel = isCalendarItem ? 'Date' : (repeatSummary ? 'Starts' : 'Complete by');
+  // The one day this modal can remove from a series. A to-do arrives as its series row, so the
+  // calendar says which day was clicked; an event occurrence carries its own day.
+  const removableDay = occurrenceDay ?? (item?.isRecurring ? getTaskDay(item) : null);
 
   // Toggles the whole schedule off/on: clearing the date drops a scheduled to-do back to the
   // unscheduled list; unchecking re-seeds today so the date field is usable again.
@@ -501,19 +512,6 @@ function PlanItemModal({
             </label>
           )}
 
-          <label className="modal__field">
-            <span className="modal__label">{isCalendarItem ? 'Date' : 'Complete by'}</span>
-            <input
-              type="date"
-              className="modal__input"
-              value={date}
-              onChange={(e) => setDate(e.target.value)}
-              onBlur={() => commitChange()}
-              required={isCalendarItem}
-              disabled={noDate}
-            />
-          </label>
-
           {date && (
             <label className="modal__field">
               <span className="modal__label">Repeat</span>
@@ -546,6 +544,23 @@ function PlanItemModal({
                 ))}
               </div>
             </div>
+          )}
+
+          <label className="modal__field">
+            <span className="modal__label">{dateLabel}</span>
+            <input
+              type="date"
+              className="modal__input"
+              value={date}
+              onChange={(e) => setDate(e.target.value)}
+              onBlur={() => commitChange()}
+              required={isCalendarItem}
+              disabled={noDate}
+            />
+          </label>
+
+          {repeatSummary && (
+            <p className="modal__hint">Repeats {repeatSummary[0].toLowerCase() + repeatSummary.slice(1)}</p>
           )}
 
           {!isCalendarItem && (
@@ -603,23 +618,23 @@ function PlanItemModal({
             </label>
           )}
 
-          {isEdit && item?.isRecurring && (
+          {isEdit && removableDay && (
             <p className="modal__hint">
-              Editing applies to the whole series. Removing a day only affects that day —
-              delete the whole to-do from its list.
+              Editing applies to the whole series. Removing a day only affects{' '}
+              {formatDayShort(removableDay)} — delete the whole to-do from its list.
             </p>
           )}
 
           <div className="modal__footer">
             {/* One occurrence of a series is removed, never deleted: the whole to-do can only
                 be deleted from its list, so the calendar can't wipe out a series by accident. */}
-            {isEdit && item?.isRecurring && (
+            {isEdit && removableDay && (
               <button
                 type="button"
                 className="button button--danger"
                 onClick={async () => {
                   try {
-                    await onSkipOccurrence(savedItemRef.current ?? item, getTaskDay(item));
+                    await onSkipOccurrence(savedItemRef.current ?? item, removableDay);
                     onClose();
                   } catch (err) {
                     setError(err.message || 'Could not remove this day');
@@ -629,7 +644,7 @@ function PlanItemModal({
                 Remove this day
               </button>
             )}
-            {isEdit && !item?.isRecurring && (
+            {isEdit && !removableDay && (
               <button
                 type="button"
                 className="button button--danger"

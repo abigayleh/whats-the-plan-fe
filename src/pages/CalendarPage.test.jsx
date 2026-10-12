@@ -1,8 +1,8 @@
 import {
-  describe, it, expect, vi, beforeEach,
+  describe, it, expect, vi, beforeEach, afterEach,
 } from 'vitest';
 import {
-  renderWithRouter, screen, userEvent, fireEvent,
+  renderWithRouter, screen, within, userEvent, fireEvent, act,
 } from '../test/utils';
 import CalendarPage from './CalendarPage';
 import useAppData from '../hooks/useAppData';
@@ -120,6 +120,106 @@ describe('CalendarPage', () => {
       renderWithRouter(<CalendarPage />);
       await userEvent.click(screen.getByRole('button', { name: 'Add event' }));
       expect(screen.getByRole('heading', { name: 'New Event' })).toBeInTheDocument();
+    });
+  });
+
+  describe('returning to a tab left open', () => {
+    const setVisibility = (state) => act(() => {
+      Object.defineProperty(document, 'visibilityState', { configurable: true, get: () => state });
+      document.dispatchEvent(new Event('visibilitychange'));
+    });
+
+    beforeEach(() => {
+      vi.useFakeTimers({ toFake: ['Date'] });
+      vi.setSystemTime(new Date(2026, 9, 12, 22, 0));
+    });
+    afterEach(() => {
+      setVisibility('visible');
+      vi.useRealTimers();
+    });
+
+    function browseToNextMonthAndLeave() {
+      renderWithRouter(<CalendarPage />);
+      fireEvent.click(screen.getByRole('button', { name: 'Next' }));
+      expect(screen.getByText('November 2026')).toBeInTheDocument();
+      setVisibility('hidden');
+    }
+
+    it('lands back on today when the day has changed', () => {
+      browseToNextMonthAndLeave();
+      vi.setSystemTime(new Date(2026, 9, 13, 8, 0));
+      setVisibility('visible');
+      expect(screen.getByText('October 2026')).toBeInTheDocument();
+    });
+
+    it('keeps the month being browsed on a same-day return', () => {
+      browseToNextMonthAndLeave();
+      vi.setSystemTime(new Date(2026, 9, 12, 23, 30));
+      setVisibility('visible');
+      expect(screen.getByText('November 2026')).toBeInTheDocument();
+    });
+  });
+
+  // The calendar opens the series row (it carries the sub-to-dos and files), so the day that
+  // was actually clicked has to travel with it — otherwise the modal can only delete it all.
+  describe('opening a repeating to-do', () => {
+    const today = new Date(2026, 9, 12);
+    const yesterday = new Date(2026, 9, 11);
+    const series = {
+      id: 't1',
+      sourceId: 't1',
+      origin: 'task',
+      title: 'Water plants',
+      status: 'todo',
+      listId: 'l1',
+      dueDate: new Date(2026, 7, 4),
+      recurrenceRule: { frequency: 'daily', interval: 1 },
+      completedDates: [],
+      skippedDates: [],
+    };
+    const occurrence = {
+      ...series, id: 'task-t1:2026-10-12', dueDate: today, recurrenceRule: null, isRecurring: true,
+    };
+    let skipOccurrence;
+
+    beforeEach(() => {
+      vi.useFakeTimers({ toFake: ['Date'] });
+      vi.setSystemTime(new Date(2026, 9, 12, 10, 0));
+      skipOccurrence = vi.fn().mockResolvedValue();
+      useAppData.mockReturnValue({
+        ...baseData,
+        lists: [{
+          id: 'l1', name: 'Home', isSystem: false, isDefault: true, groupId: null,
+        }],
+        tasks: [series],
+      });
+      usePlanItems.mockReturnValue({
+        saveItem: vi.fn(), deleteItem: vi.fn(), moveItem: vi.fn(), toggleStatus: vi.fn(), skipOccurrence,
+      });
+      useCalendarItems.mockReturnValue({ items: [occurrence], refetch: vi.fn() });
+    });
+    afterEach(() => vi.useRealTimers());
+
+    async function openRowIn(sectionTitle) {
+      renderWithRouter(<CalendarPage />);
+      await userEvent.click(screen.getByRole('button', { name: 'Day' }));
+      const section = screen.getByRole('heading', { name: sectionTitle }).closest('section');
+      await userEvent.click(section.querySelector('.task-row'));
+    }
+
+    it('removes only the day that was clicked', async () => {
+      await openRowIn('Today');
+      const modal = within(screen.getByRole('dialog'));
+      expect(modal.queryByRole('button', { name: 'Delete' })).not.toBeInTheDocument();
+      await userEvent.click(modal.getByRole('button', { name: 'Remove this day' }));
+      expect(skipOccurrence).toHaveBeenCalledWith(expect.objectContaining({ sourceId: 't1' }), today);
+    });
+
+    it('removes the missed day when opened from Overdue', async () => {
+      await openRowIn('Overdue');
+      await userEvent.click(screen.getByRole('button', { name: 'Remove this day' }));
+      const [, day] = skipOccurrence.mock.calls[0];
+      expect(day.toDateString()).toBe(yesterday.toDateString());
     });
   });
 });

@@ -95,6 +95,8 @@ function ListsPage() {
       status: task.recurrenceRule && isTaskDoneOnDay(task, dayShownFor(list, task)) ? 'done' : task.status,
       // The day this row stands for, so a repeating to-do can be ticked off for it.
       shownDay: task.recurrenceRule ? dayShownFor(list, task) : null,
+      // Only an Overdue row is about a missed day; everywhere else a series describes its repeat.
+      missedDay: list.id === 'l-overdue' ? getOverdueDay(task) : null,
       colorKey: getTaskColorKey(task, lists, groups, personalSpace),
       icon: getTaskIconKey(task, lists),
     }));

@@ -18,10 +18,11 @@ import useLocalStorageSet from '../hooks/useLocalStorageSet';
 import useCalendarItems from '../hooks/useCalendarItems';
 import useResizableSplit from '../hooks/useResizableSplit';
 import useMediaQuery from '../hooks/useMediaQuery';
+import useDayChange from '../hooks/useDayChange';
 import { MOBILE_QUERY } from '../constants/breakpoints';
 import {
   getListColorKey, getOverdueDay, getTaskColorKey, getTaskIconKey, getTaskDay,
-  isTaskOnDay, isTaskTimed, isTaskOverdue,
+  isItemRecurring, isTaskOnDay, isTaskTimed, isTaskOverdue,
 } from '../utils/tasks';
 import {
   addDays, addMonths, startOfDay, getMonthGrid, getWeekDays,
@@ -53,13 +54,19 @@ function CalendarPage() {
   const [focusDate, setFocusDate] = useState(() => new Date());
   const [hiddenGroupIds, setHiddenGroupIds] = useLocalStorageSet('calendar-hidden-groups');
   const [hiddenListIds, setHiddenListIds] = useLocalStorageSet('calendar-hidden-lists');
-  // null | { mode:'new', seed, defaultOrigin } | { mode:'edit', item }
+  // null | { mode:'new', seed, defaultOrigin } | { mode:'edit', item, occurrenceDay? }
   const [planItemModal, setPlanItemModal] = useState(null);
   const dayPanel = useResizableSplit('calendar-day-panel-width', 384);
   const isMobile = useMediaQuery(MOBILE_QUERY);
   // Which day the phone's month panel is describing. Starts on the focused day so the
   // panel is never empty on arrival.
   const [selectedDay, setSelectedDay] = useState(() => new Date());
+
+  // A tab left open overnight comes back on today, like a fresh load would.
+  useDayChange((today) => {
+    setFocusDate(today);
+    setSelectedDay(today);
+  });
 
   const range = useMemo(() => {
     let days;
@@ -183,7 +190,10 @@ function CalendarPage() {
   // the same day ticking it off applies to, so the checkbox and the write can't disagree.
   const overdueTasks = useMemo(() => tasks
     .filter((task) => isTaskOverdue(task) && isTaskVisible(task))
-    .map((task) => ({ ...decorateTask(task), shownDay: getOverdueDay(task) })),
+    .map((task) => {
+      const missedDay = getOverdueDay(task);
+      return { ...decorateTask(task), shownDay: missedDay, missedDay };
+    }),
   [tasks, isTaskVisible, decorateTask]);
 
   // Falls back to a raw (unscheduled) task when dragging it in from UnscheduledPanel, since
@@ -256,12 +266,19 @@ function CalendarPage() {
       return;
     }
     const task = taskOf(item);
-    if (task) setPlanItemModal({ mode: 'edit', item: task });
+    if (!task) return;
+    // The series row says nothing about which day was clicked, so that travels alongside it —
+    // it's the day "Remove this day" takes out.
+    const occurrenceDay = isItemRecurring(item) ? getTaskDay(item) : null;
+    setPlanItemModal({ mode: 'edit', item: task, occurrenceDay });
   }
 
-  // Rows sourced straight from `tasks` (overdue/scheduled/unscheduled buckets) carry the real
-  // task id rather than a calendar-occurrence id, so wrap it into the shape openItem expects.
-  const openTaskById = (task) => openItem({ origin: 'task', sourceId: task.id });
+  // Rows sourced straight from `tasks` (overdue/unscheduled buckets) carry the real task id
+  // rather than a calendar-occurrence id, so wrap it into the shape openItem expects. A
+  // repeating one stands for the day it was missed.
+  const openTaskById = (task) => openItem({
+    origin: 'task', sourceId: task.id, isRecurring: Boolean(task.recurrenceRule), dueDate: task.shownDay,
+  });
 
   // Clicking an empty slot makes a to-do in the default list, timed to that slot — the modal's
   // list select still offers "No list" to turn it into a bare event, as the Add event button does.
@@ -548,6 +565,7 @@ function CalendarPage() {
           defaultOrigin={planItemModal.mode === 'new' ? planItemModal.defaultOrigin : undefined}
           defaultSchedule={planItemModal.mode === 'new' ? planItemModal.seed : null}
           item={planItemModal.mode === 'edit' ? planItemModal.item : null}
+          occurrenceDay={planItemModal.occurrenceDay}
           onClose={() => setPlanItemModal(null)}
           onSave={handleItemSubmit}
           onDelete={handleItemDelete}
