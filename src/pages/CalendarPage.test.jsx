@@ -2,7 +2,7 @@ import {
   describe, it, expect, vi, beforeEach, afterEach,
 } from 'vitest';
 import {
-  renderWithRouter, screen, within, userEvent, fireEvent, act,
+  renderWithRouter, screen, within, userEvent, fireEvent, setVisibility,
 } from '../test/utils';
 import CalendarPage from './CalendarPage';
 import useAppData from '../hooks/useAppData';
@@ -124,11 +124,6 @@ describe('CalendarPage', () => {
   });
 
   describe('returning to a tab left open', () => {
-    const setVisibility = (state) => act(() => {
-      Object.defineProperty(document, 'visibilityState', { configurable: true, get: () => state });
-      document.dispatchEvent(new Event('visibilitychange'));
-    });
-
     beforeEach(() => {
       vi.useFakeTimers({ toFake: ['Date'] });
       vi.setSystemTime(new Date(2026, 9, 12, 22, 0));
@@ -138,22 +133,22 @@ describe('CalendarPage', () => {
       vi.useRealTimers();
     });
 
-    function browseToNextMonthAndLeave() {
+    async function browseToNextMonthAndLeave() {
       renderWithRouter(<CalendarPage />);
-      fireEvent.click(screen.getByRole('button', { name: 'Next' }));
+      await userEvent.click(screen.getByRole('button', { name: 'Next' }));
       expect(screen.getByText('November 2026')).toBeInTheDocument();
       setVisibility('hidden');
     }
 
-    it('lands back on today when the day has changed', () => {
-      browseToNextMonthAndLeave();
+    it('lands back on today when the day has changed', async () => {
+      await browseToNextMonthAndLeave();
       vi.setSystemTime(new Date(2026, 9, 13, 8, 0));
       setVisibility('visible');
       expect(screen.getByText('October 2026')).toBeInTheDocument();
     });
 
-    it('keeps the month being browsed on a same-day return', () => {
-      browseToNextMonthAndLeave();
+    it('keeps the month being browsed on a same-day return', async () => {
+      await browseToNextMonthAndLeave();
       vi.setSystemTime(new Date(2026, 9, 12, 23, 30));
       setVisibility('visible');
       expect(screen.getByText('November 2026')).toBeInTheDocument();
@@ -203,8 +198,8 @@ describe('CalendarPage', () => {
     async function openRowIn(sectionTitle) {
       renderWithRouter(<CalendarPage />);
       await userEvent.click(screen.getByRole('button', { name: 'Day' }));
-      const section = screen.getByRole('heading', { name: sectionTitle }).closest('section');
-      await userEvent.click(section.querySelector('.task-row'));
+      const section = within(screen.getByRole('heading', { name: sectionTitle }).closest('section'));
+      await userEvent.click(section.getByRole('button', { name: /Water plants/ }));
     }
 
     it('removes only the day that was clicked', async () => {
@@ -212,6 +207,14 @@ describe('CalendarPage', () => {
       const modal = within(screen.getByRole('dialog'));
       expect(modal.queryByRole('button', { name: 'Delete' })).not.toBeInTheDocument();
       await userEvent.click(modal.getByRole('button', { name: 'Remove this day' }));
+      expect(skipOccurrence).toHaveBeenCalledWith(expect.objectContaining({ sourceId: 't1' }), today);
+    });
+
+    it('removes the clicked day when opened from a chip on the week grid', async () => {
+      const { container } = renderWithRouter(<CalendarPage />);
+      await userEvent.click(screen.getByRole('button', { name: 'Week' }));
+      await userEvent.click(container.querySelector('.task-chip'));
+      await userEvent.click(screen.getByRole('button', { name: 'Remove this day' }));
       expect(skipOccurrence).toHaveBeenCalledWith(expect.objectContaining({ sourceId: 't1' }), today);
     });
 

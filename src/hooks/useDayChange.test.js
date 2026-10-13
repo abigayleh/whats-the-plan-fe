@@ -2,15 +2,11 @@ import {
   describe, it, expect, beforeEach, afterEach, vi,
 } from 'vitest';
 import { renderHook } from '@testing-library/react';
+import { setVisibility } from '../test/utils';
 import useDayChange from './useDayChange';
 
 const monday = new Date(2026, 9, 12, 22, 0);
 const tuesday = new Date(2026, 9, 13, 8, 0);
-
-function setVisibility(state) {
-  Object.defineProperty(document, 'visibilityState', { configurable: true, get: () => state });
-  document.dispatchEvent(new Event('visibilitychange'));
-}
 
 describe('useDayChange', () => {
   beforeEach(() => {
@@ -44,6 +40,32 @@ describe('useDayChange', () => {
     const onDayChange = vi.fn();
     renderHook(() => useDayChange(onDayChange));
     window.dispatchEvent(new Event('blur'));
+    vi.setSystemTime(tuesday);
+    window.dispatchEvent(new Event('focus'));
+    expect(onDayChange).toHaveBeenCalledTimes(1);
+  });
+
+  // Switching apps blurs the window the evening before; the screen locking hides it the next
+  // morning. Both are the same absence, and it began the evening before.
+  it('counts from when the tab was first left, not from the last sign it was away', () => {
+    const onDayChange = vi.fn();
+    renderHook(() => useDayChange(onDayChange));
+    window.dispatchEvent(new Event('blur'));
+    vi.setSystemTime(tuesday);
+    setVisibility('hidden');
+    setVisibility('visible');
+    window.dispatchEvent(new Event('focus'));
+    expect(onDayChange).toHaveBeenCalledTimes(1);
+  });
+
+  // The screen locking and unlocking while another app has focus isn't a return: the window
+  // is still in the background, so the absence that began at the blur carries on overnight.
+  it('is not fooled by the tab flickering visible while the window is still in the background', () => {
+    const onDayChange = vi.fn();
+    renderHook(() => useDayChange(onDayChange));
+    window.dispatchEvent(new Event('blur'));
+    setVisibility('hidden');
+    setVisibility('visible');
     vi.setSystemTime(tuesday);
     window.dispatchEvent(new Event('focus'));
     expect(onDayChange).toHaveBeenCalledTimes(1);

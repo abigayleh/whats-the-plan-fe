@@ -8,21 +8,28 @@ export default function useDayChange(onDayChange) {
   useEffect(() => { fnRef.current = onDayChange; });
 
   useEffect(() => {
-    let lastSeen = new Date();
-    const leave = () => { lastSeen = new Date(); };
-    const comeBack = () => {
+    // When the current absence began. Hidden and blurred count as one absence: a background
+    // window can flicker hidden/visible on a screen lock without anyone having come back.
+    let leftAt = null;
+    let blurred = false;
+    const sync = () => {
       const now = new Date();
-      if (!isSameDay(lastSeen, now)) fnRef.current(now);
-      lastSeen = now;
+      if (blurred || document.visibilityState !== 'visible') {
+        leftAt ??= now;
+        return;
+      }
+      if (leftAt && !isSameDay(leftAt, now)) fnRef.current(now);
+      leftAt = null;
     };
-    const onVisibility = () => (document.visibilityState === 'visible' ? comeBack() : leave());
-    document.addEventListener('visibilitychange', onVisibility);
-    window.addEventListener('focus', comeBack);
-    window.addEventListener('blur', leave);
+    const onFocus = () => { blurred = false; sync(); };
+    const onBlur = () => { blurred = true; sync(); };
+    document.addEventListener('visibilitychange', sync);
+    window.addEventListener('focus', onFocus);
+    window.addEventListener('blur', onBlur);
     return () => {
-      document.removeEventListener('visibilitychange', onVisibility);
-      window.removeEventListener('focus', comeBack);
-      window.removeEventListener('blur', leave);
+      document.removeEventListener('visibilitychange', sync);
+      window.removeEventListener('focus', onFocus);
+      window.removeEventListener('blur', onBlur);
     };
   }, []);
 }

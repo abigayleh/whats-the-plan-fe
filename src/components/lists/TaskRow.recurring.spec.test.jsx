@@ -101,6 +101,13 @@ describe('what a repeating to-do row says about its schedule', () => {
     expect(screen.getByText('Weekly on Mon, Wed · from Oct 20')).toBeInTheDocument();
   });
 
+  it('does not repeat the date for a yearly series that has not begun', () => {
+    renderRow({
+      task: { ...weekly, dueDate: new Date(2026, 9, 20), recurrenceRule: { frequency: 'yearly', interval: 1 } },
+    });
+    expect(screen.getByText('Yearly on Oct 20')).toBeInTheDocument();
+  });
+
   it('names the missed day, flagged overdue, on an Overdue row', () => {
     const missedDay = new Date(2026, 9, 5);
     renderRow({ task: { ...weekly, missedDay }, day: missedDay });

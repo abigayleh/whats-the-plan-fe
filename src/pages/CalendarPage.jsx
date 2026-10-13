@@ -260,25 +260,23 @@ function CalendarPage() {
     } catch { /* ignore */ }
   }
 
+  // The modal edits the series row, which says nothing about which day was clicked — so that
+  // travels alongside it, as the day "Remove this day" takes out.
+  function openTask(task, occurrenceDay) {
+    if (task) setPlanItemModal({ mode: 'edit', item: task, occurrenceDay });
+  }
+
   function openItem(item) {
     if (item.origin === 'event') {
       setPlanItemModal({ mode: 'edit', item });
       return;
     }
-    const task = taskOf(item);
-    if (!task) return;
-    // The series row says nothing about which day was clicked, so that travels alongside it —
-    // it's the day "Remove this day" takes out.
-    const occurrenceDay = isItemRecurring(item) ? getTaskDay(item) : null;
-    setPlanItemModal({ mode: 'edit', item: task, occurrenceDay });
+    openTask(taskOf(item), isItemRecurring(item) ? getTaskDay(item) : null);
   }
 
   // Rows sourced straight from `tasks` (overdue/unscheduled buckets) carry the real task id
-  // rather than a calendar-occurrence id, so wrap it into the shape openItem expects. A
-  // repeating one stands for the day it was missed.
-  const openTaskById = (task) => openItem({
-    origin: 'task', sourceId: task.id, isRecurring: Boolean(task.recurrenceRule), dueDate: task.shownDay,
-  });
+  // rather than a calendar-occurrence id. A repeating one stands for the day it missed.
+  const openTaskById = (row) => openTask(taskOf({ sourceId: row.id }), row.recurrenceRule ? row.missedDay : null);
 
   // Clicking an empty slot makes a to-do in the default list, timed to that slot — the modal's
   // list select still offers "No list" to turn it into a bare event, as the Add event button does.

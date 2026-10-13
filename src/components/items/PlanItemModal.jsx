@@ -106,10 +106,26 @@ function PlanItemModal({
   const repeatSummary = !isCalendarItem && date
     ? formatRecurrence(recurrenceRuleFor(recurrence, daysOfWeek), combineDateAndTime(date, '00:00'))
     : null;
-  const dateLabel = isCalendarItem ? 'Date' : (repeatSummary ? 'Starts' : 'Complete by');
+  const repeatHint = repeatSummary && `Repeats ${repeatSummary[0].toLowerCase()}${repeatSummary.slice(1)}`;
+  const toDoDateLabel = repeatSummary ? 'Starts' : 'Complete by';
   // The one day this modal can remove from a series. A to-do arrives as its series row, so the
-  // calendar says which day was clicked; an event occurrence carries its own day.
-  const removableDay = occurrenceDay ?? (item?.isRecurring ? getTaskDay(item) : null);
+  // calendar names the clicked day (moot once repeat is turned off); an occurrence carries its own.
+  const removableDay = (recurrence ? occurrenceDay : null) ?? (item?.isRecurring ? getTaskDay(item) : null);
+
+  const dateField = (
+    <label className="modal__field">
+      <span className="modal__label">{isCalendarItem ? 'Date' : toDoDateLabel}</span>
+      <input
+        type="date"
+        className="modal__input"
+        value={date}
+        onChange={(e) => setDate(e.target.value)}
+        onBlur={() => commitChange()}
+        required={isCalendarItem}
+        disabled={noDate}
+      />
+    </label>
+  );
 
   // Toggles the whole schedule off/on: clearing the date drops a scheduled to-do back to the
   // unscheduled list; unchecking re-seeds today so the date field is usable again.
@@ -512,6 +528,8 @@ function PlanItemModal({
             </label>
           )}
 
+          {isCalendarItem && dateField}
+
           {date && (
             <label className="modal__field">
               <span className="modal__label">Repeat</span>
@@ -546,22 +564,10 @@ function PlanItemModal({
             </div>
           )}
 
-          <label className="modal__field">
-            <span className="modal__label">{dateLabel}</span>
-            <input
-              type="date"
-              className="modal__input"
-              value={date}
-              onChange={(e) => setDate(e.target.value)}
-              onBlur={() => commitChange()}
-              required={isCalendarItem}
-              disabled={noDate}
-            />
-          </label>
+          {/* A to-do says how it repeats before when it starts; an event's date stays on top. */}
+          {!isCalendarItem && dateField}
 
-          {repeatSummary && (
-            <p className="modal__hint">Repeats {repeatSummary[0].toLowerCase() + repeatSummary.slice(1)}</p>
-          )}
+          {repeatHint && <p className="modal__hint">{repeatHint}</p>}
 
           {!isCalendarItem && (
             <label className="modal__toggle">

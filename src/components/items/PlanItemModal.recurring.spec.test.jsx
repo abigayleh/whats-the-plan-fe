@@ -106,6 +106,13 @@ describe('a repeating to-do opened from the calendar as its series row', () => {
     renderModal({ item: seriesRow, occurrenceDay: clickedDay });
     expect(screen.getByText(/Mon, Oct 12/)).toBeInTheDocument();
   });
+
+  it('goes back to a plain delete once the to-do is set to stop repeating', async () => {
+    renderModal({ item: seriesRow, occurrenceDay: clickedDay });
+    await userEvent.selectOptions(screen.getByLabelText('Repeat'), '');
+    expect(screen.getByRole('button', { name: 'Delete' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Remove this day' })).not.toBeInTheDocument();
+  });
 });
 
 describe('a repeating to-do opened from its list', () => {
@@ -146,7 +153,7 @@ describe('the schedule of a to-do', () => {
 });
 
 describe('a repeating event', () => {
-  it('keeps its plain Date label and gains no repeat summary', () => {
+  it('keeps its Date field where it was, and gains no repeat summary', () => {
     renderModal({
       item: {
         id: 'event-e1:2026-10-12',
@@ -160,7 +167,9 @@ describe('a repeating event', () => {
         rule: { frequency: 'daily', interval: 1 },
       },
     });
-    expect(screen.getByLabelText('Date')).toBeInTheDocument();
+    const date = screen.getByLabelText('Date');
+    const repeat = screen.getByLabelText('Repeat');
+    expect(date.compareDocumentPosition(repeat) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(screen.queryByLabelText('Starts')).not.toBeInTheDocument();
     expect(screen.queryByText(/^Repeats/)).not.toBeInTheDocument();
   });
