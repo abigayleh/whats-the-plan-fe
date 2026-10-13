@@ -1,3 +1,5 @@
+import { WEEKDAY_LABELS as WEEKDAY_NAMES, formatDateShort } from '../utils/date';
+
 // 'biweekly' is a UI-only value — it maps to the same { frequency: 'weekly' } rule the API
 // knows about, just with interval: 2, rather than inventing a new frequency server-side.
 export const RECURRENCE_OPTIONS = [
@@ -36,7 +38,27 @@ export function recurrenceDaysOfWeekFor(rule, startDate) {
   return startDate ? [startDate.getDay()] : [];
 }
 
-export function formatRecurrence(recurrenceRule) {
-  const match = RECURRENCE_OPTIONS.find((option) => option.value === recurrenceValueFor(recurrenceRule));
-  return match ? match.label : null;
+const ordinal = (n) => {
+  const suffix = n % 100 >= 11 && n % 100 <= 13 ? 'th' : (['th', 'st', 'nd', 'rd'][n % 10] ?? 'th');
+  return `${n}${suffix}`;
+};
+
+// API recurrenceRule (+ the series' start date) -> "Weekly on Mon, Wed", for showing when a
+// series falls rather than the one date it happens to be anchored to. null when it doesn't repeat.
+export function formatRecurrence(rule, startDate) {
+  switch (rule?.frequency) {
+    case 'daily':
+      return 'Daily';
+    case 'weekly': {
+      const days = recurrenceDaysOfWeekFor(rule, startDate).map((dow) => WEEKDAY_NAMES[dow]).join(', ');
+      const every = rule.interval === 2 ? 'Every 2 weeks' : 'Weekly';
+      return days ? `${every} on ${days}` : every;
+    }
+    case 'monthly':
+      return startDate ? `Monthly on the ${ordinal(startDate.getDate())}` : 'Monthly';
+    case 'yearly':
+      return startDate ? `Yearly on ${formatDateShort(startDate)}` : 'Yearly';
+    default:
+      return null;
+  }
 }

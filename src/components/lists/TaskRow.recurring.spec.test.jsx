@@ -1,5 +1,5 @@
 import {
-  describe, it, expect, vi, beforeEach,
+  describe, it, expect, vi, beforeEach, afterEach,
 } from 'vitest';
 import { render, screen, userEvent } from '../../test/utils';
 import TaskRow from './TaskRow';
@@ -55,5 +55,63 @@ describe('the series row itself', () => {
   it('cannot be ticked as a whole when it stands for no particular day', () => {
     renderRow({});
     expect(screen.getByRole('checkbox')).toHaveAttribute('aria-disabled', 'true');
+  });
+});
+
+// A series is anchored to one date, but that date says nothing about when it falls — so its
+// row describes the repeat instead. Monday 12 October 2026 is "today" throughout.
+describe('what a repeating to-do row says about its schedule', () => {
+  const weekly = {
+    ...series,
+    dueDate: new Date(2026, 7, 4),
+    recurrenceRule: { frequency: 'weekly', interval: 1, daysOfWeek: [1, 3] },
+  };
+
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date(2026, 9, 12, 10, 0));
+  });
+  afterEach(() => vi.useRealTimers());
+
+  it('describes when it repeats instead of the date it started', () => {
+    renderRow({ task: weekly });
+    expect(screen.getByText('Weekly on Mon, Wed')).toBeInTheDocument();
+    expect(screen.queryByText(/Aug 4/)).not.toBeInTheDocument();
+  });
+
+  it('is never flagged overdue for having started in the past', () => {
+    renderRow({ task: weekly });
+    expect(screen.getByText('Weekly on Mon, Wed')).not.toHaveClass('task-row__due--overdue');
+  });
+
+  it('keeps the time of a timed series', () => {
+    renderRow({
+      task: {
+        ...weekly,
+        dueDate: null,
+        scheduledStart: new Date(2026, 7, 4, 9, 0),
+        scheduledEnd: new Date(2026, 7, 4, 10, 0),
+      },
+    });
+    expect(screen.getByText('Weekly on Mon, Wed · 9:00 AM')).toBeInTheDocument();
+  });
+
+  it('says when a series that has not begun yet will start', () => {
+    renderRow({ task: { ...weekly, dueDate: new Date(2026, 9, 20) } });
+    expect(screen.getByText('Weekly on Mon, Wed · from Oct 20')).toBeInTheDocument();
+  });
+
+  it('does not repeat the date for a yearly series that has not begun', () => {
+    renderRow({
+      task: { ...weekly, dueDate: new Date(2026, 9, 20), recurrenceRule: { frequency: 'yearly', interval: 1 } },
+    });
+    expect(screen.getByText('Yearly on Oct 20')).toBeInTheDocument();
+  });
+
+  it('names the missed day, flagged overdue, on an Overdue row', () => {
+    const missedDay = new Date(2026, 9, 5);
+    renderRow({ task: { ...weekly, missedDay }, day: missedDay });
+    expect(screen.getByText('Mon, Oct 5')).toHaveClass('task-row__due--overdue');
+    expect(screen.queryByText(/Weekly on/)).not.toBeInTheDocument();
   });
 });

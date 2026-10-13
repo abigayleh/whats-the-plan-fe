@@ -1,7 +1,9 @@
 import {
-  describe, it, expect, vi, beforeEach,
+  describe, it, expect, vi, beforeEach, afterEach,
 } from 'vitest';
-import { renderWithRouter, screen, userEvent } from '../test/utils';
+import {
+  renderWithRouter, screen, within, userEvent,
+} from '../test/utils';
 import ListsPage from './ListsPage';
 import useAppData from '../hooks/useAppData';
 import usePlanItems from '../hooks/usePlanItems';
@@ -51,5 +53,43 @@ describe('ListsPage', () => {
     const toggle = screen.getByRole('button', { name: 'Hide completed' });
     await userEvent.click(toggle);
     expect(screen.getByRole('button', { name: 'Show completed' })).toBeInTheDocument();
+  });
+});
+
+// The same repeating to-do reads differently by section: Overdue is about the one day that was
+// missed, its own list about how it repeats. Monday 12 October 2026 is "today".
+describe('a repeating to-do that missed yesterday', () => {
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date(2026, 9, 12, 10, 0));
+    useAppData.mockReturnValue({
+      ...baseData,
+      lists: [
+        {
+          id: 'l-overdue', name: 'Overdue', isSystem: true, groupId: null,
+        },
+        ...baseData.lists,
+      ],
+      tasks: [{
+        id: 't1',
+        title: 'Water plants',
+        status: 'todo',
+        listId: 'l1',
+        dueDate: new Date(2026, 7, 4),
+        recurrenceRule: { frequency: 'daily', interval: 1 },
+        completedDates: [],
+        skippedDates: [],
+      }],
+    });
+  });
+  afterEach(() => vi.useRealTimers());
+
+  const sectionNamed = (name) => within(screen.getByText(name).closest('.list-section'));
+
+  it('names the missed day under Overdue and the repeat in its own list', () => {
+    renderWithRouter(<ListsPage />);
+    expect(sectionNamed('Overdue').getByText('Sun, Oct 11')).toBeInTheDocument();
+    expect(sectionNamed('Groceries').getByText('Daily')).toBeInTheDocument();
+    expect(screen.queryByText(/Aug 4/)).not.toBeInTheDocument();
   });
 });

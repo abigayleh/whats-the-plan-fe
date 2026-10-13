@@ -1,12 +1,24 @@
 import { useEffect, useState } from 'react';
 import { CheckIcon, RepeatIcon } from '../layout/icons';
-import { formatDateShort, formatTime } from '../../utils/date';
+import {
+  formatDateShort, formatDayShort, formatTime, startOfDay,
+} from '../../utils/date';
+import { formatRecurrence } from '../../constants/recurrence';
 import {
   getTaskDay, isTaskOverdue, isTaskTimed, isTaskDoneOnDay,
 } from '../../utils/tasks';
 import TaskActionButtons from '../tasks/TaskActionButtons';
 import Linkify from '../common/Linkify';
 import EntityIcon from '../common/EntityIcon';
+
+// What a series row says in place of a date: the day it missed (Overdue), else how it repeats —
+// plus when it begins, while that's still ahead and the repeat doesn't already name the date.
+function seriesLabel(task, repeat, anchorDay) {
+  if (task.missedDay) return formatDayShort(task.missedDay);
+  const named = task.recurrenceRule.frequency === 'yearly';
+  const notStarted = startOfDay(anchorDay) > startOfDay(new Date());
+  return notStarted && !named ? `${repeat} · from ${formatDateShort(anchorDay)}` : repeat;
+}
 
 function TaskRow({
   task, lists, onToggle, onClick, draggable = false, plain = false, day = null,
@@ -30,9 +42,13 @@ function TaskRow({
     if (day) onToggle(task.id, day);
     else onToggle(task.id);
   }
-  const overdue = isTaskOverdue(task);
-  const shownDay = getTaskDay(task);
+  const anchorDay = getTaskDay(task);
   const timed = isTaskTimed(task);
+  // A series' own date is only where it's anchored, so its row describes the series instead,
+  // and only a missed day (never the anchor being in the past) counts as overdue.
+  const repeat = formatRecurrence(task.recurrenceRule, anchorDay);
+  const overdue = repeat ? Boolean(task.missedDay) : isTaskOverdue(task);
+  const when = repeat ? seriesLabel(task, repeat, anchorDay) : (anchorDay && formatDateShort(anchorDay));
   const subtaskCount = task.subtasks?.length ?? 0;
   const subtaskDone = task.subtasks?.filter((s) => s.done).length ?? 0;
 
@@ -78,11 +94,11 @@ function TaskRow({
           <Linkify text={task.title} />
           {task.recurrenceRule && <RepeatIcon className="task-row__repeat-icon" />}
         </span>
-        {!plain && (shownDay || task.assignedTo || subtaskCount > 0) && (
+        {!plain && (when || task.assignedTo || subtaskCount > 0) && (
           <span className="task-row__meta">
-            {shownDay && (
+            {when && (
               <span className={`task-row__due${overdue ? ' task-row__due--overdue' : ''}`}>
-                {formatDateShort(shownDay)}
+                {when}
                 {timed && ` · ${formatTime(task.scheduledStart)}`}
               </span>
             )}

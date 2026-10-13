@@ -1,4 +1,4 @@
-import { render } from '@testing-library/react';
+import { render, act } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 
 // Render a component inside a router (most screens use Link / useNavigate). Pass `route`
@@ -7,6 +7,14 @@ export function renderWithRouter(ui, { route = '/', ...options } = {}) {
   return render(ui, {
     wrapper: ({ children }) => <MemoryRouter initialEntries={[route]}>{children}</MemoryRouter>,
     ...options,
+  });
+}
+
+// Flips the tab between hidden and visible, as switching tabs or locking the screen does.
+export function setVisibility(state) {
+  act(() => {
+    Object.defineProperty(document, 'visibilityState', { configurable: true, get: () => state });
+    document.dispatchEvent(new Event('visibilitychange'));
   });
 }
 

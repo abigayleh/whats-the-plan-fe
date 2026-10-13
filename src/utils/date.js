@@ -98,6 +98,11 @@ export function formatDateShort(date) {
   return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
 }
 
+// "Mon, Oct 5" — a single day named with its weekday, for when which day it was matters.
+export function formatDayShort(date) {
+  return date.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
+}
+
 export function formatTime(date) {
   return date.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
 }
